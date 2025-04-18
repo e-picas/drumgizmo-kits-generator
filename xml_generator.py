@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+XML generation module for DrumGizmo kit generator.
+Contains functions to create the XML files needed for DrumGizmo kits.
+"""
+
+import os
+import sys
+import tempfile
+import shutil
+import datetime
+from config import CHANNELS, MAIN_CHANNELS, get_filechannel
+
+def create_xml_file(instrument, kit_dir, version, extension):
+    """
+    Creates the XML file for an instrument.
+    
+    Args:
+        instrument (str): Name of the instrument
+        kit_dir (str): Target directory for the kit
+        version (str): Kit version
+        extension (str): Audio file extension (with the dot)
+    """
+    xml_file = os.path.join(kit_dir, instrument, f"{instrument}.xml")
+    
+    print(f"Creating XML file: {xml_file}", file=sys.stderr)
+    
+    # Create a temporary XML file
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp:
+        # Write XML header
+        temp.write(f"""<?xml version='1.0' encoding='UTF-8'?>
+<instrument version="2.0" name="{instrument}">
+  <samples>
+""")
+        
+        # Add 10 samples with power values from 0 to 1
+        for i in range(1, 11):
+            # Calculate power value (0-1) based on volume
+            # Sample 1 (100% volume) -> power=1.0
+            # Sample 10 (10% volume) -> power=0.1
+            power = 1.0 - (i-1) * 0.1
+            
+            temp.write(f"""    <sample name="{instrument}-{i}" power="{power:.6f}">
+""")
+            # Add audiofiles for each channel, but map them all to the available stereo channels (1 and 2)
+            # For stereo files, we map left channels to filechannel 1 and right channels to filechannel 2
+            for channel in CHANNELS:
+                # Determine if this channel should use left (1) or right (2) audio channel
+                if channel in ["AmbL", "Hihat", "Kdrum_back", "OHL", "Snare_bottom", "Tom1", "Tom2", "Tom3"]:
+                    filechannel = "1"  # Left channel
+                else:
+                    filechannel = "2"  # Right channel
+                
+                temp.write(f"""      <audiofile channel="{channel}" file="samples/{i}-{instrument}{extension}" filechannel="{filechannel}"/>
+""")
+            temp.write("""    </sample>
+""")
+        
+        # Add XML file ending
+        temp.write("""  </samples>
+</instrument>
+""")
+    
+    # Move temporary file to final XML file
+    shutil.move(temp.name, xml_file)
+    
+    print(f"XML file successfully created: {xml_file}", file=sys.stderr)
+
+def create_drumkit_xml(instruments, kit_dir, metadata):
+    """
+    Creates the main drumkit.xml file.
+    
+    Args:
+        instruments (list): List of instrument names
+        kit_dir (str): Target directory for the kit
+        metadata (dict): Kit metadata
+    """
+    drumkit_file = os.path.join(kit_dir, "drumkit.xml")
+    
+    print(f"Creating drumkit.xml file", file=sys.stderr)
+    
+    # Create a temporary XML file
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp:
+        # Write XML header with simplified format similar to DRSKit
+        temp.write(f"""<?xml version="1.0" encoding="UTF-8"?>
+<drumkit name="{metadata['name']}" description="{metadata['description']}">
+  <channels>
+""")
+        for channel in CHANNELS:
+            temp.write(f"""    <channel name="{channel}"/>
+""")
+
+        temp.write(f"""  </channels>
+  <instruments>
+""")
+        
+        # Add each instrument with channelmaps
+        for instrument in instruments:
+            temp.write(f"""    <instrument name="{instrument}" file="{instrument}/{instrument}.xml">
+""")
+            for channel in CHANNELS:
+                if channel in MAIN_CHANNELS:
+                    temp.write(f"""      <channelmap in="{channel}" out="{channel}" main="true"/>
+""")
+                else:
+                    temp.write(f"""      <channelmap in="{channel}" out="{channel}"/>
+""")
+
+            temp.write(f"""    </instrument>
+""")
+
+        # Add XML file ending
+        temp.write("""  </instruments>
+</drumkit>
+""")
+    
+    # Move temporary file to final XML file
+    shutil.move(temp.name, drumkit_file)
+    
+    print(f"drumkit.xml file successfully created: {drumkit_file}", file=sys.stderr)
+
+def create_midimap_xml(instruments, kit_dir, metadata):
+    """
+    Creates the midimap.xml file.
+    
+    Args:
+        instruments (list): List of instrument names
+        kit_dir (str): Target directory for the kit
+        metadata (dict): Kit metadata
+    """
+    midimap_file = os.path.join(kit_dir, "midimap.xml")
+    
+    print(f"Creating midimap.xml file", file=sys.stderr)
+    
+    # Create a temporary XML file
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp:
+        # Write XML header
+        temp.write(f"""<?xml version="1.0" encoding="UTF-8"?>
+<midimap>
+""")
+        
+        # Add each instrument with a different MIDI note
+        midi_note = 35
+        for instrument in instruments:
+            temp.write(f"""  <map note="{midi_note}" instr="{instrument}" velmin="0" velmax="127"/>
+""")
+            midi_note += 1
+            # Avoid exceeding 81 (reasonable upper limit for drum MIDI notes)
+            if midi_note > 81:
+                midi_note = 81
+        
+        # Add XML file ending
+        temp.write("""</midimap>
+""")
+    
+    # Move temporary file to final XML file
+    shutil.move(temp.name, midimap_file)
+    
+    print(f"midimap.xml file successfully created: {midimap_file}", file=sys.stderr)
