@@ -20,12 +20,7 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 
 ## Installation
 
-Clone this repository:
-
-```bash
-git clone https://github.com/e-picas/drumgizmo-kits-generator.git
-cd drumgizmo-kits-generator
-```
+Download and extract [the latest release](https://github.com/e-picas/drumgizmo-kits-generator/releases).
 
 ## Usage
 
@@ -112,6 +107,15 @@ kit/
 
 To fix a bug or make a proposal in this app, you may commit to a personal branch, push it to the repo and then
 make a "Pull request" explaining your modification.
+
+### Get the sources
+
+Clone this repository:
+
+```bash
+git clone https://github.com/e-picas/drumgizmo-kits-generator.git
+cd drumgizmo-kits-generator
+```
 
 ### Tests & coverage
 
