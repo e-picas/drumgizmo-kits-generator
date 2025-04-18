@@ -145,7 +145,7 @@ make lint
 
 ## License
 
-This project is licensed under the [CC-BY-SA](LICENSE) license.
+This project is licensed under the [MIT](LICENSE) license.
 
 ## Author
 
