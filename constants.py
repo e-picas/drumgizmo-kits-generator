@@ -7,5 +7,5 @@ Contains global constants used across the application.
 
 # Application information
 APP_NAME = "DrumGizmo Kits Generator"
-APP_VERSION = "1.0.0-alpha.1"
+APP_VERSION = "1.0.0"
 APP_LINK = "https://github.com/e-picas/drumgizmo-kits-generator"
