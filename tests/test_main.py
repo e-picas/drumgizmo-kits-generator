@@ -232,7 +232,8 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
     @patch('main.create_volume_variations')
     @patch('main.copy_sample_file')  # Utiliser copy_sample_file au lieu de copy_audio_file
     @patch('main.find_audio_files')
-    # pylint: disable-next=too-many-arguments,too-many-positional-arguments
+
+    # pylint: disable-next=too-many-arguments
     def test_main_integration(self, mock_find_audio_files, mock_copy_sample_file,
                              mock_create_volume_variations, mock_create_drumkit_xml,
                              mock_create_midimap_xml, mock_create_xml_file):
