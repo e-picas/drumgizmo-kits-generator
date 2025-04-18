@@ -185,10 +185,10 @@ def create_midimap_xml(instruments, kit_dir):
 """)
             instrument_to_midi[instrument] = midi_note
             midi_note += 1
-            # Avoid exceeding 81 (reasonable upper limit for drum MIDI notes)
-            if midi_note > 81:
+            # Avoid exceeding 127 (upper limit for drum MIDI notes)
+            if midi_note > 127:
                 print("Warning: Too many instruments, some will share MIDI note 81", file=sys.stderr)
-                midi_note = 81
+                midi_note = 127
 
         # Add XML file ending
         temp.write("""</midimap>
