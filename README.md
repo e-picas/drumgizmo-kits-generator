@@ -1,89 +1,153 @@
 # DrumGizmo Kits Generator
 
-A modular tool for generating percussion kits for DrumGizmo from audio samples.
+A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), a multichannel drum sampler, from a directory of audio sources.
 
-## Description
+## Features
 
-This project transforms a collection of audio samples into a complete DrumGizmo kit with multiple velocity levels. It automatically generates all necessary XML files and organizes the samples according to the structure expected by DrumGizmo.
-
-## Project Structure
-
-The project is organized into several modules for better readability and maintainability:
-
-- `create_drumgizmo_kit.py`: Main entry script
-- `main.py`: Main program logic
-- `config.py`: Configuration and global variables
-- `audio.py`: Audio file processing
-- `xml_generator.py`: XML file generation
-- `utils.py`: Various utility functions
+- Generate DrumGizmo kits from audio samples
+- Support for multiple audio formats (WAV, FLAC, OGG)
+- Automatic creation of volume variations (10 levels)
+- Alphabetical sorting of instruments and assignment of consecutive MIDI notes
+- Read metadata from a configuration file
+- Copy additional files to the final kit
+- Complete command-line interface
 
 ## Prerequisites
 
-- Python 3.6+
-- SoX (Sound eXchange) for audio processing
+- [Python 3.8](https://www.python.org/downloads/) or higher
+- [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing
+- [PyLint](https://pypi.org/project/pylint/) and [Python Coverage](https://coverage.readthedocs.io/) for development
+
+## Installation
+
+Download and extract [the latest release](https://github.com/e-picas/drumgizmo-kits-generator/releases).
 
 ## Usage
 
+### Command Line
+
 ```bash
-./create_drumgizmo_kit.py -s <source_directory> -t <target_directory> [-c <config_file>] [options]
+python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target -c /path/to/config.ini
 ```
 
 ### Options
 
-- `-s, --source`: Source directory containing audio samples (required)
-- `-t, --target`: Target directory for the DrumGizmo kit (required)
-- `-c, --config`: Path to an INI configuration file
-- `-e, --extensions`: List of audio file extensions to process (comma-separated)
-- `--name`: Kit name
-- `--version`: Kit version (default: 1.0)
-- `--description`: Kit description
-- `--notes`: Additional notes about the kit
-- `--author`: Kit author
-- `--license`: Kit license (default: CC-BY-SA)
-- `--website`: Kit website
-- `--logo`: Logo filename
-- `--samplerate`: Sample rate in Hz (default: 44100)
-- `--instrument-prefix`: Prefix for instrument names
+```
+Options:
+  -h, --help            Show this help message
+  -s SOURCE, --source SOURCE
+                        Source directory containing audio samples
+  -t TARGET, --target TARGET
+                        Target directory for the DrumGizmo kit
+  -c CONFIG, --config CONFIG
+                        Configuration file for kit metadata
+  -n NAME, --name NAME  Kit name
+  -v VERSION, --version VERSION
+                        Kit version
+  -d DESCRIPTION, --description DESCRIPTION
+                        Kit description
+  -a AUTHOR, --author AUTHOR
+                        Kit author
+  -l LICENSE, --license LICENSE
+                        Kit license
+  -w WEBSITE, --website WEBSITE
+                        Kit website
+  -r SAMPLERATE, --samplerate SAMPLERATE
+                        Kit sample rate
+  -p INSTRUMENT_PREFIX, --instrument-prefix INSTRUMENT_PREFIX
+                        Prefix for instrument names
+  -e EXTENSIONS, --extensions EXTENSIONS
+                        Audio file extensions to search for (comma-separated)
+  --extra-files EXTRA_FILES
+                        Additional files to copy to the kit (comma-separated)
+```
 
-## Configuration File
+### Configuration File
 
-You can specify kit metadata in an INI configuration file:
+You can specify kit metadata in a configuration file (e.g., `drumgizmo-kit.ini`):
 
 ```ini
-KIT_NAME="Kit Name"
-KIT_VERSION="1.0"
-KIT_DESCRIPTION="Kit description"
-KIT_NOTES="Additional notes"
-KIT_AUTHOR="Author name"
-KIT_LICENSE="CC-BY-SA"
-KIT_WEBSITE="https://example.com/"
-KIT_LOGO="logo.jpg"
-KIT_SAMPLERATE="44100"
-KIT_INSTRUMENT_PREFIX="Prefix"
+KIT_NAME = "My Drum Kit"
+KIT_VERSION = "1.0.0"
+KIT_DESCRIPTION = "An acoustic drum kit"
+KIT_NOTES = "Recorded in a professional studio"
+KIT_AUTHOR = "Your Name"
+KIT_LICENSE = "CC-BY-SA"
+KIT_WEBSITE = "https://your-site.com"
+KIT_SAMPLERATE = "44100"
+KIT_INSTRUMENT_PREFIX = "MyKit"
+KIT_LOGO = "logo.png"
+KIT_EXTRA_FILES = "README.txt,LICENSE.txt,photo.jpg"
 ```
 
-## Audio Channels
+## Generated Kit Structure
 
-The audio channels used are defined in `config.py`:
+The generated kit will have the following structure:
 
-```python
-CHANNELS = [
-    "AmbL", "AmbR", "Hihat", "Kdrum_back", "Kdrum_front", 
-    "OHL", "OHR", "Ride", "Snare_bottom", "Snare_top", 
-    "Tom1", "Tom2", "Tom3"
-]
-
-MAIN_CHANNELS = ["AmbL", "AmbR", "OHL", "OHR", "Snare_top"]
+```
+kit/
+├── drumkit.xml
+├── midimap.xml
+├── Instrument1/
+│   ├── instrument.xml
+│   └── samples/
+│       ├── 1-Instrument1.wav
+│       ├── 2-Instrument1.wav
+│       └── ...
+├── Instrument2/
+│   ├── instrument.xml
+│   └── samples/
+│       ├── 1-Instrument2.wav
+│       ├── 2-Instrument2.wav
+│       └── ...
+└── ...
 ```
 
-To modify the channels used, simply edit these lists.
+## Development
 
-## Example Usage
+To fix a bug or make a proposal in this app, you may commit to a personal branch, push it to the repo and then
+make a "Pull request" explaining your modification.
+
+### Get the sources
+
+Clone this repository:
 
 ```bash
-./create_drumgizmo_kit.py -s Darbuka8514/ -t DarbukaKit_generated -c Darbuka8514/drumgizmo-kit.ini
+git clone https://github.com/e-picas/drumgizmo-kits-generator.git
+cd drumgizmo-kits-generator
 ```
+
+### Tests & coverage
+
+To run unit tests:
+
+```bash
+make test
+```
+
+To get the coverage levels:
+
+```bash
+make coverage
+```
+
+**NOTE** - The tests are run in the CI for all branches.
+
+### Linting
+
+To check the code with pylint:
+
+```bash
+make lint
+```
+
+**NOTE** - The linter is run in the CI for all branches.
 
 ## License
 
-CC-BY-SA
+This project is licensed under the [MIT](LICENSE) license.
+
+## Author
+
+- This software is generated by [Claude 3.7 Sonnet](https://claude.ai/) guided by myself ^^
+- "myself" is e-Picas (<https://github.com/e-picas>)

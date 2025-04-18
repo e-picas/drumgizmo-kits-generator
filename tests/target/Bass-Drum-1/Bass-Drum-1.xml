@@ -1,0 +1,155 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<instrument version="2.0" name="Bass-Drum-1">
+  <samples>
+    <sample name="Bass-Drum-1-1" power="1.000000">
+      <audiofile channel="AmbL" file="samples/1-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/1-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/1-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/1-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_front" file="samples/1-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/1-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/1-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/1-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Snare_bottom" file="samples/1-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Snare_top" file="samples/1-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Tom1" file="samples/1-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom2" file="samples/1-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/1-Bass-Drum-1.wav" filechannel="1"/>
+    </sample>
+    <sample name="Bass-Drum-1-2" power="0.900000">
+      <audiofile channel="AmbL" file="samples/2-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/2-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/2-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/2-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_front" file="samples/2-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/2-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/2-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/2-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Snare_bottom" file="samples/2-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Snare_top" file="samples/2-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Tom1" file="samples/2-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom2" file="samples/2-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/2-Bass-Drum-1.wav" filechannel="1"/>
+    </sample>
+    <sample name="Bass-Drum-1-3" power="0.800000">
+      <audiofile channel="AmbL" file="samples/3-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/3-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/3-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/3-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_front" file="samples/3-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/3-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/3-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/3-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Snare_bottom" file="samples/3-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Snare_top" file="samples/3-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Tom1" file="samples/3-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom2" file="samples/3-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/3-Bass-Drum-1.wav" filechannel="1"/>
+    </sample>
+    <sample name="Bass-Drum-1-4" power="0.700000">
+      <audiofile channel="AmbL" file="samples/4-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/4-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/4-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/4-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_front" file="samples/4-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/4-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/4-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/4-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Snare_bottom" file="samples/4-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Snare_top" file="samples/4-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Tom1" file="samples/4-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom2" file="samples/4-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/4-Bass-Drum-1.wav" filechannel="1"/>
+    </sample>
+    <sample name="Bass-Drum-1-5" power="0.600000">
+      <audiofile channel="AmbL" file="samples/5-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/5-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/5-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/5-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_front" file="samples/5-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/5-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/5-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/5-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Snare_bottom" file="samples/5-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Snare_top" file="samples/5-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Tom1" file="samples/5-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom2" file="samples/5-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/5-Bass-Drum-1.wav" filechannel="1"/>
+    </sample>
+    <sample name="Bass-Drum-1-6" power="0.500000">
+      <audiofile channel="AmbL" file="samples/6-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/6-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/6-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/6-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_front" file="samples/6-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/6-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/6-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/6-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Snare_bottom" file="samples/6-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Snare_top" file="samples/6-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Tom1" file="samples/6-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom2" file="samples/6-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/6-Bass-Drum-1.wav" filechannel="1"/>
+    </sample>
+    <sample name="Bass-Drum-1-7" power="0.400000">
+      <audiofile channel="AmbL" file="samples/7-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/7-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/7-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/7-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_front" file="samples/7-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/7-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/7-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/7-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Snare_bottom" file="samples/7-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Snare_top" file="samples/7-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Tom1" file="samples/7-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom2" file="samples/7-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/7-Bass-Drum-1.wav" filechannel="1"/>
+    </sample>
+    <sample name="Bass-Drum-1-8" power="0.300000">
+      <audiofile channel="AmbL" file="samples/8-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/8-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/8-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/8-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_front" file="samples/8-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/8-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/8-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/8-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Snare_bottom" file="samples/8-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Snare_top" file="samples/8-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Tom1" file="samples/8-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom2" file="samples/8-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/8-Bass-Drum-1.wav" filechannel="1"/>
+    </sample>
+    <sample name="Bass-Drum-1-9" power="0.200000">
+      <audiofile channel="AmbL" file="samples/9-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/9-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/9-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/9-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_front" file="samples/9-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/9-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/9-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/9-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Snare_bottom" file="samples/9-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Snare_top" file="samples/9-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Tom1" file="samples/9-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom2" file="samples/9-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/9-Bass-Drum-1.wav" filechannel="1"/>
+    </sample>
+    <sample name="Bass-Drum-1-10" power="0.100000">
+      <audiofile channel="AmbL" file="samples/10-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/10-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/10-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/10-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Kdrum_front" file="samples/10-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/10-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/10-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/10-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Snare_bottom" file="samples/10-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Snare_top" file="samples/10-Bass-Drum-1.wav" filechannel="2"/>
+      <audiofile channel="Tom1" file="samples/10-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom2" file="samples/10-Bass-Drum-1.wav" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/10-Bass-Drum-1.wav" filechannel="1"/>
+    </sample>
+  </samples>
+</instrument>
