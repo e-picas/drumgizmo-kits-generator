@@ -16,8 +16,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip==3.3.6
-        pip install pylint
+        python -m pip install --upgrade pip
+        pip install pylint==3.3.6
     - name: Analysing the code with pylint
       run: |
         make lint
