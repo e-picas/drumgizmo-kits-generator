@@ -49,16 +49,16 @@ class TestUtils(unittest.TestCase):
         """Test preparing the target directory under various conditions."""
         # Test with a non-existent directory
         target_dir = os.path.join(self.temp_dir, "new_dir")
-        self.assertTrue(prepare_target_directory(target_dir), 
+        self.assertTrue(prepare_target_directory(target_dir),
                        "Should return True for non-existent directory")
-        self.assertTrue(os.path.exists(target_dir), 
+        self.assertTrue(os.path.exists(target_dir),
                        "Directory should be created if it doesn't exist")
 
         # Test with an existing directory (should be removed and recreated)
         # Create a file in the directory
         with open(os.path.join(target_dir, "test_file.txt"), "w", encoding="utf-8") as f:
             f.write("Test content")
-        
+
         # Verify the file was created
         self.assertTrue(os.path.exists(os.path.join(target_dir, "test_file.txt")),
                        "Test file should exist")
@@ -66,18 +66,18 @@ class TestUtils(unittest.TestCase):
         # The function should remove the directory and recreate it empty
         self.assertTrue(prepare_target_directory(target_dir),
                        "Should return True when removing and recreating directory")
-        
+
         # Verify that the directory exists but is empty
         self.assertTrue(os.path.exists(target_dir),
                        "Directory should exist after preparation")
         self.assertEqual(len(os.listdir(target_dir)), 0,
                         "Directory should be empty after preparation")
-            
+
         # Test with a directory that cannot be removed (simulate permission error)
         with patch('shutil.rmtree', side_effect=PermissionError("Permission denied")):
             self.assertFalse(prepare_target_directory(target_dir),
                            "Should return False when directory cannot be removed")
-            
+
         # Test with a directory that cannot be created
         with patch('os.makedirs', side_effect=PermissionError("Permission denied")):
             # First remove the directory to test creation
@@ -95,24 +95,24 @@ class TestUtils(unittest.TestCase):
 
         # Verify that the instrument directory has been created
         instrument_dir = os.path.join(self.temp_dir, instrument_name)
-        self.assertTrue(os.path.exists(instrument_dir), 
+        self.assertTrue(os.path.exists(instrument_dir),
                        "Instrument directory should be created")
 
         # Verify that the samples directory has been created
         samples_dir = os.path.join(instrument_dir, "samples")
-        self.assertTrue(os.path.exists(samples_dir), 
+        self.assertTrue(os.path.exists(samples_dir),
                        "Samples directory should be created")
-        
+
         # Test with an existing instrument directory
         result = prepare_instrument_directory(instrument_name, self.temp_dir)
         self.assertTrue(result, "Should return True even if directory already exists")
-        
+
         # Test with a special character in the instrument name
         special_instrument = "Test/Instrument"
         result = prepare_instrument_directory(special_instrument, self.temp_dir)
         self.assertTrue(result, "Should handle special characters in instrument name")
         special_dir = os.path.join(self.temp_dir, special_instrument)
-        self.assertTrue(os.path.exists(special_dir), 
+        self.assertTrue(os.path.exists(special_dir),
                        "Directory with special character should be created")
 
     def test_get_timestamp(self):
@@ -124,13 +124,13 @@ class TestUtils(unittest.TestCase):
         self.assertGreater(len(timestamp), 0, "Timestamp should not be empty")
 
         # Verify that the timestamp contains a date in YYYY-MM-DD format
-        self.assertRegex(timestamp, r'\d{4}-\d{2}-\d{2}', 
+        self.assertRegex(timestamp, r'\d{4}-\d{2}-\d{2}',
                         "Timestamp should match YYYY-MM-DD format")
-        
+
         # Le format réel est YYYY-MM-DD et non YYYY-MM-DD HH:MM:SS
         # Adapter le test au format réel
         date_pattern = re.compile(r'\d{4}-\d{2}-\d{2}')
-        self.assertTrue(date_pattern.match(timestamp), 
+        self.assertTrue(date_pattern.match(timestamp),
                        "Timestamp should match YYYY-MM-DD format")
 
     def test_extract_instrument_name(self):
@@ -144,7 +144,7 @@ class TestUtils(unittest.TestCase):
             ("/path/with spaces/Tom Tom.wav", "Tom Tom"),
             ("/path/to/file/without/extension", "extension")
         ]
-        
+
         for file_path, expected in test_cases:
             self.assertEqual(extract_instrument_name(file_path), expected,
                             f"Should extract '{expected}' from '{file_path}'")
@@ -164,7 +164,7 @@ class TestUtils(unittest.TestCase):
             # car elle cherche un point suivi d'au moins un caractère
             ("/path/to/.hidden", "")
         ]
-        
+
         for file_path, expected in test_cases:
             self.assertEqual(get_file_extension(file_path), expected,
                             f"Should extract '{expected}' from '{file_path}'")
@@ -200,31 +200,31 @@ class TestUtils(unittest.TestCase):
         self.assertIn('1.0', output, "Version should be in the summary")
         self.assertIn('Author', output, "Author should be in the summary")
         self.assertIn('Test License', output, "License should be in the summary")
-        self.assertIn('Number of instruments created: 3', output, 
+        self.assertIn('Number of instruments created: 3', output,
                      "Instrument count should be in the summary")
         self.assertIn('/path/to/target', output, "Target directory should be in the summary")
-        
+
         # Test with minimal metadata
         mock_stderr.reset_mock()
         minimal_metadata = {
             'name': 'Minimal Kit',
             'version': '0.1'
         }
-        
+
         print_summary(minimal_metadata, instruments, target_dir)
-        
+
         # Verify output with minimal metadata
         output = ''.join([call_args[0][0] for call_args in mock_stderr.write.call_args_list])
         self.assertIn('Minimal Kit', output, "Kit name should be in the minimal summary")
         self.assertIn('0.1', output, "Version should be in the minimal summary")
-        
+
         # Test with empty instruments list
         mock_stderr.reset_mock()
         print_summary(metadata, [], target_dir)
-        
+
         # Verify output with no instruments
         output = ''.join([call_args[0][0] for call_args in mock_stderr.write.call_args_list])
-        self.assertIn('Number of instruments created: 0', output, 
+        self.assertIn('Number of instruments created: 0', output,
                      "Zero instruments should be reported correctly")
 
 

@@ -39,6 +39,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         if os.path.exists(self.target_dir):
             shutil.rmtree(self.target_dir)
 
+    # pylint: disable-next=too-many-statements
     def test_prepare_metadata(self):
         """Test preparing metadata from the configuration file with various input combinations."""
         # Create a temporary configuration file
@@ -54,7 +55,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
             temp.write('kit_samplerate = "48000"\n')
             temp.write('kit_instrument_prefix = "Test"\n')
             temp_name = temp.name
-            
+
         # Create mock arguments
         args = MagicMock()
         args.config = temp_name
@@ -70,10 +71,10 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         args.samplerate = None
         args.instrument_prefix = None
         args.extra_files = None
-            
+
         # Call the function to test
         metadata = main.prepare_metadata(args)
-            
+
         # Verify the metadata
         self.assertEqual(metadata['name'], 'Test Kit', "Kit name should be read from config")
         self.assertEqual(metadata['version'], '1.0', "Version should be read from config")
@@ -85,23 +86,23 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         self.assertEqual(metadata['logo'], 'test_logo.png', "Logo should be read from config")
         self.assertEqual(metadata['samplerate'], '48000', "Sample rate should be read from config")
         self.assertEqual(metadata['instrument_prefix'], 'Test', "Instrument prefix should be read from config")
-        
+
         # Test command line arguments overriding config values
         args.name = "Override Kit"
         args.version = "2.0"
         args.author = "Override Author"
-        
+
         # Call the function again
         metadata = main.prepare_metadata(args)
-        
+
         # Verify the overridden values
         self.assertEqual(metadata['name'], 'Override Kit', "Kit name should be overridden by command line")
         self.assertEqual(metadata['version'], '2.0', "Version should be overridden by command line")
         self.assertEqual(metadata['author'], 'Override Author', "Author should be overridden by command line")
-        
+
         # Delete the temporary file
         os.unlink(temp_name)
-        
+
         # Test with missing config file but command line arguments
         args.config = None
         args.name = "Command Line Kit"
@@ -112,10 +113,10 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         args.license = "Command Line License"
         args.samplerate = "96000"
         args.instrument_prefix = "CL"
-        
+
         # Call the function again
         metadata = main.prepare_metadata(args)
-        
+
         # Verify values from command line only
         self.assertEqual(metadata['name'], 'Command Line Kit', "Kit name should be from command line")
         self.assertEqual(metadata['version'], '3.0', "Version should be from command line")
@@ -132,55 +133,55 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         extra_files = ["test_file1.txt", "test_file2.txt"]
         current_dir = os.getcwd()
         subdir = None
-        
+
         try:
             # Create files in the current directory
             for file in extra_files:
                 file_path = os.path.join(current_dir, file)
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write("Test content")
-                    
+
             # Create a string of additional files
             extra_files_str = ",".join(extra_files)
-                    
+
             # Call the function - note that copy_extra_files prend 3 arguments: source_dir, target_dir, extra_files_str
             copied_files = main.copy_extra_files(current_dir, self.target_dir, extra_files_str)
-                    
+
             # Verify that the files have been copied
-            self.assertEqual(len(copied_files), len(extra_files), 
+            self.assertEqual(len(copied_files), len(extra_files),
                             f"Should have copied {len(extra_files)} files")
             for file in extra_files:
                 target_path = os.path.join(self.target_dir, file)
-                self.assertTrue(os.path.exists(target_path), 
+                self.assertTrue(os.path.exists(target_path),
                                f"File {file} should exist in target directory")
-                self.assertTrue(file in copied_files, 
+                self.assertTrue(file in copied_files,
                                f"File {file} should be in the list of copied files")
-                
+
             # Test with a non-existent file
             non_existent = "non_existent_file.txt"
             copied_files = main.copy_extra_files(current_dir, self.target_dir, non_existent)
-            self.assertEqual(len(copied_files), 0, 
+            self.assertEqual(len(copied_files), 0,
                             "Should not copy any files when file doesn't exist")
-                
+
             # Test with a file in a subdirectory
             subdir = os.path.join(current_dir, "subdir")
             os.makedirs(subdir, exist_ok=True)
             subdir_file = os.path.join(subdir, "subdir_file.txt")
             with open(subdir_file, 'w', encoding='utf-8') as f:
                 f.write("Subdir test content")
-                
+
             # Call the function with a file in a subdirectory
             copied_files = main.copy_extra_files(current_dir, self.target_dir, "subdir/subdir_file.txt")
-            
+
             # Verify the file was copied with its directory structure
             target_subdir = os.path.join(self.target_dir, "subdir")
-            self.assertTrue(os.path.exists(target_subdir), 
+            self.assertTrue(os.path.exists(target_subdir),
                            "Target subdirectory should be created")
-            self.assertTrue(os.path.exists(os.path.join(target_subdir, "subdir_file.txt")), 
+            self.assertTrue(os.path.exists(os.path.join(target_subdir, "subdir_file.txt")),
                            "File in subdirectory should be copied")
-            self.assertEqual(len(copied_files), 1, 
+            self.assertEqual(len(copied_files), 1,
                             "Should have copied 1 file from subdirectory")
-                
+
         finally:
             # Clean up created files
             for file in extra_files:
@@ -200,7 +201,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
             ('Cymbal-Crash.flac', 'Cymbal-Crash'),
             ('/path/to/file/without/extension', 'extension')
         ]
-        
+
         for file_path, expected in test_cases:
             self.assertEqual(extract_instrument_name(file_path), expected,
                             f"Should extract '{expected}' from '{file_path}'")
@@ -220,7 +221,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
             # car elle cherche un point suivi d'au moins un caractère
             ('/path/to/.hidden', '')
         ]
-        
+
         for file_path, expected in test_cases:
             self.assertEqual(get_file_extension(file_path), expected,
                             f"Should extract '{expected}' from '{file_path}'")
@@ -243,52 +244,55 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         mock_create_xml_file.return_value = True
         mock_create_drumkit_xml.return_value = True
         mock_create_midimap_xml.return_value = True
-        
+
         # Create arguments for main()
         sys.argv = ['create_drumgizmo_kit.py',
-                   '-s', self.source_dir, 
+                   '-s', self.source_dir,
                    '-t', self.target_dir,
                    '-c', self.config_file,
                    '--name', 'Test Kit']
-                   
+
         # Call the main() function
         with patch('sys.exit') as mock_exit:
             main.main()
-                
+
             # Verify that the function did not terminate with an error
             mock_exit.assert_not_called()
-            
+
         # Verify that the functions were called
+        # pylint: disable-next=expression-not-assigned
         mock_find_audio_files.assert_called_once(), "find_audio_files should be called once"
-        self.assertEqual(mock_copy_sample_file.call_count, 2, 
+        self.assertEqual(mock_copy_sample_file.call_count, 2,
                         "copy_sample_file should be called for each sample")
-        self.assertEqual(mock_create_volume_variations.call_count, 2, 
+        self.assertEqual(mock_create_volume_variations.call_count, 2,
                         "create_volume_variations should be called for each sample")
-        self.assertEqual(mock_create_xml_file.call_count, 2, 
+        self.assertEqual(mock_create_xml_file.call_count, 2,
                         "create_xml_file should be called for each sample")
+        # pylint: disable-next=expression-not-assigned
         mock_create_drumkit_xml.assert_called_once(), "create_drumkit_xml should be called once"
+        # pylint: disable-next=expression-not-assigned
         mock_create_midimap_xml.assert_called_once(), "create_midimap_xml should be called once"
-        
+
     @patch('main.find_audio_files')
     def test_main_no_audio_files(self, mock_find_audio_files):
         """Test main function behavior when no audio files are found."""
         # Configure the mock to return an empty list
         mock_find_audio_files.return_value = []
-        
+
         # Create arguments for main()
         sys.argv = ['create_drumgizmo_kit.py',
-                   '-s', self.source_dir, 
+                   '-s', self.source_dir,
                    '-t', self.target_dir,
                    '-c', self.config_file,
                    '--name', 'Test Kit']
-                   
+
         # Call the main() function and expect a system exit
         with patch('sys.exit') as mock_exit:
             main.main()
-            
+
             # Verify that the function terminated with an error
             mock_exit.assert_called_once()
-            
+
         # Verify that find_audio_files was called
         mock_find_audio_files.assert_called_once()
 

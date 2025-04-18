@@ -67,7 +67,7 @@ class TestAudio(unittest.TestCase):
         audio_files = find_audio_files(self.temp_dir, extensions=["wav"])
         self.assertEqual(len(audio_files), 1, "Should find only 1 file with WAV extension")
         self.assertIn(os.path.join(self.temp_dir, "test1.wav"), audio_files, "Only WAV file should be included")
-        
+
         # Test with empty directory
         empty_dir = os.path.join(self.temp_dir, "empty")
         os.makedirs(empty_dir, exist_ok=True)
@@ -92,20 +92,20 @@ class TestAudio(unittest.TestCase):
         # Verify the result
         self.assertTrue(result, "Function should return True for successful copy")
         mock_copy2.assert_called_once_with(source_file, target_file)
-        
+
     @patch('shutil.copy2')
     def test_copy_sample_file_nonexistent(self, mock_copy2):
         """Test copying a non-existent audio file."""
         # Configure the mock to raise FileNotFoundError
         mock_copy2.side_effect = FileNotFoundError("File not found")
-        
+
         # Test with a non-existent file
         source_file = os.path.join(self.temp_dir, "nonexistent.wav")
         target_file = os.path.join(self.temp_dir, "target", "nonexistent.wav")
-        
+
         # Call the function
         result = copy_sample_file(source_file, target_file)
-        
+
         # Verify the result
         self.assertFalse(result, "Function should return False for failed copy")
         mock_copy2.assert_called_once_with(source_file, target_file)
@@ -132,7 +132,7 @@ class TestAudio(unittest.TestCase):
 
         # Verify the result - la fonction ne retourne pas de valeur, donc pas de vérification de retour
         self.assertEqual(mock_run.call_count, 9, "Should create 9 variations (2-10)")
-        
+
         # Verify the command arguments for the first call
         args, _ = mock_run.call_args_list[0]
         cmd = args[0]

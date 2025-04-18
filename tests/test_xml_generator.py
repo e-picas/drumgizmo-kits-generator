@@ -90,34 +90,35 @@ class TestXmlGenerator(unittest.TestCase):
         self.assertEqual(metadata.find('license').text, 'Test License', "License should match")
         self.assertEqual(metadata.find('website').text, 'http://example.com', "Website should match")
         self.assertIsNotNone(metadata.find('logo'), "Logo element should exist")
-        
+
         # Verify the created element exists
         self.assertIsNotNone(metadata.find('created'), "Created element should exist")
 
         # Verify the channels element exists
         channels = root.find('channels')
         self.assertIsNotNone(channels, "Channels element should exist")
-        
+
         # Verify channel elements exist
         channel_elements = channels.findall('channel')
         self.assertGreater(len(channel_elements), 0, "At least one channel should be defined")
-        
+
         # Verify the instruments element exists
         instruments_elem = root.find('instruments')
         self.assertIsNotNone(instruments_elem, "Instruments element should exist")
-        
+
         # Verify the instrument elements under instruments
         instrument_elements = instruments_elem.findall('instrument')
-        self.assertEqual(len(instrument_elements), len(self.instruments), 
+        self.assertEqual(len(instrument_elements), len(self.instruments),
                         f"Should have {len(self.instruments)} instrument elements")
-        
+
         for i, instrument in enumerate(instrument_elements):
-            self.assertEqual(instrument.attrib['name'], self.instruments[i], 
+            self.assertEqual(instrument.attrib['name'], self.instruments[i],
                             f"Instrument {i} name should match")
-            self.assertEqual(instrument.attrib['file'], 
-                            f"{self.instruments[i]}/{self.instruments[i]}.xml", 
+            self.assertEqual(instrument.attrib['file'],
+                            f"{self.instruments[i]}/{self.instruments[i]}.xml",
                             f"Instrument {i} file path should match")
 
+    # pylint: disable-next=too-many-locals
     def test_create_xml_file(self):
         """Test creating an instrument XML file with proper structure and sample references."""
         # Create a directory for the instrument
@@ -155,22 +156,22 @@ class TestXmlGenerator(unittest.TestCase):
         # Verify the samples
         samples_element = root.find('samples')
         self.assertIsNotNone(samples_element, "Samples element should exist")
-        
+
         samples = samples_element.findall('sample')
         self.assertEqual(len(samples), 10, "Should have 10 sample elements")
-        
+
         for i, sample in enumerate(samples, 1):
             self.assertEqual(sample.attrib['name'], f"{instrument_name}-{i}", f"Sample {i} name should match")
-            
+
             # Verify audiofile elements exist
             audiofiles = sample.findall('audiofile')
             self.assertGreater(len(audiofiles), 0, f"Sample {i} should have audiofile elements")
-            
+
             # Verify that the power value decreases as sample number increases
             power_value = float(sample.attrib['power'])
             if i > 1:
                 prev_power = float(samples[i-2].attrib['power'])
-                self.assertLess(power_value, prev_power, 
+                self.assertLess(power_value, prev_power,
                                f"Power for sample {i} should be less than for sample {i-1}")
 
     def test_create_midimap_xml(self):
@@ -192,7 +193,7 @@ class TestXmlGenerator(unittest.TestCase):
 
         # Verify the instruments
         maps = root.findall('map')
-        self.assertEqual(len(maps), len(self.instruments), 
+        self.assertEqual(len(maps), len(self.instruments),
                         f"Should have {len(self.instruments)} map elements")
 
         # Sort instruments alphabetically to match the function's behavior
@@ -200,22 +201,22 @@ class TestXmlGenerator(unittest.TestCase):
 
         # Verify the map entries
         for i, map_entry in enumerate(maps):
-            self.assertEqual(map_entry.attrib['instr'], sorted_instruments[i], 
+            self.assertEqual(map_entry.attrib['instr'], sorted_instruments[i],
                             f"Instrument name for map {i} should match")
-            self.assertEqual(map_entry.attrib['velmin'], '0', 
+            self.assertEqual(map_entry.attrib['velmin'], '0',
                             f"Velocity min for map {i} should be 0")
-            self.assertEqual(map_entry.attrib['velmax'], '127', 
+            self.assertEqual(map_entry.attrib['velmax'], '127',
                             f"Velocity max for map {i} should be 127")
-        
+
         # Test with a large number of instruments to verify MIDI note assignment
         many_instruments = [f"Instrument{i}" for i in range(20)]
         create_midimap_xml(many_instruments, self.temp_dir)
-        
+
         # Parse the new XML file
         tree = ET.parse(xml_file)
         root = tree.getroot()
         maps = root.findall('map')
-        
+
         # Verify all instruments have unique MIDI notes
         midi_notes = set()
         for map_entry in maps:
@@ -244,13 +245,13 @@ class TestXmlGenerator(unittest.TestCase):
 
         # Verify the timestamp in the metadata
         metadata = root.find('metadata')
-        
+
         # Verify that the created element contains the timestamp
         created = metadata.find('created')
         self.assertIsNotNone(created, "Created element should exist")
-        self.assertIn('2023-01-01 12:00:00', created.text, 
+        self.assertIn('2023-01-01 12:00:00', created.text,
                      "Created text should contain the timestamp")
-        
+
     def test_create_drumkit_xml_with_minimal_metadata(self):
         """Test creating the drumkit XML file with minimal metadata."""
         # Create minimal metadata
@@ -259,27 +260,27 @@ class TestXmlGenerator(unittest.TestCase):
             'version': '0.1',
             'samplerate': '48000'
         }
-        
+
         # Call the function
         create_drumkit_xml(self.instruments, self.temp_dir, minimal_metadata)
-        
+
         # Verify the result
         xml_file = os.path.join(self.temp_dir, 'drumkit.xml')
         self.assertTrue(os.path.exists(xml_file), "drumkit.xml file should be created")
-        
+
         # Parse the XML file
         tree = ET.parse(xml_file)
         root = tree.getroot()
-        
+
         # Verify the root attributes
         self.assertEqual(root.attrib['name'], 'Minimal Kit', "Kit name should match")
         self.assertEqual(root.attrib['version'], '0.1', "Version should match")
         self.assertEqual(root.attrib['samplerate'], '48000', "Samplerate should match")
-        
+
         # Verify that metadata section still exists
         metadata = root.find('metadata')
         self.assertIsNotNone(metadata, "Metadata element should exist even with minimal data")
-        
+
         # Verify that title exists
         self.assertEqual(metadata.find('title').text, 'Minimal Kit', "Title should match kit name")
 

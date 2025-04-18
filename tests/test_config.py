@@ -45,7 +45,7 @@ KIT_LOGO="test_logo.png"
 KIT_EXTRA_FILES="file1.txt,file2.txt"
 ''')
         self.temp_config.close()
-        
+
         # Create an empty config file for testing defaults
         # pylint: disable-next=consider-using-with
         self.empty_config = tempfile.NamedTemporaryFile(delete=False, mode='w')
@@ -75,7 +75,7 @@ KIT_EXTRA_FILES="file1.txt,file2.txt"
         self.assertEqual(config['instrument_prefix'], 'Test', "Instrument prefix should match")
         self.assertEqual(config['logo'], 'pngtree-music-notes-png-image_8660757.png', "Logo should match")
         self.assertEqual(config['extra_files'], 'Lorem Ipsum.pdf', "Extra files should match")
-        
+
         # Verify the config is a dictionary with the expected number of keys
         self.assertIsInstance(config, dict, "Config should be a dictionary")
         self.assertGreaterEqual(len(config), 11, "Config should have at least 11 keys")
@@ -102,12 +102,12 @@ KIT_EXTRA_FILES="file1.txt,file2.txt"
         """Test reading an empty configuration file to verify default values."""
         # Read the empty configuration file
         config = read_config_file(self.empty_config.name)
-        
+
         # Verify that default values are used
         self.assertEqual(config.get('name', ''), '', "Empty name should be returned")
         self.assertEqual(config.get('version', ''), '', "Empty version should be returned")
         self.assertEqual(config.get('description', ''), '', "Empty description should be returned")
-        
+
         # Verify the config is a dictionary
         self.assertIsInstance(config, dict, "Config should be a dictionary")
 
@@ -115,7 +115,7 @@ KIT_EXTRA_FILES="file1.txt,file2.txt"
         """Test reading a non-existent configuration file."""
         # Try to read a non-existent file
         config = read_config_file('/path/to/nonexistent/file.ini')
-        
+
         # Verify that an empty dictionary is returned
         self.assertIsInstance(config, dict, "Config should be a dictionary")
         self.assertEqual(len(config), 0, "Config should be empty for non-existent file")
@@ -125,7 +125,7 @@ KIT_EXTRA_FILES="file1.txt,file2.txt"
         # Verify that the channel constants are correctly defined
         self.assertIsInstance(CHANNELS, list, "CHANNELS should be a list")
         self.assertIsInstance(MAIN_CHANNELS, list, "MAIN_CHANNELS should be a list")
-        
+
         # Verify that there are channels defined
         self.assertGreater(len(CHANNELS), 0, "CHANNELS should not be empty")
         self.assertGreater(len(MAIN_CHANNELS), 0, "MAIN_CHANNELS should not be empty")
@@ -133,7 +133,7 @@ KIT_EXTRA_FILES="file1.txt,file2.txt"
         # Verify that the main channels are included in the complete list of channels
         for channel in MAIN_CHANNELS:
             self.assertIn(channel, CHANNELS, f"Channel {channel} should be in CHANNELS list")
-            
+
         # Verify that all channels are strings
         for channel in CHANNELS:
             self.assertIsInstance(channel, str, "Each channel should be a string")
