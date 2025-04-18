@@ -88,7 +88,7 @@ def create_drumkit_xml(instruments, kit_dir, metadata):
 <drumkit version="{metadata.get('version', '1.0.0')}" name="{metadata['name']}" samplerate="{metadata.get('samplerate', '44100')}">
  <metadata>
   <title>{metadata['name']}</title>
-  <description>{metadata['description']}</description>
+  <description>{metadata.get('description', 'DrumGizmo drum kit')}</description>
 """)
 
         # Add notes if available
