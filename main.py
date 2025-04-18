@@ -46,11 +46,12 @@ def parse_arguments():
                        help='Kit description (default: Kit automatically created with 10 velocity levels)')
     parser.add_argument('--notes', help='Additional notes about the kit')
     parser.add_argument('--author', help='Kit author')
-    parser.add_argument('--license', default='CC-BY-SA', help='Kit license (default: CC-BY-SA)')
+    parser.add_argument('--license', default='Private license', help='Kit license (default: Private license)')
     parser.add_argument('--website', help='Kit website')
     parser.add_argument('--logo', help='Kit logo filename')
     parser.add_argument('--samplerate', default='44100', help='Sample rate in Hz (default: 44100)')
     parser.add_argument('--instrument-prefix', help='Prefix for instrument names')
+    parser.add_argument('--extra-files', help='Comma-separated list of additional files to copy to the target directory')
     
     return parser.parse_args()
 
@@ -72,21 +73,25 @@ def prepare_metadata(args):
         metadata.update(config_metadata)
         print(f"Metadata loaded from config file: {config_metadata}", file=sys.stderr)
     
-    # Override with command line arguments if specified
+    # Override with command line arguments ONLY if they are explicitly specified
+    # (not using default values)
     if args.name:
         metadata['name'] = args.name
     elif 'name' not in metadata:
         metadata['name'] = 'DrumGizmoKit'
         
-    if args.version:
+    # For version, only use command line value if it's not the default or if no config value exists
+    if args.version and (args.version != '1.0' or 'version' not in metadata):
         metadata['version'] = args.version
     elif 'version' not in metadata:
         metadata['version'] = '1.0'
         
-    if args.description:
+    # For description, only use command line value if it's not the default or if no config value exists
+    default_desc = 'Kit automatically created with 10 velocity levels'
+    if args.description and (args.description != default_desc or 'description' not in metadata):
         metadata['description'] = args.description
     elif 'description' not in metadata:
-        metadata['description'] = 'Kit automatically created with 10 velocity levels'
+        metadata['description'] = default_desc
         
     if args.notes:
         metadata['notes'] = args.notes
@@ -100,10 +105,11 @@ def prepare_metadata(args):
     elif 'author' not in metadata:
         metadata['author'] = os.environ.get('USER', 'Unknown')
         
-    if args.license:
+    # For license, only use command line value if it's not the default or if no config value exists
+    if args.license and (args.license != 'Private license' or 'license' not in metadata):
         metadata['license'] = args.license
     elif 'license' not in metadata:
-        metadata['license'] = 'CC-BY-SA'
+        metadata['license'] = 'Private license'
         
     if args.website:
         metadata['website'] = args.website
@@ -111,13 +117,18 @@ def prepare_metadata(args):
     if args.logo:
         metadata['logo'] = args.logo
         
-    if args.samplerate:
+    # For samplerate, only use command line value if it's not the default or if no config value exists
+    if args.samplerate and (args.samplerate != '44100' or 'samplerate' not in metadata):
         metadata['samplerate'] = args.samplerate
     elif 'samplerate' not in metadata:
         metadata['samplerate'] = '44100'
         
     if args.instrument_prefix:
         metadata['instrument_prefix'] = args.instrument_prefix
+    
+    # For extra files, use command line value if specified, otherwise use config value
+    if args.extra_files:
+        metadata['extra_files'] = args.extra_files
         
     # Add date and script name to the description
     timestamp = get_timestamp()
@@ -135,6 +146,51 @@ def prepare_metadata(args):
     print("", file=sys.stderr)
         
     return metadata
+
+def copy_extra_files(source_dir, target_dir, extra_files_str):
+    """
+    Copy additional files specified in extra_files to the target directory.
+    
+    Args:
+        source_dir (str): Source directory containing the files
+        target_dir (str): Target directory to copy the files to
+        extra_files_str (str): Comma-separated list of files to copy
+    
+    Returns:
+        list: List of successfully copied files
+    """
+    if not extra_files_str:
+        return []
+    
+    # Split the comma-separated list
+    extra_files = [f.strip() for f in extra_files_str.split(',')]
+    copied_files = []
+    
+    print(f"\nCopying extra files to {target_dir}:", file=sys.stderr)
+    
+    for file in extra_files:
+        source_file = os.path.join(source_dir, file)
+        target_file = os.path.join(target_dir, file)
+        
+        # Check if source file exists
+        if not os.path.exists(source_file):
+            print(f"  Warning: Extra file not found: {source_file}", file=sys.stderr)
+            continue
+        
+        try:
+            # Create target directory if it doesn't exist (for files in subdirectories)
+            target_dir_path = os.path.dirname(target_file)
+            if not os.path.exists(target_dir_path):
+                os.makedirs(target_dir_path)
+            
+            # Copy the file
+            shutil.copy2(source_file, target_file)
+            print(f"  Copied: {file}", file=sys.stderr)
+            copied_files.append(file)
+        except Exception as e:
+            print(f"  Error copying {file}: {e}", file=sys.stderr)
+    
+    return copied_files
 
 def main():
     """
@@ -161,13 +217,19 @@ def main():
         print("Error: No audio samples found in the source directory", file=sys.stderr)
         sys.exit(1)
     
+    # Sort samples alphabetically by filename
+    samples.sort(key=lambda x: os.path.basename(x).lower())
+    print(f"Samples sorted alphabetically", file=sys.stderr)
+    
     # Process each sample
     instruments = []
+    instrument_to_sample = {}  # Map to keep track of which sample was used for each instrument
     
     for sample in samples:
         # Extract instrument name
         instrument = extract_instrument_name(sample)
         instruments.append(instrument)
+        instrument_to_sample[instrument] = os.path.basename(sample)
         
         # Get file extension
         extension = get_file_extension(sample)
@@ -203,11 +265,28 @@ def main():
         if os.path.exists(logo_source):
             try:
                 shutil.copy2(logo_source, logo_dest)
+                print(f"Logo file copied: {metadata['logo']}", file=sys.stderr)
             except Exception as e:
                 print(f"Warning: Could not copy logo file: {e}", file=sys.stderr)
     
+    # Copy extra files if specified
+    extra_files_copied = []
+    if 'extra_files' in metadata and metadata['extra_files']:
+        extra_files_copied = copy_extra_files(args.source, args.target, metadata['extra_files'])
+    
     # Display summary
     print_summary(metadata, instruments, args.target)
+    
+    # Print mapping of instruments to original sample files
+    print("\nInstrument to sample mapping:", file=sys.stderr)
+    for instrument, sample in instrument_to_sample.items():
+        print(f"  {instrument}: {sample}", file=sys.stderr)
+    
+    # Print extra files copied
+    if extra_files_copied:
+        print("\nExtra files copied:", file=sys.stderr)
+        for file in extra_files_copied:
+            print(f"  {file}", file=sys.stderr)
 
 if __name__ == "__main__":
     main()

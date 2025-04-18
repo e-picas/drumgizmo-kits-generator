@@ -39,7 +39,7 @@ The project is organized into several modules for better readability and maintai
 - `--description`: Kit description
 - `--notes`: Additional notes about the kit
 - `--author`: Kit author
-- `--license`: Kit license (default: CC-BY-SA)
+- `--license`: Kit license (default: Private license)
 - `--website`: Kit website
 - `--logo`: Logo filename
 - `--samplerate`: Sample rate in Hz (default: 44100)
@@ -55,7 +55,7 @@ KIT_VERSION="1.0"
 KIT_DESCRIPTION="Kit description"
 KIT_NOTES="Additional notes"
 KIT_AUTHOR="Author name"
-KIT_LICENSE="CC-BY-SA"
+KIT_LICENSE="Private license"
 KIT_WEBSITE="https://example.com/"
 KIT_LOGO="logo.jpg"
 KIT_SAMPLERATE="44100"

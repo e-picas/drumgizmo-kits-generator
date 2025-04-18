@@ -11,6 +11,7 @@ import tempfile
 import shutil
 import datetime
 from config import CHANNELS, MAIN_CHANNELS, get_filechannel
+from constants import APP_NAME, APP_VERSION, APP_LINK
 
 def create_xml_file(instrument, kit_dir, version, extension):
     """
@@ -82,11 +83,43 @@ def create_drumkit_xml(instruments, kit_dir, metadata):
     
     # Create a temporary XML file
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp:
-        # Write XML header with simplified format similar to DRSKit
+        # Write XML header with proper metadata structure
+        # Add samplerate attribute to the drumkit tag
         temp.write(f"""<?xml version="1.0" encoding="UTF-8"?>
-<drumkit name="{metadata['name']}" description="{metadata['description']}">
-  <channels>
+<drumkit version="{metadata.get('version', '1.0.0')}" name="{metadata['name']}" samplerate="{metadata.get('samplerate', '44100')}">
+ <metadata>
+  <title>{metadata['name']}</title>
+  <description>{metadata['description']}</description>
 """)
+        
+        # Add notes if available
+        if 'notes' in metadata and metadata['notes']:
+            temp.write(f"""  <notes>{metadata['notes']}</notes>
+""")
+        
+        # Add license, author, website, and samplerate
+        temp.write(f"""  <license>{metadata.get('license', 'Private license')}</license>
+  <author>{metadata.get('author', 'Unknown')}</author>
+  <samplerate>{metadata.get('samplerate', '44100')}</samplerate>
+""")
+        
+        # Add website if available
+        if 'website' in metadata and metadata['website']:
+            temp.write(f"""  <website>{metadata['website']}</website>
+""")
+        
+        # Add logo if available - using the correct format with src attribute
+        if 'logo' in metadata and metadata['logo']:
+            temp.write(f"""  <logo src="{metadata['logo']}"/>
+""")
+        
+        # Add generation timestamp with app information
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        temp.write(f"""  <created>Generated on {current_time} with {APP_NAME} v{APP_VERSION} ({APP_LINK})</created>
+ </metadata>
+ <channels>
+""")
+        
         for channel in CHANNELS:
             temp.write(f"""    <channel name="{channel}"/>
 """)
@@ -133,6 +166,9 @@ def create_midimap_xml(instruments, kit_dir, metadata):
     
     print(f"Creating midimap.xml file", file=sys.stderr)
     
+    # Sort instruments alphabetically to ensure consistent MIDI mapping
+    sorted_instruments = sorted(instruments, key=lambda x: x.lower())
+    
     # Create a temporary XML file
     with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp:
         # Write XML header
@@ -140,14 +176,20 @@ def create_midimap_xml(instruments, kit_dir, metadata):
 <midimap>
 """)
         
-        # Add each instrument with a different MIDI note
-        midi_note = 35
-        for instrument in instruments:
+        # Add each instrument with a different MIDI note in alphabetical order
+        midi_note = 35  # Start with MIDI note 35 (standard for kick drum)
+        
+        # Create a mapping of instruments to MIDI notes for logging
+        instrument_to_midi = {}
+        
+        for instrument in sorted_instruments:
             temp.write(f"""  <map note="{midi_note}" instr="{instrument}" velmin="0" velmax="127"/>
 """)
+            instrument_to_midi[instrument] = midi_note
             midi_note += 1
             # Avoid exceeding 81 (reasonable upper limit for drum MIDI notes)
             if midi_note > 81:
+                print(f"Warning: Too many instruments, some will share MIDI note 81", file=sys.stderr)
                 midi_note = 81
         
         # Add XML file ending
@@ -156,5 +198,10 @@ def create_midimap_xml(instruments, kit_dir, metadata):
     
     # Move temporary file to final XML file
     shutil.move(temp.name, midimap_file)
+    
+    # Print the MIDI mapping for reference
+    print(f"\nMIDI mapping (alphabetical order):", file=sys.stderr)
+    for instrument, note in instrument_to_midi.items():
+        print(f"  MIDI Note {note}: {instrument}", file=sys.stderr)
     
     print(f"midimap.xml file successfully created: {midimap_file}", file=sys.stderr)
