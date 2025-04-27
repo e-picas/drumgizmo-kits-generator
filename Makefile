@@ -11,6 +11,9 @@ help:
 install-ci:
 	pip install -r requirements-dev.txt
 
+coverage-ci:
+	coverage run -m unittest discover tests && coverage xml
+
 install: install-ci
 	pre-commit install
 	pre-commit install --hook-type commit-msg
