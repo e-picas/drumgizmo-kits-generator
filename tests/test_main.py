@@ -294,6 +294,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         mock_create_midimap_xml.return_value = True
 
         # Create arguments for main()
+        # pylint: disable-next=R0801
         sys.argv = [
             "create_drumgizmo_kit.py",
             "-s",

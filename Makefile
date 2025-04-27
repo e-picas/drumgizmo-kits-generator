@@ -8,8 +8,10 @@
 help:
 	@cat ./Makefile
 
-install:
+install-ci:
 	pip install -r requirements-dev.txt
+
+install: install-ci
 	pre-commit install
 	pre-commit install --hook-type commit-msg
 
@@ -22,5 +24,5 @@ test:
 coverage:
 	coverage run -m unittest discover tests && coverage report -m
 
-git-hooks-test:
-	pre-commit run --all-files
+pre-commit-run:
+	pre-commit run --show-diff-on-failure --color=always --all-files
