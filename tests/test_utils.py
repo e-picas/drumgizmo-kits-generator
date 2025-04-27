@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 # Import the module to test
 # pylint: disable-next=wrong-import-position
-from utils import (
+from drumgizmo_kits_generator.utils import (
     extract_instrument_name,
     get_file_extension,
     get_timestamp,

@@ -15,6 +15,10 @@ install: install-ci
 	pre-commit install
 	pre-commit install --hook-type commit-msg
 
+format:
+	black $$(git ls-files '*.py')
+	isort $$(git ls-files '*.py')
+
 lint:
 	pylint $$(git ls-files '*.py')
 
@@ -25,4 +29,4 @@ coverage:
 	coverage run -m unittest discover tests && coverage report -m
 
 pre-commit-run:
-	pre-commit run --show-diff-on-failure --color=always --all-files
+	pre-commit run --hook-stage manual --show-diff-on-failure --color=always --all-files

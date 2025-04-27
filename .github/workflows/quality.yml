@@ -1,6 +1,9 @@
-name: Codebase validation
+name: Quality
 
-on: [push]
+on:
+  push:
+    branches: ['master']
+  pull_request:
 
 jobs:
   pre-commit-run:
@@ -22,3 +25,9 @@ jobs:
     - uses: pre-commit/action@v3.0.1
     - uses: pre-commit-ci/lite-action@v1.1.0
       if: always()
+
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run commitlint
+        uses: opensource-nepal/commitlint@v1

@@ -3,17 +3,17 @@ repos:
     rev: v4.5.0
     hooks:
       - id: trailing-whitespace
-        stages: [pre-commit]
+        stages: [pre-commit, manual]
       - id: end-of-file-fixer
-        stages: [pre-commit]
+        stages: [pre-commit, manual]
       - id: check-yaml
-        stages: [pre-commit]
+        stages: [pre-commit, manual]
       - id: check-added-large-files
-        stages: [pre-commit]
+        stages: [pre-commit, manual]
       - id: check-toml
-        stages: [pre-commit]
+        stages: [pre-commit, manual]
       - id: debug-statements
-        stages: [pre-commit]
+        stages: [pre-commit, manual]
 
   - repo: https://github.com/psf/black
     rev: 23.12.1
@@ -21,14 +21,14 @@ repos:
       - id: black
         language_version: python3
         args: [--line-length=100]
-        stages: [pre-commit]
+        stages: [pre-commit, manual]
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
         args: ["--profile", "black", "--line-length", "100"]
-        stages: [pre-commit]
+        stages: [pre-commit, manual]
 
   - repo: local
     hooks:
@@ -38,17 +38,17 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-        stages: [pre-commit]
+        stages: [pre-commit, manual]
       - id: tests
         name: run tests
         entry: make test
         language: system
         pass_filenames: false
         always_run: true
-        stages: [pre-commit]
+        stages: [pre-commit, manual]
 
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v3.18.0
     hooks:
       - id: commitizen
-        stages: [commit-msg]
+        stages: [commit-msg, manual]

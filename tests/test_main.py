@@ -20,10 +20,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 # Import the modules to test
 # pylint: disable-next=wrong-import-position
-import main
+from drumgizmo_kits_generator import main as main_module
 
 # pylint: disable-next=wrong-import-position
-from utils import extract_instrument_name, get_file_extension
+from drumgizmo_kits_generator.utils import extract_instrument_name, get_file_extension
 
 
 class TestDrumGizmoKitGenerator(unittest.TestCase):
@@ -74,7 +74,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         args.extra_files = None
 
         # Call the function to test
-        metadata = main.prepare_metadata(args)
+        metadata = main_module.prepare_metadata(args)
 
         # Verify the metadata
         self.assertEqual(metadata["name"], "Test Kit", "Kit name should be read from config")
@@ -106,7 +106,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         args.author = "Override Author"
 
         # Call the function again
-        metadata = main.prepare_metadata(args)
+        metadata = main_module.prepare_metadata(args)
 
         # Verify the overridden values
         self.assertEqual(
@@ -132,7 +132,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         args.instrument_prefix = "CL"
 
         # Call the function again
-        metadata = main.prepare_metadata(args)
+        metadata = main_module.prepare_metadata(args)
 
         # Verify values from command line only
         self.assertEqual(
@@ -174,7 +174,9 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
             extra_files_str = ",".join(extra_files)
 
             # Call the function - note that copy_extra_files prend 3 arguments: source_dir, target_dir, extra_files_str
-            copied_files = main.copy_extra_files(current_dir, self.target_dir, extra_files_str)
+            copied_files = main_module.copy_extra_files(
+                current_dir, self.target_dir, extra_files_str
+            )
 
             # Verify that the files have been copied
             self.assertEqual(
@@ -191,7 +193,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
 
             # Test with a non-existent file
             non_existent = "non_existent_file.txt"
-            copied_files = main.copy_extra_files(current_dir, self.target_dir, non_existent)
+            copied_files = main_module.copy_extra_files(current_dir, self.target_dir, non_existent)
             self.assertEqual(
                 len(copied_files), 0, "Should not copy any files when file doesn't exist"
             )
@@ -204,7 +206,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
                 f.write("Subdir test content")
 
             # Call the function with a file in a subdirectory
-            copied_files = main.copy_extra_files(
+            copied_files = main_module.copy_extra_files(
                 current_dir, self.target_dir, "subdir/subdir_file.txt"
             )
 
@@ -267,12 +269,14 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
                 f"Should extract '{expected}' from '{file_path}'",
             )
 
-    @patch("main.create_xml_file")
-    @patch("main.create_midimap_xml")
-    @patch("main.create_drumkit_xml")
-    @patch("main.create_volume_variations")
-    @patch("main.copy_sample_file")  # Utiliser copy_sample_file au lieu de copy_audio_file
-    @patch("main.find_audio_files")
+    @patch("drumgizmo_kits_generator.main.create_xml_file")
+    @patch("drumgizmo_kits_generator.main.create_midimap_xml")
+    @patch("drumgizmo_kits_generator.main.create_drumkit_xml")
+    @patch("drumgizmo_kits_generator.main.create_volume_variations")
+    @patch(
+        "drumgizmo_kits_generator.main.copy_sample_file"
+    )  # Utiliser copy_sample_file au lieu de copy_audio_file
+    @patch("drumgizmo_kits_generator.main.find_audio_files")
 
     # pylint: disable-next=too-many-arguments
     def test_main_integration(
@@ -309,7 +313,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
 
         # Call the main() function
         with patch("sys.exit") as mock_exit:
-            main.main()
+            main_module.main()
 
             # Verify that the function did not terminate with an error
             mock_exit.assert_not_called()
@@ -333,7 +337,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         # pylint: disable-next=expression-not-assigned
         mock_create_midimap_xml.assert_called_once(), "create_midimap_xml should be called once"
 
-    @patch("main.find_audio_files")
+    @patch("drumgizmo_kits_generator.main.find_audio_files")
     def test_main_no_audio_files(self, mock_find_audio_files):
         """Test main function behavior when no audio files are found."""
         # Configure the mock to return an empty list
@@ -354,7 +358,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
 
         # Call the main() function and expect a system exit
         with patch("sys.exit") as mock_exit:
-            main.main()
+            main_module.main()
 
             # Verify that the function terminated with an error
             mock_exit.assert_called_once()

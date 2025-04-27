@@ -11,8 +11,8 @@ import shutil
 import sys
 import tempfile
 
-from config import CHANNELS, MAIN_CHANNELS
-from constants import APP_LINK, APP_NAME, APP_VERSION
+from drumgizmo_kits_generator.config import CHANNELS, MAIN_CHANNELS
+from drumgizmo_kits_generator.constants import APP_LINK, APP_NAME, APP_VERSION
 
 
 def create_xml_file(instrument, kit_dir, extension):

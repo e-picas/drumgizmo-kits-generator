@@ -11,11 +11,14 @@ import os
 import shutil
 import sys
 
-from audio import copy_sample_file, create_volume_variations, find_audio_files
-
 # Import local modules
-from config import read_config_file
-from utils import (
+from drumgizmo_kits_generator.audio import (
+    copy_sample_file,
+    create_volume_variations,
+    find_audio_files,
+)
+from drumgizmo_kits_generator.config import read_config_file
+from drumgizmo_kits_generator.utils import (
     extract_instrument_name,
     get_file_extension,
     get_timestamp,
@@ -23,7 +26,11 @@ from utils import (
     prepare_target_directory,
     print_summary,
 )
-from xml_generator import create_drumkit_xml, create_midimap_xml, create_xml_file
+from drumgizmo_kits_generator.xml_generator import (
+    create_drumkit_xml,
+    create_midimap_xml,
+    create_xml_file,
+)
 
 
 def parse_arguments():

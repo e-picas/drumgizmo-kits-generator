@@ -10,7 +10,7 @@ import os
 import tomlkit
 
 # Get the absolute path to the project root directory
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Path to the pyproject.toml file
 PYPROJECT_PATH = os.path.join(PROJECT_ROOT, "pyproject.toml")
