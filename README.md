@@ -2,6 +2,7 @@
 
 A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), a multichannel drum sampler, from a directory of audio sources.
 
+![GitHub Release](https://img.shields.io/github/v/release/e-picas/drumgizmo-kits-generator)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/e-picas/drumgizmo-kits-generator/quality.yml?branch=master)
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fe-picas%2Fdrumgizmo-kits-generator%2Frefs%2Fheads%2Fmaster%2Fpyproject.toml)
 ![GitHub License](https://img.shields.io/github/license/e-picas/drumgizmo-kits-generator)
