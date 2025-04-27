@@ -39,8 +39,8 @@ from drumgizmo_kits_generator.utils import (
 )
 from drumgizmo_kits_generator.xml_generator import (
     create_drumkit_xml,
+    create_instrument_xml,
     create_midimap_xml,
-    create_xml_file,
 )
 
 # Default values for command line arguments
@@ -130,11 +130,7 @@ Configuration file options:
         default=DEFAULT_VERSION,
         help=f"Kit version (default: {DEFAULT_VERSION})",
     )
-    parser.add_argument(
-        "--description",
-        default=f"Kit automatically created with {DEFAULT_VELOCITY_LEVELS} velocity levels",
-        help="Kit description",
-    )
+    parser.add_argument("--description", help="Kit description")
     parser.add_argument("--notes", help="Additional notes about the kit")
     parser.add_argument("--author", help="Kit author")
     parser.add_argument(
@@ -455,7 +451,7 @@ def main():
         create_volume_variations(instrument, args.target, extension, velocity_levels)
 
         # Create XML file for the instrument
-        create_xml_file(
+        create_instrument_xml(
             instrument,
             args.target,
             extension,

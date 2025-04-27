@@ -21,8 +21,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 # pylint: disable-next=wrong-import-position
 from drumgizmo_kits_generator.xml_generator import (
     create_drumkit_xml,
+    create_instrument_xml,
     create_midimap_xml,
-    create_xml_file,
 )
 
 
@@ -129,7 +129,7 @@ class TestXmlGenerator(unittest.TestCase):
             )
 
     # pylint: disable-next=too-many-locals
-    def test_create_xml_file(self):
+    def test_create_instrument_xml(self):
         """Test creating an instrument XML file with proper structure and sample references."""
         # Create a directory for the instrument
         instrument_name = "Kick"
@@ -149,7 +149,7 @@ class TestXmlGenerator(unittest.TestCase):
                 f.write(f"Sample {i} content")
 
         # Call the function with default velocity levels
-        xml_file = create_xml_file(instrument_name, self.temp_dir, ".wav")
+        xml_file = create_instrument_xml(instrument_name, self.temp_dir, ".wav")
 
         # Verify the file was created
         self.assertTrue(os.path.exists(xml_file), "XML file should be created")
@@ -200,7 +200,7 @@ class TestXmlGenerator(unittest.TestCase):
                     f"Power for sample {i} should be less than for sample {i-1}",
                 )
 
-    def test_create_xml_file_custom_velocity_levels(self):
+    def test_create_instrument_xml_custom_velocity_levels(self):
         """Test creating an instrument XML file with custom velocity levels."""
         # Create a directory for the instrument
         instrument_name = "Snare"
@@ -220,7 +220,7 @@ class TestXmlGenerator(unittest.TestCase):
                 f.write(f"Sample {i} content")
 
         # Call the function with custom velocity levels
-        xml_file = create_xml_file(instrument_name, self.temp_dir, ".wav", velocity_levels)
+        xml_file = create_instrument_xml(instrument_name, self.temp_dir, ".wav", velocity_levels)
 
         # Parse the XML file
         tree = ET.parse(xml_file)

@@ -12,7 +12,18 @@ import sys
 import xml.dom.minidom
 import xml.etree.ElementTree as ET
 
-from drumgizmo_kits_generator.config import CHANNELS, MAIN_CHANNELS
+from drumgizmo_kits_generator.config import (
+    CHANNELS,
+    DEFAULT_LICENSE,
+    DEFAULT_MIDI_NOTE_MAX,
+    DEFAULT_MIDI_NOTE_MEDIAN,
+    DEFAULT_MIDI_NOTE_MIN,
+    DEFAULT_NAME,
+    DEFAULT_SAMPLERATE,
+    DEFAULT_VELOCITY_LEVELS,
+    DEFAULT_VERSION,
+    MAIN_CHANNELS,
+)
 from drumgizmo_kits_generator.constants import APP_LINK, APP_NAME, APP_VERSION
 
 
@@ -35,7 +46,7 @@ def write_pretty_xml(tree, file_path):
         f.write(dom.toprettyxml(indent="  "))
 
 
-def create_xml_file(instrument, kit_dir, extension, velocity_levels=10):
+def create_instrument_xml(instrument, kit_dir, extension, velocity_levels=DEFAULT_VELOCITY_LEVELS):
     """
     Creates the XML file for an instrument.
 
@@ -43,7 +54,7 @@ def create_xml_file(instrument, kit_dir, extension, velocity_levels=10):
         instrument (str): Name of the instrument
         kit_dir (str): Target directory for the kit
         extension (str): Audio file extension (with the dot)
-        velocity_levels (int): Number of velocity levels to generate (default: 10)
+        velocity_levels (int): Number of velocity levels to generate (default: DEFAULT_VELOCITY_LEVELS)
     """
     xml_file = os.path.join(kit_dir, instrument, f"{instrument}.xml")
 
@@ -111,32 +122,32 @@ def create_drumkit_xml(instruments, kit_dir, metadata):
     # Create root element with attributes expected by tests
     root = ET.Element(
         "drumkit",
-        version=metadata.get("version", "1.0"),
-        name=metadata.get("name", "DrumGizmo Kit"),
-        samplerate=metadata.get("samplerate", "44100"),
+        version=metadata.get("version", DEFAULT_VERSION),
+        name=metadata.get("name", DEFAULT_NAME),
+        samplerate=metadata.get("samplerate", DEFAULT_SAMPLERATE),
     )
 
     # Add metadata section as expected by tests
     metadata_elem = ET.SubElement(root, "metadata")
 
     title = ET.SubElement(metadata_elem, "title")
-    title.text = metadata.get("name", "DrumGizmo Kit")
+    title.text = metadata.get("name", DEFAULT_NAME)
 
     description = ET.SubElement(metadata_elem, "description")
-    description.text = metadata.get("description", "DrumGizmo kit")
+    description.text = metadata.get("description", "")
 
     if "notes" in metadata:
         notes = ET.SubElement(metadata_elem, "notes")
         notes.text = metadata["notes"]
 
-    license_elem = ET.SubElement(metadata_elem, "license")
-    license_elem.text = metadata.get("license", "Private license")
-
     author = ET.SubElement(metadata_elem, "author")
-    author.text = metadata.get("author", "Unknown")
+    author.text = metadata.get("author", "")
+
+    license_elem = ET.SubElement(metadata_elem, "license")
+    license_elem.text = metadata.get("license", DEFAULT_LICENSE)
 
     samplerate = ET.SubElement(metadata_elem, "samplerate")
-    samplerate.text = metadata.get("samplerate", "44100")
+    samplerate.text = metadata.get("samplerate", DEFAULT_SAMPLERATE)
 
     if "website" in metadata:
         website = ET.SubElement(metadata_elem, "website")
@@ -187,7 +198,11 @@ def create_drumkit_xml(instruments, kit_dir, metadata):
 
 # pylint: disable-next=too-many-locals
 def create_midimap_xml(
-    instruments, kit_dir, midi_note_min=0, midi_note_max=127, midi_note_median=60
+    instruments,
+    kit_dir,
+    midi_note_min=DEFAULT_MIDI_NOTE_MIN,
+    midi_note_max=DEFAULT_MIDI_NOTE_MAX,
+    midi_note_median=DEFAULT_MIDI_NOTE_MEDIAN,
 ):
     """
     Creates the midimap.xml file for the kit.

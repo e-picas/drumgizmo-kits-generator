@@ -269,7 +269,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
                 f"Should extract '{expected}' from '{file_path}'",
             )
 
-    @patch("drumgizmo_kits_generator.main.create_xml_file")
+    @patch("drumgizmo_kits_generator.main.create_instrument_xml")
     @patch("drumgizmo_kits_generator.main.create_midimap_xml")
     @patch("drumgizmo_kits_generator.main.create_drumkit_xml")
     @patch("drumgizmo_kits_generator.main.create_volume_variations")
@@ -286,14 +286,14 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         mock_create_volume_variations,
         mock_create_drumkit_xml,
         mock_create_midimap_xml,
-        mock_create_xml_file,
+        mock_create_instrument_xml,
     ):
         """Integration test of the main script with all components mocked."""
         # Configure the mocks
         mock_find_audio_files.return_value = ["/path/to/sample1.wav", "/path/to/sample2.wav"]
         mock_copy_sample_file.return_value = True
         mock_create_volume_variations.return_value = None  # La fonction ne retourne rien
-        mock_create_xml_file.return_value = True
+        mock_create_instrument_xml.return_value = True
         mock_create_drumkit_xml.return_value = True
         mock_create_midimap_xml.return_value = True
 
@@ -330,7 +330,9 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
             "create_volume_variations should be called for each sample",
         )
         self.assertEqual(
-            mock_create_xml_file.call_count, 2, "create_xml_file should be called for each sample"
+            mock_create_instrument_xml.call_count,
+            2,
+            "create_instrument_xml should be called for each sample",
         )
         # pylint: disable-next=expression-not-assigned
         mock_create_drumkit_xml.assert_called_once(), "create_drumkit_xml should be called once"

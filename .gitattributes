@@ -2,3 +2,5 @@ Makefile    export-ignore
 tests       export-ignore
 .git*       export-ignore
 .pylintrc   export-ignore
+.pre-commit-config.yaml   export-ignore
+requirements-dev.txt   export-ignore
