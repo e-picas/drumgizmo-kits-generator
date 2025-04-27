@@ -69,6 +69,9 @@ major_on_zero = true
 allow_zero_version = true
 no_git_verify = false
 tag_format = "v{version}"
+version_toml = [
+    "definition.toml:project.version:nf"
+]
 
 [tool.semantic_release.branches.main]
 match = "master"
