@@ -9,10 +9,30 @@ This module contains functions for generating XML files for DrumGizmo kits.
 import datetime
 import os
 import sys
+import xml.dom.minidom
 import xml.etree.ElementTree as ET
 
 from drumgizmo_kits_generator.config import CHANNELS, MAIN_CHANNELS
 from drumgizmo_kits_generator.constants import APP_LINK, APP_NAME, APP_VERSION
+
+
+def write_pretty_xml(tree, file_path):
+    """
+    Write an ElementTree to a file with pretty formatting.
+
+    Args:
+        tree (ElementTree): The ElementTree to write
+        file_path (str): Path to the output file
+    """
+    # Convert to string
+    xml_string = ET.tostring(tree.getroot(), encoding="UTF-8", xml_declaration=True)
+
+    # Parse with minidom
+    dom = xml.dom.minidom.parseString(xml_string)
+
+    # Write pretty XML to file
+    with open(file_path, "w", encoding="UTF-8") as f:
+        f.write(dom.toprettyxml(indent="  "))
 
 
 def create_xml_file(instrument, kit_dir, extension):
@@ -44,24 +64,27 @@ def create_xml_file(instrument, kit_dir, extension):
         sample = ET.SubElement(samples, "sample", name=f"{instrument}-{i}", power=f"{power:.6f}")
 
         # Add audiofiles for each channel
-        for channel in CHANNELS:
-            # Map all channels to the available stereo channels (1 and 2)
-            audiofile = ET.SubElement(
-                sample, "audiofile", channel=channel, file=f"{i}-{instrument}{extension}"
+        # Alternate filechannel between channels to use both stereo channels
+        for index, channel in enumerate(CHANNELS):
+            # Alternate between filechannel 1 and 2 based on channel index
+            filechannel = "1" if index % 2 == 0 else "2"
+
+            ET.SubElement(
+                sample,
+                "audiofile",
+                channel=channel,
+                file=f"samples/{i}-{instrument}{extension}",
+                filechannel=filechannel,
             )
 
-            # Add channels 1 and 2 for each audiofile
-            ET.SubElement(audiofile, "channel", num="1")
-            ET.SubElement(audiofile, "channel", num="2")
-
-    # Create XML tree and write to file
+    # Create XML tree
     tree = ET.ElementTree(root)
 
     # Create instrument directory if it doesn't exist
     os.makedirs(os.path.dirname(xml_file), exist_ok=True)
 
-    # Write the XML file with proper formatting
-    tree.write(xml_file, encoding="UTF-8", xml_declaration=True)
+    # Write the XML file with pretty formatting
+    write_pretty_xml(tree, xml_file)
 
     print(f"XML file successfully created: {xml_file}", file=sys.stderr)
     return xml_file
@@ -151,9 +174,11 @@ def create_drumkit_xml(instruments, kit_dir, metadata):
             else:
                 ET.SubElement(instrument_elem, "channelmap", **{"in": channel, "out": channel})
 
-    # Create XML tree and write to file
+    # Create XML tree
     tree = ET.ElementTree(root)
-    tree.write(xml_file, encoding="UTF-8", xml_declaration=True)
+
+    # Write the XML file with pretty formatting
+    write_pretty_xml(tree, xml_file)
 
     print(f"drumkit.xml file successfully created: {xml_file}", file=sys.stderr)
     return xml_file
@@ -191,9 +216,11 @@ def create_midimap_xml(instruments, kit_dir):
         # Add instrument to midimap using the format expected by tests
         ET.SubElement(root, "map", note=str(midi_note), instr=instrument, velmin="0", velmax="127")
 
-    # Create XML tree and write to file
+    # Create XML tree
     tree = ET.ElementTree(root)
-    tree.write(xml_file, encoding="UTF-8", xml_declaration=True)
+
+    # Write the XML file with pretty formatting
+    write_pretty_xml(tree, xml_file)
 
     print(f"midimap.xml file successfully created: {xml_file}", file=sys.stderr)
     return xml_file

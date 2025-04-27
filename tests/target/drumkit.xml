@@ -1,22 +1,23 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" ?>
 <drumkit version="1.0" name="Test Kit" samplerate="44100">
- <metadata>
-  <title>Test Kit</title>
-  <description>This is a description</description>
-  <notes>DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at 2025-04-18 14:48</notes>
-  <license>CC-BY-SA</license>
-  <author>Piero</author>
-  <samplerate>44100</samplerate>
-  <website>https://picas.fr/</website>
-  <logo src="pngtree-music-notes-png-image_8660757.png"/>
-  <created>Generated on 2025-04-18 14:48:46 with DrumGizmo Kits Generator v0.0.1 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
- </metadata>
- <channels>
+  <metadata>
+    <title>Test Kit</title>
+    <description>This is a description</description>
+    <notes>DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at 2025-04-27 15:45</notes>
+    <license>CC-BY-SA</license>
+    <author>Piero</author>
+    <samplerate>44100</samplerate>
+    <website>https://picas.fr/</website>
+    <logo src="pngtree-music-notes-png-image_8660757.png"/>
+    <created>Generated on 2025-04-27 15:45:31 with drumgizmo-kits-generator v1.1.2 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
+  </metadata>
+  <channels>
     <channel name="AmbL"/>
     <channel name="AmbR"/>
     <channel name="Hihat"/>
     <channel name="Kdrum_back"/>
     <channel name="Kdrum_front"/>
+    <channel name="Hihat"/>
     <channel name="OHL"/>
     <channel name="OHR"/>
     <channel name="Ride"/>
@@ -33,11 +34,12 @@
       <channelmap in="Hihat" out="Hihat"/>
       <channelmap in="Kdrum_back" out="Kdrum_back"/>
       <channelmap in="Kdrum_front" out="Kdrum_front"/>
+      <channelmap in="Hihat" out="Hihat"/>
       <channelmap in="OHL" out="OHL" main="true"/>
       <channelmap in="OHR" out="OHR" main="true"/>
       <channelmap in="Ride" out="Ride"/>
       <channelmap in="Snare_bottom" out="Snare_bottom"/>
-      <channelmap in="Snare_top" out="Snare_top" main="true"/>
+      <channelmap in="Snare_top" out="Snare_top"/>
       <channelmap in="Tom1" out="Tom1"/>
       <channelmap in="Tom2" out="Tom2"/>
       <channelmap in="Tom3" out="Tom3"/>
@@ -48,11 +50,12 @@
       <channelmap in="Hihat" out="Hihat"/>
       <channelmap in="Kdrum_back" out="Kdrum_back"/>
       <channelmap in="Kdrum_front" out="Kdrum_front"/>
+      <channelmap in="Hihat" out="Hihat"/>
       <channelmap in="OHL" out="OHL" main="true"/>
       <channelmap in="OHR" out="OHR" main="true"/>
       <channelmap in="Ride" out="Ride"/>
       <channelmap in="Snare_bottom" out="Snare_bottom"/>
-      <channelmap in="Snare_top" out="Snare_top" main="true"/>
+      <channelmap in="Snare_top" out="Snare_top"/>
       <channelmap in="Tom1" out="Tom1"/>
       <channelmap in="Tom2" out="Tom2"/>
       <channelmap in="Tom3" out="Tom3"/>
