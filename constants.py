@@ -5,7 +5,21 @@ Constants module for DrumGizmo kit generator.
 Contains global constants used across the application.
 """
 
-# Application information
-APP_NAME = "DrumGizmo Kits Generator"
-APP_VERSION = "1.0.0"
-APP_LINK = "https://github.com/e-picas/drumgizmo-kits-generator"
+import os
+
+import tomlkit
+
+# Get the absolute path to the project root directory
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+# Path to the pyproject.toml file
+PYPROJECT_PATH = os.path.join(PROJECT_ROOT, "pyproject.toml")
+
+# Read the pyproject.toml file
+with open(PYPROJECT_PATH, "r", encoding="utf-8") as f:
+    PYPROJECT = tomlkit.parse(f.read())
+
+# Application information from pyproject.toml
+APP_NAME = PYPROJECT["project"]["name"]
+APP_VERSION = PYPROJECT["project"]["version"]
+APP_LINK = PYPROJECT["project"]["urls"]["Homepage"]

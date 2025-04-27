@@ -6,11 +6,12 @@ Audio processing module for DrumGizmo kit generator.
 Contains functions to manipulate audio files and create volume variations.
 """
 
+import glob
 import os
-import sys
 import shutil
 import subprocess
-import glob
+import sys
+
 
 def create_volume_variations(instrument, kit_dir, extension):
     """
@@ -28,16 +29,24 @@ def create_volume_variations(instrument, kit_dir, extension):
 
     # Create 9 versions with a 10% volume decrease each time
     for i in range(2, 11):
-        volume = 1.0 - (i-1)*0.1
-        print(f"Creating version at {volume:.1f}% volume for {instrument} (file {i}-{instrument}{extension})", file=sys.stderr)
+        volume = 1.0 - (i - 1) * 0.1
+        print(
+            f"Creating version at {volume:.1f}% volume for {instrument} (file {i}-{instrument}{extension})",
+            file=sys.stderr,
+        )
 
         # Use sox to adjust volume
-        subprocess.run([
-            "sox",
-            os.path.join(samples_dir, f"1-{instrument}{extension}"),
-            os.path.join(samples_dir, f"{i}-{instrument}{extension}"),
-            "vol", f"{volume}"
-        ], check=False)
+        subprocess.run(
+            [
+                "sox",
+                os.path.join(samples_dir, f"1-{instrument}{extension}"),
+                os.path.join(samples_dir, f"{i}-{instrument}{extension}"),
+                "vol",
+                f"{volume}",
+            ],
+            check=False,
+        )
+
 
 def copy_sample_file(source_file, dest_file):
     """
@@ -53,6 +62,7 @@ def copy_sample_file(source_file, dest_file):
     except Exception as e:
         print(f"Error copying file {source_file} to {dest_file}: {e}", file=sys.stderr)
         return False
+
 
 def find_audio_files(source_dir, extensions):
     """

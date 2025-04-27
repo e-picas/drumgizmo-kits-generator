@@ -1,7 +1,16 @@
-.PHONY: help lint test coverage
+#
+# To create a Python virtual environment, run:
+#		python3 -m venv .venv;
+#		source .venv/bin/activate;
+#
+.PHONY: help install lint test coverage
 
 help:
 	@cat ./Makefile
+
+install:
+	pip install -r requirements-dev.txt
+	pre-commit install
 
 lint:
 	pylint $$(git ls-files '*.py')
