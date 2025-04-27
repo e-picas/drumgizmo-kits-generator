@@ -140,51 +140,58 @@ class TestXmlGenerator(unittest.TestCase):
         samples_dir = os.path.join(instrument_dir, "samples")
         os.makedirs(samples_dir, exist_ok=True)
 
-        # Create sample files
-        for i in range(1, 11):
+        # Create sample files (default: 10 levels)
+        velocity_levels = 10
+        for i in range(1, velocity_levels + 1):
             sample_file = os.path.join(samples_dir, f"{i}-{instrument_name}.wav")
-            with open(sample_file, "w", encoding="utf-8") as f:
-                f.write("Sample content")
+            # pylint: disable-next=unspecified-encoding
+            with open(sample_file, "w") as f:
+                f.write(f"Sample {i} content")
 
-        # Call the function to test
-        create_xml_file(instrument_name, self.temp_dir, ".wav")
+        # Call the function with default velocity levels
+        xml_file = create_xml_file(instrument_name, self.temp_dir, ".wav")
 
-        # Verify that the file has been created
-        xml_file = os.path.join(instrument_dir, f"{instrument_name}.xml")
-        self.assertTrue(os.path.exists(xml_file), "Instrument XML file should be created")
-        self.assertGreater(os.path.getsize(xml_file), 0, "Instrument XML file should not be empty")
+        # Verify the file was created
+        self.assertTrue(os.path.exists(xml_file), "XML file should be created")
 
-        # Parse the XML file and verify its content
+        # Parse the XML file
         tree = ET.parse(xml_file)
         root = tree.getroot()
 
         # Verify the root element
         self.assertEqual(root.tag, "instrument", "Root element should be 'instrument'")
+        self.assertEqual(root.attrib["name"], instrument_name, "Name attribute should match")
+        self.assertEqual(root.attrib["version"], "2.0", "Version should be 2.0")
+
+        # Verify samples element
+        samples_elem = root.find("samples")
+        self.assertIsNotNone(samples_elem, "Should have a samples element")
+
+        # Verify sample elements (should have 10 by default)
+        samples = samples_elem.findall("sample")
         self.assertEqual(
-            root.attrib["name"], instrument_name, "Instrument name attribute should match"
-        )
-        self.assertEqual(
-            root.attrib["version"], "2.0", "Version should be 2.0 for instrument files"
+            len(samples), velocity_levels, f"Should have {velocity_levels} sample elements"
         )
 
-        # Verify the samples
-        samples_element = root.find("samples")
-        self.assertIsNotNone(samples_element, "Samples element should exist")
-
-        samples = samples_element.findall("sample")
-        self.assertEqual(len(samples), 10, "Should have 10 sample elements")
-
+        # Verify each sample
         for i, sample in enumerate(samples, 1):
+            # Check name attribute
             self.assertEqual(
-                sample.attrib["name"], f"{instrument_name}-{i}", f"Sample {i} name should match"
+                sample.attrib["name"],
+                f"{instrument_name}-{i}",
+                f"Sample {i} should have correct name",
             )
 
-            # Verify audiofile elements exist
+            # Check power attribute
+            power_value = float(sample.attrib["power"])
+            self.assertGreaterEqual(power_value, 0.0, f"Power for sample {i} should be >= 0")
+            self.assertLessEqual(power_value, 1.0, f"Power for sample {i} should be <= 1")
+
+            # Check audiofile elements
             audiofiles = sample.findall("audiofile")
             self.assertGreater(len(audiofiles), 0, f"Sample {i} should have audiofile elements")
 
             # Verify that the power value decreases as sample number increases
-            power_value = float(sample.attrib["power"])
             if i > 1:
                 prev_power = float(samples[i - 2].attrib["power"])
                 self.assertLess(
@@ -192,6 +199,56 @@ class TestXmlGenerator(unittest.TestCase):
                     prev_power,
                     f"Power for sample {i} should be less than for sample {i-1}",
                 )
+
+    def test_create_xml_file_custom_velocity_levels(self):
+        """Test creating an instrument XML file with custom velocity levels."""
+        # Create a directory for the instrument
+        instrument_name = "Snare"
+        instrument_dir = os.path.join(self.temp_dir, instrument_name)
+        os.makedirs(instrument_dir, exist_ok=True)
+
+        # Create a samples directory
+        samples_dir = os.path.join(instrument_dir, "samples")
+        os.makedirs(samples_dir, exist_ok=True)
+
+        # Create sample files with custom velocity levels
+        velocity_levels = 5
+        for i in range(1, velocity_levels + 1):
+            sample_file = os.path.join(samples_dir, f"{i}-{instrument_name}.wav")
+            # pylint: disable-next=unspecified-encoding
+            with open(sample_file, "w") as f:
+                f.write(f"Sample {i} content")
+
+        # Call the function with custom velocity levels
+        xml_file = create_xml_file(instrument_name, self.temp_dir, ".wav", velocity_levels)
+
+        # Parse the XML file
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+
+        # Verify samples element
+        samples_elem = root.find("samples")
+        self.assertIsNotNone(samples_elem, "Should have a samples element")
+
+        # Verify sample elements (should match custom velocity levels)
+        samples = samples_elem.findall("sample")
+        self.assertEqual(
+            len(samples), velocity_levels, f"Should have {velocity_levels} sample elements"
+        )
+
+        # Verify power values are distributed correctly
+        powers = [float(sample.attrib["power"]) for sample in samples]
+
+        # First sample should have power 1.0
+        self.assertAlmostEqual(powers[0], 1.0, places=5, msg="First sample should have power 1.0")
+
+        # Last sample should have power close to 1/velocity_levels
+        self.assertAlmostEqual(
+            powers[-1],
+            1.0 - (velocity_levels - 1) / velocity_levels,
+            places=5,
+            msg=f"Last sample should have power {1.0 - (velocity_levels - 1) / velocity_levels}",
+        )
 
     def test_create_midimap_xml(self):
         """Test creating the MIDI map XML file with proper note mappings."""

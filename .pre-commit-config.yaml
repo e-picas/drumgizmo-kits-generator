@@ -51,4 +51,4 @@ repos:
     rev: v3.18.0
     hooks:
       - id: commitizen
-        stages: [commit-msg, manual]
+        stages: [commit-msg]

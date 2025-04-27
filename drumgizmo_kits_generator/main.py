@@ -55,6 +55,13 @@ def parse_arguments():
         help="Comma-separated list of audio file extensions to process (default: wav,WAV,flac,FLAC,ogg,OGG)",
     )
 
+    parser.add_argument(
+        "--velocity-levels",
+        type=int,
+        default=10,
+        help="Number of velocity levels to generate (default: 10)",
+    )
+
     # Arguments for metadata (can be overridden by the configuration file)
     parser.add_argument("--name", help="Kit name")
     parser.add_argument("--version", default="1.0", help="Kit version (default: 1.0)")
@@ -277,10 +284,10 @@ def main():
             continue
 
         # Create volume variations
-        create_volume_variations(instrument, args.target, extension)
+        create_volume_variations(instrument, args.target, extension, args.velocity_levels)
 
         # Create XML file for the instrument
-        create_xml_file(instrument, args.target, extension)
+        create_xml_file(instrument, args.target, extension, args.velocity_levels)
 
     # Create drumkit.xml file
     create_drumkit_xml(instruments, args.target, metadata)
