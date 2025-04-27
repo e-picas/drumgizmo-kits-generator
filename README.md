@@ -1,6 +1,6 @@
 # DrumGizmo Kits Generator
 
-**A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), a multichannel drum sampler, from a directory of audio sources.**
+A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), a multichannel drum sampler, from a directory of audio sources.
 
 ![GitHub Release](https://img.shields.io/github/v/release/e-picas/drumgizmo-kits-generator)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/e-picas/drumgizmo-kits-generator/quality.yml?branch=master)
@@ -40,15 +40,35 @@ python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target -c /path/t
 python create_drumgizmo_kit.py -h
 ```
 
+The following common arguments are in use:
+
+*  `-s` / `--source`: **REQUIRED** - Source directory containing audio samples
+*  `-t` / `--target`: **REQUIRED** - Target directory for the DrumGizmo kit
+*  `-c` / `--config`: Configuration file path to use (*INI* format)
+
 ### Configuration & options
+
+You can specify kit metadata and generation options in a configuration file (e.g., `drumgizmo-kit.ini`):
+
+```ini
+# Kit metadata
+kit_name = "My Drum Kit"
+kit_version = "1.0.0"
+kit_description = "An acoustic drum kit"
+kit_notes = "Recorded in a professional studio"
+kit_author = "Your Name"
+kit_license = "CC-BY-SA"
+kit_website = "https://your-site.com"
+kit_samplerate = "44100"
+kit_instrument_prefix = "MyKit"
+kit_logo = "logo.png"
+kit_extra_files = "README.txt,LICENSE.txt,photo.jpg"
+```
 
 All command-line options have equivalent configuration file settings. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
 
 | Config file variable | Command-line option | Description | Default |
 |----------------------|---------------------|-------------|---------|
-| | `-s` / `--source` | **REQUIRED** - Source directory containing audio samples | |
-| | `-t` / `--target` | **REQUIRED** - Target directory for the DrumGizmo kit | |
-| | `-c` / `--config` | Configuration file path to use (*INI* format) | |
 | `kit_name` | `--name` | The name of the generated kit | "DrumGizmo Kit" |
 | `kit_version` | `--version` | The version of the generated kit | "1.0" |
 | `kit_description` | `--description` | The description of the generated kit | *null* |
@@ -56,7 +76,7 @@ All command-line options have equivalent configuration file settings. The config
 | `kit_author` | `--author` | The author(s) of the generated kit | *null* |
 | `kit_license` | `--license` | The license of the generated kit | "Private license" |
 | `kit_website` | `--website` | The website of the generated kit | *null* |
-| `kit_logo` | `--logo` | The kit logo filename | *null* (must be a valid local path in `source`) |
+| `kit_logo` | `--logo` | The kit logo filename | *null* |
 | `kit_samplerate` | `--samplerate` | Sample rate of the kit's samples in Hz | 44100 |
 | `kit_instrument_prefix` | `--instrument-prefix` | Prefix used for instrument names | *null* |
 | `kit_extra_files` | `--extra-files` | Comma-separated list of additional files to copy to the target directory | *null* |
