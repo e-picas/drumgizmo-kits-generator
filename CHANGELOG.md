@@ -1,6 +1,28 @@
 # CHANGELOG
 
 
+## v1.3.0 (2025-04-27)
+
+### Bug Fixes
+
+- Config values usage review ([#11](https://github.com/e-picas/drumgizmo-kits-generator/pull/11),
+  [`91894d4`](https://github.com/e-picas/drumgizmo-kits-generator/commit/91894d41a2872b9003b2e91c190eac81b64ae31b))
+
+- Delete old sonar.yml workflow
+  ([`a288bb6`](https://github.com/e-picas/drumgizmo-kits-generator/commit/a288bb6fb06c7b1b61d3a8e9fbe1f53c60f9e73f))
+
+- Fix SonarQube coverage scanner
+  ([`cfd2cff`](https://github.com/e-picas/drumgizmo-kits-generator/commit/cfd2cff02c06683027e3085db4ee258f17ebca5b))
+
+### Features
+
+- Introduce SonarQube scanner ([#12](https://github.com/e-picas/drumgizmo-kits-generator/pull/12),
+  [`1ae7711`](https://github.com/e-picas/drumgizmo-kits-generator/commit/1ae7711010c478f95dd004ac6ac6598b571f47c4))
+
+- Introduce SonarQube scanner ([#13](https://github.com/e-picas/drumgizmo-kits-generator/pull/13),
+  [`1920ef3`](https://github.com/e-picas/drumgizmo-kits-generator/commit/1920ef3032342d572c2d8769e5bed19dda2c4a2a))
+
+
 ## v1.2.0 (2025-04-27)
 
 ### Features
