@@ -2,8 +2,10 @@ name: Quality
 
 on:
   push:
-    branches: ['master']
+    branches:
+      - master
   pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   pre-commit-run:
@@ -31,3 +33,22 @@ jobs:
     steps:
       - name: Run commitlint
         uses: opensource-nepal/commitlint@v1
+
+  sonarqube:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v3
+      - name: Install system & python deps
+        run: |
+          sudo apt update
+          sudo apt install sox
+          make install-ci
+          make coverage-ci
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
