@@ -117,9 +117,19 @@ git clone https://github.com/e-picas/drumgizmo-kits-generator.git
 cd drumgizmo-kits-generator
 ```
 
-### Tests & coverage
+### Install the project
 
-To run unit tests:
+To install the dependencies and git hooks, run:
+
+```bash
+make install
+```
+
+The hooks will run the linter and tests before each commit and validate that your commit message follows the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/). They are run in the CI for validation.
+
+### Local validation
+
+To run unit tests locally:
 
 ```bash
 make test
@@ -131,17 +141,11 @@ To get the coverage levels:
 make coverage
 ```
 
-**NOTE** - The tests are run in the CI for all branches.
-
-### Linting
-
 To check the code with pylint:
 
 ```bash
 make lint
 ```
-
-**NOTE** - The linter is run in the CI for all branches.
 
 ## License
 

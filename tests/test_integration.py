@@ -7,18 +7,18 @@ This module contains tests that verify the complete processing pipeline
 by comparing the generated output with expected reference output.
 """
 
-import os
-import sys
-import unittest
-import tempfile
-import shutil
-import filecmp
-import xml.etree.ElementTree as ET
-import re
 import difflib
+import filecmp
+import os
+import re
+import shutil
+import sys
+import tempfile
+import unittest
+import xml.etree.ElementTree as ET
 
 # Add the parent directory to the path to be able to import modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import the modules to test
 # pylint: disable-next=wrong-import-position
@@ -30,10 +30,10 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
 
     def setUp(self):
         """Initialize before each test by creating test directories."""
-        self.source_dir = os.path.join(os.path.dirname(__file__), 'sources')
-        self.reference_dir = os.path.join(os.path.dirname(__file__), 'target')
+        self.source_dir = os.path.join(os.path.dirname(__file__), "sources")
+        self.reference_dir = os.path.join(os.path.dirname(__file__), "target")
         self.temp_dir = tempfile.mkdtemp()
-        self.config_file = os.path.join(self.source_dir, 'drumgizmo-kit.ini')
+        self.config_file = os.path.join(self.source_dir, "drumgizmo-kit.ini")
 
     def tearDown(self):
         """Cleanup after each test by removing temporary directories."""
@@ -59,7 +59,7 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
 
         # Add patterns to ignore audio files if requested
         if ignore_audio_files:
-            ignore_patterns.extend([r'\.wav$', r'\.flac$', r'\.ogg$'])
+            ignore_patterns.extend([r"\.wav$", r"\.flac$", r"\.ogg$"])
 
         # Compile regex patterns
         compiled_patterns = [re.compile(pattern) for pattern in ignore_patterns]
@@ -107,7 +107,7 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             file2 = os.path.join(dir2, file)
 
             # Special handling for XML files to ignore version differences
-            if file.endswith('.xml'):
+            if file.endswith(".xml"):
                 try:
                     if self.compare_xml_files(file1, file2):
                         match_files.append(file)
@@ -128,13 +128,15 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
                     error_files.append((file, str(e)))
 
         return {
-            'match_files': match_files,
-            'mismatch_files': mismatch_files,
-            'error_files': error_files,
-            'missing_in_dir2': missing_in_dir2,
-            'missing_in_dir1': missing_in_dir1,
-            'all_match': len(mismatch_files) == 0 and len(error_files) == 0 and
-                        len(missing_in_dir1) == 0 and len(missing_in_dir2) == 0
+            "match_files": match_files,
+            "mismatch_files": mismatch_files,
+            "error_files": error_files,
+            "missing_in_dir2": missing_in_dir2,
+            "missing_in_dir1": missing_in_dir1,
+            "all_match": len(mismatch_files) == 0
+            and len(error_files) == 0
+            and len(missing_in_dir1) == 0
+            and len(missing_in_dir2) == 0,
         }
 
     def normalize_xml_content(self, xml_string):
@@ -151,15 +153,20 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
         xml_string = re.sub(r'version="[^"]*"', 'version="NORMALIZED_VERSION"', xml_string)
 
         # Replace timestamps in created elements
-        xml_string = re.sub(r'<created>[^<]*</created>', '<created>NORMALIZED_TIMESTAMP</created>', xml_string)
+        xml_string = re.sub(
+            r"<created>[^<]*</created>", "<created>NORMALIZED_TIMESTAMP</created>", xml_string
+        )
 
         # Replace generated notes that include timestamps
-        xml_string = re.sub(r'Generated with create_drumgizmo_kit\.py at [^"<]*',
-                           'Generated with create_drumgizmo_kit.py at NORMALIZED_DATE', xml_string)
+        xml_string = re.sub(
+            r'Generated with create_drumgizmo_kit\.py at [^"<]*',
+            "Generated with create_drumgizmo_kit.py at NORMALIZED_DATE",
+            xml_string,
+        )
 
         # Remove whitespace variations
-        xml_string = re.sub(r'\s+', ' ', xml_string)
-        xml_string = re.sub(r'> <', '><', xml_string)
+        xml_string = re.sub(r"\s+", " ", xml_string)
+        xml_string = re.sub(r"> <", "><", xml_string)
         xml_string = xml_string.strip()
 
         return xml_string
@@ -176,7 +183,7 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             bool: True if the files match (ignoring versions and timestamps)
         """
         try:
-            with open(file1, 'r', encoding='utf-8') as f1, open(file2, 'r', encoding='utf-8') as f2:
+            with open(file1, "r", encoding="utf-8") as f1, open(file2, "r", encoding="utf-8") as f2:
                 content1 = f1.read()
                 content2 = f2.read()
 
@@ -187,10 +194,7 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
                 if normalized1 != normalized2:
                     # Print diff for debugging
                     diff = difflib.unified_diff(
-                        normalized1.splitlines(),
-                        normalized2.splitlines(),
-                        lineterm='',
-                        n=3
+                        normalized1.splitlines(), normalized2.splitlines(), lineterm="", n=3
                     )
                     print(f"\nDifferences in {os.path.basename(file1)}:")
                     for line in diff:
@@ -212,14 +216,14 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             bool: True if the structure matches
         """
         # Check that the main files exist
-        required_files = ['drumkit.xml', 'midimap.xml']
+        required_files = ["drumkit.xml", "midimap.xml"]
         for file in required_files:
             if not os.path.exists(os.path.join(self.temp_dir, file)):
                 print(f"Missing required file: {file}")
                 return False
 
         # Check that the instrument directories exist
-        expected_instruments = ['Bass-Drum-1', 'E-Mu-Proteus-FX-Wacky-Snare']
+        expected_instruments = ["Bass-Drum-1", "E-Mu-Proteus-FX-Wacky-Snare"]
         for instrument in expected_instruments:
             instrument_dir = os.path.join(self.temp_dir, instrument)
             if not os.path.isdir(instrument_dir):
@@ -233,19 +237,19 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
                 return False
 
             # Check that each instrument has a samples directory with 10 samples
-            samples_dir = os.path.join(instrument_dir, 'samples')
+            samples_dir = os.path.join(instrument_dir, "samples")
             if not os.path.isdir(samples_dir):
                 print(f"Missing samples directory for instrument: {instrument}")
                 return False
 
             # Count the number of sample files
-            sample_count = len([f for f in os.listdir(samples_dir) if f.endswith('.wav')])
+            sample_count = len([f for f in os.listdir(samples_dir) if f.endswith(".wav")])
             if sample_count != 10:
                 print(f"Expected 10 sample files for {instrument}, found {sample_count}")
                 return False
 
         # Check that extra files were copied
-        extra_files = ['Lorem Ipsum.pdf', 'pngtree-music-notes-png-image_8660757.png']
+        extra_files = ["Lorem Ipsum.pdf", "pngtree-music-notes-png-image_8660757.png"]
         for file in extra_files:
             if not os.path.exists(os.path.join(self.temp_dir, file)):
                 print(f"Missing extra file: {file}")
@@ -262,40 +266,40 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             bool: True if the XML content is valid
         """
         # Check drumkit.xml
-        drumkit_xml = os.path.join(self.temp_dir, 'drumkit.xml')
+        drumkit_xml = os.path.join(self.temp_dir, "drumkit.xml")
         try:
             tree = ET.parse(drumkit_xml)
             root = tree.getroot()
 
             # Check root element
-            if root.tag != 'drumkit':
+            if root.tag != "drumkit":
                 print("Root element is not 'drumkit'")
                 return False
 
             # Check required attributes
-            required_attrs = ['name', 'version', 'samplerate']
+            required_attrs = ["name", "version", "samplerate"]
             for attr in required_attrs:
                 if attr not in root.attrib:
                     print(f"Missing required attribute: {attr}")
                     return False
 
             # Check required elements
-            required_elements = ['metadata', 'channels', 'instruments']
+            required_elements = ["metadata", "channels", "instruments"]
             for elem in required_elements:
                 if root.find(elem) is None:
                     print(f"Missing required element: {elem}")
                     return False
 
             # Check metadata elements
-            metadata = root.find('metadata')
-            metadata_elements = ['title', 'description', 'notes', 'license', 'author', 'samplerate']
+            metadata = root.find("metadata")
+            metadata_elements = ["title", "description", "notes", "license", "author", "samplerate"]
             for elem in metadata_elements:
                 if metadata.find(elem) is None:
                     print(f"Missing metadata element: {elem}")
                     return False
 
             # Check instruments
-            instruments = root.find('instruments')
+            instruments = root.find("instruments")
             if len(instruments) != 2:
                 print(f"Expected 2 instruments, found {len(instruments)}")
                 return False
@@ -306,18 +310,18 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             return False
 
         # Check midimap.xml
-        midimap_xml = os.path.join(self.temp_dir, 'midimap.xml')
+        midimap_xml = os.path.join(self.temp_dir, "midimap.xml")
         try:
             tree = ET.parse(midimap_xml)
             root = tree.getroot()
 
             # Check root element
-            if root.tag != 'midimap':
+            if root.tag != "midimap":
                 print("Root element is not 'midimap'")
                 return False
 
             # Check map entries
-            map_entries = root.findall('map')
+            map_entries = root.findall("map")
             if len(map_entries) != 2:
                 print(f"Expected 2 MIDI map entries, found {len(map_entries)}")
                 return False
@@ -328,24 +332,24 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             return False
 
         # Check instrument XML files
-        for instrument in ['Bass-Drum-1', 'E-Mu-Proteus-FX-Wacky-Snare']:
+        for instrument in ["Bass-Drum-1", "E-Mu-Proteus-FX-Wacky-Snare"]:
             xml_file = os.path.join(self.temp_dir, instrument, f"{instrument}.xml")
             try:
                 tree = ET.parse(xml_file)
                 root = tree.getroot()
 
                 # Check root element
-                if root.tag != 'instrument':
+                if root.tag != "instrument":
                     print(f"Root element is not 'instrument' in {xml_file}")
                     return False
 
                 # Check required attributes
-                if 'name' not in root.attrib or 'version' not in root.attrib:
+                if "name" not in root.attrib or "version" not in root.attrib:
                     print(f"Missing required attributes in {xml_file}")
                     return False
 
                 # Check samples
-                samples = root.findall('.//sample')
+                samples = root.findall(".//sample")
                 if len(samples) != 10:
                     print(f"Expected 10 samples in {xml_file}, found {len(samples)}")
                     return False
@@ -365,11 +369,15 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
         the output with the expected reference output in the target directory.
         """
         # Set up command line arguments
+        # pylint: disable-next=R0801
         sys.argv = [
-            'create_drumgizmo_kit.py',
-            '-s', self.source_dir,
-            '-t', self.temp_dir,
-            '-c', self.config_file
+            "create_drumgizmo_kit.py",
+            "-s",
+            self.source_dir,
+            "-t",
+            self.temp_dir,
+            "-c",
+            self.config_file,
         ]
 
         # Run the main function
@@ -378,13 +386,12 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
         # First verify the directory structure
         self.assertTrue(
             self.verify_directory_structure(),
-            "Generated directory structure does not match expected structure"
+            "Generated directory structure does not match expected structure",
         )
 
         # Then verify the XML content structure
         self.assertTrue(
-            self.verify_xml_content(),
-            "Generated XML content does not have the expected structure"
+            self.verify_xml_content(), "Generated XML content does not have the expected structure"
         )
 
         # Finally compare the XML files with the reference, ignoring version numbers and timestamps
@@ -392,42 +399,39 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             self.temp_dir,
             self.reference_dir,
             ignore_patterns=[
-                r'.*\.pyc$',  # Ignore Python cache files
-                r'^__pycache__/'  # Ignore __pycache__ directories
+                r".*\.pyc$",  # Ignore Python cache files
+                r"^__pycache__/",  # Ignore __pycache__ directories
             ],
-            ignore_audio_files=True  # Ignore audio files in comparison
+            ignore_audio_files=True,  # Ignore audio files in comparison
         )
 
         # Print detailed comparison results for debugging
-        if not comparison['all_match']:
+        if not comparison["all_match"]:
             print("\nDirectory comparison results:")
 
-            if comparison['mismatch_files']:
+            if comparison["mismatch_files"]:
                 print("\nMismatched files:")
-                for file in comparison['mismatch_files']:
+                for file in comparison["mismatch_files"]:
                     print(f"  - {file}")
 
-            if comparison['error_files']:
+            if comparison["error_files"]:
                 print("\nError comparing files:")
-                for file, error in comparison['error_files']:
+                for file, error in comparison["error_files"]:
                     print(f"  - {file}: {error}")
 
-            if comparison['missing_in_dir2']:
+            if comparison["missing_in_dir2"]:
                 print("\nFiles in generated output but not in reference:")
-                for file in comparison['missing_in_dir2']:
+                for file in comparison["missing_in_dir2"]:
                     print(f"  - {file}")
 
-            if comparison['missing_in_dir1']:
+            if comparison["missing_in_dir1"]:
                 print("\nFiles in reference but not in generated output:")
-                for file in comparison['missing_in_dir1']:
+                for file in comparison["missing_in_dir1"]:
                     print(f"  - {file}")
 
         # Assert that all files match (except audio files which we ignore)
-        self.assertTrue(
-            comparison['all_match'],
-            "Generated output does not match reference output"
-        )
+        self.assertTrue(comparison["all_match"], "Generated output does not match reference output")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

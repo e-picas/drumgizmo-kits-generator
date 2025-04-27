@@ -6,23 +6,25 @@ Main script for DrumGizmo kit generation.
 Uses the config, audio, xml_generator and utils modules to create a complete kit.
 """
 
-import os
-import sys
 import argparse
+import os
 import shutil
+import sys
+
+from audio import copy_sample_file, create_volume_variations, find_audio_files
 
 # Import local modules
 from config import read_config_file
-from audio import create_volume_variations, copy_sample_file, find_audio_files
-from xml_generator import create_xml_file, create_drumkit_xml, create_midimap_xml
 from utils import (
-    prepare_target_directory,
-    prepare_instrument_directory,
-    get_timestamp,
     extract_instrument_name,
     get_file_extension,
-    print_summary
+    get_timestamp,
+    prepare_instrument_directory,
+    prepare_target_directory,
+    print_summary,
 )
+from xml_generator import create_drumkit_xml, create_midimap_xml, create_xml_file
+
 
 def parse_arguments():
     """
@@ -31,29 +33,46 @@ def parse_arguments():
     Returns:
         argparse.Namespace: Parsed arguments
     """
-    parser = argparse.ArgumentParser(description='Create a DrumGizmo kit from audio samples')
+    parser = argparse.ArgumentParser(description="Create a DrumGizmo kit from audio samples")
 
-    parser.add_argument('-s', '--source', required=True, help='Source directory containing audio samples')
-    parser.add_argument('-t', '--target', required=True, help='Target directory for the DrumGizmo kit')
-    parser.add_argument('-c', '--config', help='Configuration file path')
-    parser.add_argument('-e', '--extensions', default='wav,WAV,flac,FLAC,ogg,OGG',
-                        help='Comma-separated list of audio file extensions to process (default: wav,WAV,flac,FLAC,ogg,OGG)')
+    parser.add_argument(
+        "-s", "--source", required=True, help="Source directory containing audio samples"
+    )
+    parser.add_argument(
+        "-t", "--target", required=True, help="Target directory for the DrumGizmo kit"
+    )
+    parser.add_argument("-c", "--config", help="Configuration file path")
+    parser.add_argument(
+        "-e",
+        "--extensions",
+        default="wav,WAV,flac,FLAC,ogg,OGG",
+        help="Comma-separated list of audio file extensions to process (default: wav,WAV,flac,FLAC,ogg,OGG)",
+    )
 
     # Arguments for metadata (can be overridden by the configuration file)
-    parser.add_argument('--name', help='Kit name')
-    parser.add_argument('--version', default='1.0', help='Kit version (default: 1.0)')
-    parser.add_argument('--description', default='Kit automatically created with 10 velocity levels',
-                       help='Kit description (default: Kit automatically created with 10 velocity levels)')
-    parser.add_argument('--notes', help='Additional notes about the kit')
-    parser.add_argument('--author', help='Kit author')
-    parser.add_argument('--license', default='Private license', help='Kit license (default: Private license)')
-    parser.add_argument('--website', help='Kit website')
-    parser.add_argument('--logo', help='Kit logo filename')
-    parser.add_argument('--samplerate', default='44100', help='Sample rate in Hz (default: 44100)')
-    parser.add_argument('--instrument-prefix', help='Prefix for instrument names')
-    parser.add_argument('--extra-files', help='Comma-separated list of additional files to copy to the target directory')
+    parser.add_argument("--name", help="Kit name")
+    parser.add_argument("--version", default="1.0", help="Kit version (default: 1.0)")
+    parser.add_argument(
+        "--description",
+        default="Kit automatically created with 10 velocity levels",
+        help="Kit description (default: Kit automatically created with 10 velocity levels)",
+    )
+    parser.add_argument("--notes", help="Additional notes about the kit")
+    parser.add_argument("--author", help="Kit author")
+    parser.add_argument(
+        "--license", default="Private license", help="Kit license (default: Private license)"
+    )
+    parser.add_argument("--website", help="Kit website")
+    parser.add_argument("--logo", help="Kit logo filename")
+    parser.add_argument("--samplerate", default="44100", help="Sample rate in Hz (default: 44100)")
+    parser.add_argument("--instrument-prefix", help="Prefix for instrument names")
+    parser.add_argument(
+        "--extra-files",
+        help="Comma-separated list of additional files to copy to the target directory",
+    )
 
     return parser.parse_args()
+
 
 # pylint: disable-next=too-many-branches,too-many-statements
 def prepare_metadata(args):
@@ -77,68 +96,70 @@ def prepare_metadata(args):
     # Override with command line arguments ONLY if they are explicitly specified
     # (not using default values)
     if args.name:
-        metadata['name'] = args.name
-    elif 'name' not in metadata:
-        metadata['name'] = 'DrumGizmoKit'
+        metadata["name"] = args.name
+    elif "name" not in metadata:
+        metadata["name"] = "DrumGizmoKit"
 
     # For version, only use command line value if it's not the default or if no config value exists
-    if args.version and (args.version != '1.0' or 'version' not in metadata):
-        metadata['version'] = args.version
-    elif 'version' not in metadata:
-        metadata['version'] = '1.0'
+    if args.version and (args.version != "1.0" or "version" not in metadata):
+        metadata["version"] = args.version
+    elif "version" not in metadata:
+        metadata["version"] = "1.0"
 
     # For description, only use command line value if it's not the default or if no config value exists
-    default_desc = 'Kit automatically created with 10 velocity levels'
-    if args.description and (args.description != default_desc or 'description' not in metadata):
-        metadata['description'] = args.description
-    elif 'description' not in metadata:
-        metadata['description'] = default_desc
+    default_desc = "Kit automatically created with 10 velocity levels"
+    if args.description and (args.description != default_desc or "description" not in metadata):
+        metadata["description"] = args.description
+    elif "description" not in metadata:
+        metadata["description"] = default_desc
 
     if args.notes:
-        metadata['notes'] = args.notes
-    elif 'notes' not in metadata:
+        metadata["notes"] = args.notes
+    elif "notes" not in metadata:
         # Use source directory name as sample information
         source_name = os.path.basename(os.path.abspath(args.source))
-        metadata['notes'] = f"DrumGizmo kit generated from royalty free samples '{source_name}'"
+        metadata["notes"] = f"DrumGizmo kit generated from royalty free samples '{source_name}'"
 
     if args.author:
-        metadata['author'] = args.author
-    elif 'author' not in metadata:
-        metadata['author'] = os.environ.get('USER', 'Unknown')
+        metadata["author"] = args.author
+    elif "author" not in metadata:
+        metadata["author"] = os.environ.get("USER", "Unknown")
 
     # For license, only use command line value if it's not the default or if no config value exists
-    if args.license and (args.license != 'Private license' or 'license' not in metadata):
-        metadata['license'] = args.license
-    elif 'license' not in metadata:
-        metadata['license'] = 'Private license'
+    if args.license and (args.license != "Private license" or "license" not in metadata):
+        metadata["license"] = args.license
+    elif "license" not in metadata:
+        metadata["license"] = "Private license"
 
     if args.website:
-        metadata['website'] = args.website
+        metadata["website"] = args.website
 
     if args.logo:
-        metadata['logo'] = args.logo
+        metadata["logo"] = args.logo
 
     # For samplerate, only use command line value if it's not the default or if no config value exists
-    if args.samplerate and (args.samplerate != '44100' or 'samplerate' not in metadata):
-        metadata['samplerate'] = args.samplerate
-    elif 'samplerate' not in metadata:
-        metadata['samplerate'] = '44100'
+    if args.samplerate and (args.samplerate != "44100" or "samplerate" not in metadata):
+        metadata["samplerate"] = args.samplerate
+    elif "samplerate" not in metadata:
+        metadata["samplerate"] = "44100"
 
     if args.instrument_prefix:
-        metadata['instrument_prefix'] = args.instrument_prefix
+        metadata["instrument_prefix"] = args.instrument_prefix
 
     # For extra files, use command line value if specified, otherwise use config value
     if args.extra_files:
-        metadata['extra_files'] = args.extra_files
+        metadata["extra_files"] = args.extra_files
 
     # Add date and script name to the description
     timestamp = get_timestamp()
-    if 'notes' in metadata and metadata['notes']:
+    if "notes" in metadata and metadata["notes"]:
         # Don't modify notes if they already exist, except to add the date
-        if " - Generated with create_drumgizmo_kit.py at " not in metadata['notes']:
-            metadata['notes'] = f"{metadata['notes']} - Generated with create_drumgizmo_kit.py at {timestamp}"
+        if " - Generated with create_drumgizmo_kit.py at " not in metadata["notes"]:
+            metadata[
+                "notes"
+            ] = f"{metadata['notes']} - Generated with create_drumgizmo_kit.py at {timestamp}"
     else:
-        metadata['notes'] = f"Generated with create_drumgizmo_kit.py at {timestamp}"
+        metadata["notes"] = f"Generated with create_drumgizmo_kit.py at {timestamp}"
 
     # Display final metadata for debugging
     print("\nFinal metadata after processing:", file=sys.stderr)
@@ -147,6 +168,7 @@ def prepare_metadata(args):
     print("", file=sys.stderr)
 
     return metadata
+
 
 def copy_extra_files(source_dir, target_dir, extra_files_str):
     """
@@ -164,7 +186,7 @@ def copy_extra_files(source_dir, target_dir, extra_files_str):
         return []
 
     # Split the comma-separated list
-    extra_files = [f.strip() for f in extra_files_str.split(',')]
+    extra_files = [f.strip() for f in extra_files_str.split(",")]
     copied_files = []
 
     print(f"\nCopying extra files to {target_dir}:", file=sys.stderr)
@@ -193,6 +215,7 @@ def copy_extra_files(source_dir, target_dir, extra_files_str):
 
     return copied_files
 
+
 # pylint: disable-next=too-many-locals
 def main():
     """
@@ -209,7 +232,7 @@ def main():
         sys.exit(1)
 
     # Search for samples in the source directory
-    extensions = args.extensions.split(',')
+    extensions = args.extensions.split(",")
     samples = find_audio_files(args.source, extensions)
 
     print(f"Searching for samples in: {args.source}", file=sys.stderr)
@@ -260,9 +283,9 @@ def main():
     create_midimap_xml(instruments, args.target)
 
     # Copy logo if specified
-    if 'logo' in metadata and metadata['logo']:
-        logo_source = os.path.join(args.source, metadata['logo'])
-        logo_dest = os.path.join(args.target, metadata['logo'])
+    if "logo" in metadata and metadata["logo"]:
+        logo_source = os.path.join(args.source, metadata["logo"])
+        logo_dest = os.path.join(args.target, metadata["logo"])
 
         if os.path.exists(logo_source):
             try:
@@ -273,8 +296,8 @@ def main():
 
     # Copy extra files if specified
     extra_files_copied = []
-    if 'extra_files' in metadata and metadata['extra_files']:
-        extra_files_copied = copy_extra_files(args.source, args.target, metadata['extra_files'])
+    if "extra_files" in metadata and metadata["extra_files"]:
+        extra_files_copied = copy_extra_files(args.source, args.target, metadata["extra_files"])
 
     # Display summary
     print_summary(metadata, instruments, args.target)
@@ -289,6 +312,7 @@ def main():
         print("\nExtra files copied:", file=sys.stderr)
         for file in extra_files_copied:
             print(f"  {file}", file=sys.stderr)
+
 
 if __name__ == "__main__":
     main()

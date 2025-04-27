@@ -6,8 +6,8 @@ Configuration module for DrumGizmo kit generator.
 Contains global variables and constants used across the application.
 """
 
-import os
 import configparser
+import os
 import tempfile
 
 # Global variables
@@ -27,7 +27,7 @@ CHANNELS = [
     "Snare_top",
     "Tom1",
     "Tom2",
-    "Tom3"
+    "Tom3",
 ]
 
 # List of main channels (with main="true" attribute)
@@ -47,8 +47,9 @@ CHANNEL_TO_FILECHANNEL = {
     "Snare_top": "10",
     "Tom1": "11",
     "Tom2": "12",
-    "Tom3": "13"
+    "Tom3": "13",
 }
+
 
 def get_filechannel(channel):
     """
@@ -61,6 +62,7 @@ def get_filechannel(channel):
         str: Filechannel number (1-13) for the given channel
     """
     return CHANNEL_TO_FILECHANNEL.get(channel, "1")
+
 
 def read_config_file(config_file):
     """
@@ -77,18 +79,18 @@ def read_config_file(config_file):
     try:
         # Check if the file contains a [DEFAULT] section
         # pylint: disable-next=unspecified-encoding
-        with open(config_file, 'r') as f:
+        with open(config_file, "r") as f:
             content = f.read()
 
         # If the file doesn't start with a section, add [DEFAULT]
-        if not content.lstrip().startswith('['):
+        if not content.lstrip().startswith("["):
             # pylint: disable-next=unspecified-encoding
-            with open(config_file, 'r') as f:
+            with open(config_file, "r") as f:
                 config_content = f.read()
 
             # Create a temporary file with the [DEFAULT] section
-            with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp:
-                temp.write('[DEFAULT]\n' + config_content)
+            with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp:
+                temp.write("[DEFAULT]\n" + config_content)
                 temp_name = temp.name
 
             # Read the temporary file
@@ -102,19 +104,19 @@ def read_config_file(config_file):
         print(f"Reading configuration from: {config_file}", file=os.sys.stderr)
 
         # Check if the file was correctly read
-        if 'DEFAULT' not in config:
+        if "DEFAULT" not in config:
             print("Warning: Configuration file format is incorrect", file=os.sys.stderr)
             return {}
 
         print("Configuration loaded successfully", file=os.sys.stderr)
         print("Raw configuration values:", file=os.sys.stderr)
-        for key in config['DEFAULT']:
+        for key in config["DEFAULT"]:
             print(f"  {key} = {config['DEFAULT'][key]}", file=os.sys.stderr)
 
         # Extract values and remove quotes if present
         result = {}
-        for key in config['DEFAULT']:
-            value = config['DEFAULT'][key]
+        for key in config["DEFAULT"]:
+            value = config["DEFAULT"][key]
             # Remove quotes if present
             if value.startswith('"') and value.endswith('"'):
                 value = value[1:-1]
@@ -123,7 +125,7 @@ def read_config_file(config_file):
 
             # Convert configuration keys to metadata keys
             key_lower = key.lower()  # Convert key to lowercase
-            if key_lower.startswith('kit_'):
+            if key_lower.startswith("kit_"):
                 meta_key = key_lower[4:]  # Remove 'kit_'
                 result[meta_key] = value
 
