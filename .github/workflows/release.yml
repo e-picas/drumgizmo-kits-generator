@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_level:
+        description: 'Force a specific version bump level'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - 'auto'
+          - patch
+          - minor
+          - major
+
+jobs:
+  make-release:
+    runs-on: ubuntu-latest
+    # Double vérification que nous sommes sur la branche master
+    if: github.ref == 'refs/heads/master'
+    concurrency: release
+    permissions:
+      id-token: write
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install python-semantic-release tomlkit
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+      - name: Run semantic-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_LEVEL: ${{ inputs.force_level }}
+        run: |
+          if [ "$FORCE_LEVEL" != "auto" ]; then
+            semantic-release version --$FORCE_LEVEL
+          else
+            semantic-release version
+          fi
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
