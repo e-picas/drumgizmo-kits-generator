@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.1.1 (2025-04-27)
+
+### Bug Fixes
+
+- Semantic-release commit message
+  ([`539d293`](https://github.com/e-picas/drumgizmo-kits-generator/commit/539d293b6618b86704914db863537d71355da1d7))
+
+
 ## v1.1.0 (2025-04-27)
 
 ### Bug Fixes
