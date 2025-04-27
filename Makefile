@@ -15,10 +15,6 @@ install: install-ci
 	pre-commit install
 	pre-commit install --hook-type commit-msg
 
-format:
-	black $$(git ls-files '*.py')
-	isort $$(git ls-files '*.py')
-
 lint:
 	pylint $$(git ls-files '*.py')
 

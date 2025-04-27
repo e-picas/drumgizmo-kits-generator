@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" ?>
 <midimap>
   <map note="35" instr="Bass-Drum-1" velmin="0" velmax="127"/>
   <map note="36" instr="E-Mu-Proteus-FX-Wacky-Snare" velmin="0" velmax="127"/>

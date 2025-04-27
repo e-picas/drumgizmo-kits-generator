@@ -370,16 +370,6 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             os.path.join(self.source_dir),
             "-t",
             self.temp_dir,
-            "--name",
-            "Test Kit",
-            "--version",
-            "1.0",
-            "--description",
-            "Test description",
-            "--author",
-            "Test Author",
-            "--license",
-            "Test License",
             "-c",
             os.path.join(self.source_dir, "drumgizmo-kit.ini"),
         ]
@@ -398,19 +388,38 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             self.verify_xml_content(), "Generated XML content does not have the expected structure"
         )
 
-        # Skip the directory comparison for now since we've refactored the project structure
-        # and the reference output might not match the new structure
-        # This test will be updated in a future PR
-
-        # Print a message to indicate that the test is passing with the new structure
-        print(
-            "\nNote: Directory comparison with reference output is skipped due to project restructuring."
+        # Compare the generated output with the reference output
+        reference_dir = os.path.join(os.path.dirname(__file__), "target")
+        comparison_result = self.compare_directories(
+            reference_dir, self.temp_dir, ignore_patterns=[r"\.git", r"__pycache__"]
         )
-        print("The test will be updated in a future PR to match the new structure.")
 
-        # Consider the test as passed if we've reached this point
-        # pylint: disable-next=redundant-unittest-assert
-        self.assertTrue(True, "Integration test passed with the new project structure")
+        # Print detailed information about the comparison
+        if not comparison_result["all_match"]:
+            if comparison_result["missing_in_dir2"]:
+                print("\nFiles missing in generated output:")
+                for file in sorted(comparison_result["missing_in_dir2"]):
+                    print(f"  {file}")
+
+            if comparison_result["missing_in_dir1"]:
+                print("\nExtra files in generated output:")
+                for file in sorted(comparison_result["missing_in_dir1"]):
+                    print(f"  {file}")
+
+            if comparison_result["mismatch_files"]:
+                print("\nFiles with different content:")
+                for file in sorted(comparison_result["mismatch_files"]):
+                    print(f"  {file}")
+
+            if comparison_result["error_files"]:
+                print("\nErrors during comparison:")
+                for file, error in comparison_result["error_files"]:
+                    print(f"  {file}: {error}")
+
+        # Assert that the comparison was successful
+        self.assertTrue(
+            comparison_result["all_match"], "Generated output does not match reference output"
+        )
 
 
 if __name__ == "__main__":
