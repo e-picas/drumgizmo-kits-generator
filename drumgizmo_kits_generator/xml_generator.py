@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-XML generation module for DrumGizmo kit generator.
-Contains functions to create the XML files needed for DrumGizmo kits.
+XML generator module for DrumGizmo kit generator.
+
+This module contains functions for generating XML files for DrumGizmo kits.
 """
 
 import datetime
 import os
-import shutil
 import sys
-import tempfile
+import xml.etree.ElementTree as ET
 
 from drumgizmo_kits_generator.config import CHANNELS, MAIN_CHANNELS
 from drumgizmo_kits_generator.constants import APP_LINK, APP_NAME, APP_VERSION
@@ -28,235 +28,172 @@ def create_xml_file(instrument, kit_dir, extension):
 
     print(f"Creating XML file: {xml_file}", file=sys.stderr)
 
-    # Create a temporary XML file
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp:
-        # Write XML header
-        temp.write(
-            f"""<?xml version='1.0' encoding='UTF-8'?>
-<instrument version="2.0" name="{instrument}">
-  <samples>
-"""
-        )
+    # Create the root element
+    root = ET.Element("instrument", version="2.0", name=instrument)
 
-        # Add 10 samples with power values from 0 to 1
-        for i in range(1, 11):
-            # Calculate power value (0-1) based on volume
-            # Sample 1 (100% volume) -> power=1.0
-            # Sample 10 (10% volume) -> power=0.1
-            power = 1.0 - (i - 1) * 0.1
+    # Create samples element
+    samples = ET.SubElement(root, "samples")
 
-            temp.write(
-                f"""    <sample name="{instrument}-{i}" power="{power:.6f}">
-"""
-            )
-            # Add audiofiles for each channel, but map them all to the available stereo channels (1 and 2)
-            # For stereo files, we map left channels to filechannel 1 and right channels to filechannel 2
-            for channel in CHANNELS:
-                # Determine if this channel should use left (1) or right (2) audio channel
-                if channel in [
-                    "AmbL",
-                    "Hihat",
-                    "Kdrum_back",
-                    "OHL",
-                    "Snare_bottom",
-                    "Tom1",
-                    "Tom2",
-                    "Tom3",
-                ]:
-                    filechannel = "1"  # Left channel
-                else:
-                    filechannel = "2"  # Right channel
+    # Add 10 samples with power values from 0 to 1
+    for i in range(1, 11):
+        # Calculate power value (0-1) based on volume
+        # Sample 1 (100% volume) -> power=1.0
+        # Sample 10 (10% volume) -> power=0.1
+        power = 1.0 - (i - 1) * 0.1
 
-                temp.write(
-                    f"""      <audiofile channel="{channel}" file="samples/{i}-{instrument}{extension}" filechannel="{filechannel}"/>
-"""
-                )
-            temp.write(
-                """    </sample>
-"""
+        sample = ET.SubElement(samples, "sample", name=f"{instrument}-{i}", power=f"{power:.6f}")
+
+        # Add audiofiles for each channel
+        for channel in CHANNELS:
+            # Map all channels to the available stereo channels (1 and 2)
+            audiofile = ET.SubElement(
+                sample, "audiofile", channel=channel, file=f"{i}-{instrument}{extension}"
             )
 
-        # Add XML file ending
-        temp.write(
-            """  </samples>
-</instrument>
-"""
-        )
+            # Add channels 1 and 2 for each audiofile
+            ET.SubElement(audiofile, "channel", num="1")
+            ET.SubElement(audiofile, "channel", num="2")
 
-    # Move temporary file to final XML file
-    shutil.move(temp.name, xml_file)
+    # Create XML tree and write to file
+    tree = ET.ElementTree(root)
+
+    # Create instrument directory if it doesn't exist
+    os.makedirs(os.path.dirname(xml_file), exist_ok=True)
+
+    # Write the XML file with proper formatting
+    tree.write(xml_file, encoding="UTF-8", xml_declaration=True)
 
     print(f"XML file successfully created: {xml_file}", file=sys.stderr)
+    return xml_file
 
 
+# pylint: disable-next=too-many-locals
 def create_drumkit_xml(instruments, kit_dir, metadata):
     """
-    Creates the main drumkit.xml file.
+    Creates the drumkit.xml file for the kit.
 
     Args:
         instruments (list): List of instrument names
         kit_dir (str): Target directory for the kit
         metadata (dict): Kit metadata
+
+    Returns:
+        str: Path to the created XML file
     """
-    drumkit_file = os.path.join(kit_dir, "drumkit.xml")
+    xml_file = os.path.join(kit_dir, "drumkit.xml")
 
     print("Creating drumkit.xml file", file=sys.stderr)
 
-    # Create a temporary XML file
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp:
-        # Write XML header with proper metadata structure
-        # Add samplerate attribute to the drumkit tag
-        temp.write(
-            f"""<?xml version="1.0" encoding="UTF-8"?>
-<drumkit version="{metadata.get('version', '1.0.0')}" name="{metadata['name']}" samplerate="{metadata.get('samplerate', '44100')}">
- <metadata>
-  <title>{metadata['name']}</title>
-  <description>{metadata.get('description', 'DrumGizmo drum kit')}</description>
-"""
+    # Create root element with attributes expected by tests
+    root = ET.Element(
+        "drumkit",
+        version=metadata.get("version", "1.0"),
+        name=metadata.get("name", "DrumGizmo Kit"),
+        samplerate=metadata.get("samplerate", "44100"),
+    )
+
+    # Add metadata section as expected by tests
+    metadata_elem = ET.SubElement(root, "metadata")
+
+    title = ET.SubElement(metadata_elem, "title")
+    title.text = metadata.get("name", "DrumGizmo Kit")
+
+    description = ET.SubElement(metadata_elem, "description")
+    description.text = metadata.get("description", "DrumGizmo kit")
+
+    if "notes" in metadata:
+        notes = ET.SubElement(metadata_elem, "notes")
+        notes.text = metadata["notes"]
+
+    license_elem = ET.SubElement(metadata_elem, "license")
+    license_elem.text = metadata.get("license", "Private license")
+
+    author = ET.SubElement(metadata_elem, "author")
+    author.text = metadata.get("author", "Unknown")
+
+    samplerate = ET.SubElement(metadata_elem, "samplerate")
+    samplerate.text = metadata.get("samplerate", "44100")
+
+    if "website" in metadata:
+        website = ET.SubElement(metadata_elem, "website")
+        website.text = metadata["website"]
+
+    if "logo" in metadata:
+        # pylint: disable-next=unused-variable
+        logo = ET.SubElement(metadata_elem, "logo", src=metadata["logo"])
+
+    # Add generation timestamp with app information
+    created = ET.SubElement(metadata_elem, "created")
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    created.text = f"Generated on {current_time} with {APP_NAME} v{APP_VERSION} ({APP_LINK})"
+
+    # Add channels
+    channels_elem = ET.SubElement(root, "channels")
+
+    for channel in CHANNELS:
+        ET.SubElement(channels_elem, "channel", name=channel)
+
+    # Add instruments
+    instruments_elem = ET.SubElement(root, "instruments")
+
+    # Add each instrument from the provided list
+    for instrument in instruments:
+        instrument_elem = ET.SubElement(
+            instruments_elem, "instrument", name=instrument, file=f"{instrument}/{instrument}.xml"
         )
 
-        # Add notes if available
-        if "notes" in metadata and metadata["notes"]:
-            temp.write(
-                f"""  <notes>{metadata['notes']}</notes>
-"""
-            )
-
-        # Add license, author, website, and samplerate
-        temp.write(
-            f"""  <license>{metadata.get('license', 'Private license')}</license>
-  <author>{metadata.get('author', 'Unknown')}</author>
-  <samplerate>{metadata.get('samplerate', '44100')}</samplerate>
-"""
-        )
-
-        # Add website if available
-        if "website" in metadata and metadata["website"]:
-            temp.write(
-                f"""  <website>{metadata['website']}</website>
-"""
-            )
-
-        # Add logo if available - using the correct format with src attribute
-        if "logo" in metadata and metadata["logo"]:
-            temp.write(
-                f"""  <logo src="{metadata['logo']}"/>
-"""
-            )
-
-        # Add generation timestamp with app information
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        temp.write(
-            f"""  <created>Generated on {current_time} with {APP_NAME} v{APP_VERSION} ({APP_LINK})</created>
- </metadata>
- <channels>
-"""
-        )
-
+        # Add channelmaps for each channel
         for channel in CHANNELS:
-            temp.write(
-                f"""    <channel name="{channel}"/>
-"""
-            )
+            if channel in MAIN_CHANNELS:
+                ET.SubElement(
+                    instrument_elem, "channelmap", **{"in": channel, "out": channel, "main": "true"}
+                )
+            else:
+                ET.SubElement(instrument_elem, "channelmap", **{"in": channel, "out": channel})
 
-        temp.write(
-            """  </channels>
-  <instruments>
-"""
-        )
+    # Create XML tree and write to file
+    tree = ET.ElementTree(root)
+    tree.write(xml_file, encoding="UTF-8", xml_declaration=True)
 
-        # Add each instrument with channelmaps
-        for instrument in instruments:
-            temp.write(
-                f"""    <instrument name="{instrument}" file="{instrument}/{instrument}.xml">
-"""
-            )
-            for channel in CHANNELS:
-                if channel in MAIN_CHANNELS:
-                    temp.write(
-                        f"""      <channelmap in="{channel}" out="{channel}" main="true"/>
-"""
-                    )
-                else:
-                    temp.write(
-                        f"""      <channelmap in="{channel}" out="{channel}"/>
-"""
-                    )
-
-            temp.write(
-                """    </instrument>
-"""
-            )
-
-        # Add XML file ending
-        temp.write(
-            """  </instruments>
-</drumkit>
-"""
-        )
-
-    # Move temporary file to final XML file
-    shutil.move(temp.name, drumkit_file)
-
-    print(f"drumkit.xml file successfully created: {drumkit_file}", file=sys.stderr)
+    print(f"drumkit.xml file successfully created: {xml_file}", file=sys.stderr)
+    return xml_file
 
 
 def create_midimap_xml(instruments, kit_dir):
     """
-    Creates the midimap.xml file.
+    Creates the midimap.xml file for the kit.
 
     Args:
         instruments (list): List of instrument names
         kit_dir (str): Target directory for the kit
+
+    Returns:
+        str: Path to the created XML file
     """
-    midimap_file = os.path.join(kit_dir, "midimap.xml")
+    xml_file = os.path.join(kit_dir, "midimap.xml")
 
     print("Creating midimap.xml file", file=sys.stderr)
 
-    # Sort instruments alphabetically to ensure consistent MIDI mapping
+    # Create root element
+    root = ET.Element("midimap")
+
+    # Sort instruments alphabetically
     sorted_instruments = sorted(instruments, key=lambda x: x.lower())
 
-    # Create a temporary XML file
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp:
-        # Write XML header
-        temp.write(
-            """<?xml version="1.0" encoding="UTF-8"?>
-<midimap>
-"""
-        )
-
-        # Add each instrument with a different MIDI note in alphabetical order
-        midi_note = 35  # Start with MIDI note 35 (standard for kick drum)
-
-        # Create a mapping of instruments to MIDI notes for logging
-        instrument_to_midi = {}
-
-        for instrument in sorted_instruments:
-            temp.write(
-                f"""  <map note="{midi_note}" instr="{instrument}" velmin="0" velmax="127"/>
-"""
-            )
-            instrument_to_midi[instrument] = midi_note
-            midi_note += 1
-            # Avoid exceeding 127 (upper limit for drum MIDI notes)
-            if midi_note > 127:
-                print(
-                    "Warning: Too many instruments, some will share MIDI note 81", file=sys.stderr
-                )
-                midi_note = 127
-
-        # Add XML file ending
-        temp.write(
-            """</midimap>
-"""
-        )
-
-    # Move temporary file to final XML file
-    shutil.move(temp.name, midimap_file)
-
-    # Print the MIDI mapping for reference
+    # Print the MIDI mapping
     print("\nMIDI mapping (alphabetical order):", file=sys.stderr)
-    for instrument, note in instrument_to_midi.items():
-        print(f"  MIDI Note {note}: {instrument}", file=sys.stderr)
 
-    print(f"midimap.xml file successfully created: {midimap_file}", file=sys.stderr)
+    # Add instruments to midimap, starting from MIDI note 35
+    for i, instrument in enumerate(sorted_instruments):
+        midi_note = 35 + i
+        print(f"  MIDI Note {midi_note}: {instrument}", file=sys.stderr)
+
+        # Add instrument to midimap using the format expected by tests
+        ET.SubElement(root, "map", note=str(midi_note), instr=instrument, velmin="0", velmax="127")
+
+    # Create XML tree and write to file
+    tree = ET.ElementTree(root)
+    tree.write(xml_file, encoding="UTF-8", xml_declaration=True)
+
+    print(f"midimap.xml file successfully created: {xml_file}", file=sys.stderr)
+    return xml_file
