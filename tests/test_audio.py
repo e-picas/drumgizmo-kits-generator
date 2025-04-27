@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pylint: disable=unspecified-encoding,consider-using-with
 """
 Unit tests for the audio module of the DrumGizmo kit generator.
 
@@ -169,6 +170,72 @@ class TestAudio(unittest.TestCase):
 
         # Check that subprocess.run was not called
         self.assertEqual(mock_run.call_count, 0, "Should not create any variations")
+
+    @patch("drumgizmo_kits_generator.audio.subprocess.run")
+    def test_create_volume_variations_called_process_error(self, mock_subprocess_run):
+        """Test error handling in create_volume_variations with CalledProcessError."""
+        # Create a test instrument directory
+        instrument_name = "test_instrument"
+        instrument_dir = os.path.join(self.temp_dir, instrument_name)
+        samples_dir = os.path.join(instrument_dir, "samples")
+        os.makedirs(samples_dir, exist_ok=True)
+
+        # Create a test sample file
+        sample_file = os.path.join(samples_dir, f"1-{instrument_name}.wav")
+        with open(sample_file, "w") as f:
+            f.write("Test sample content")
+
+        # Configure the mock to raise an exception
+        mock_subprocess_run.side_effect = subprocess.CalledProcessError(
+            1, ["sox"], output=b"Test output", stderr=b"Test error"
+        )
+
+        # Redirect stderr to avoid cluttering test output
+        original_stderr = sys.stderr
+        sys.stderr = open(os.devnull, "w")
+
+        try:
+            # Call the function
+            create_volume_variations(instrument_name, self.temp_dir, ".wav", 3)
+
+            # Verify that subprocess.run was called
+            self.assertEqual(mock_subprocess_run.call_count, 2)
+        finally:
+            # Restore stderr
+            sys.stderr.close()
+            sys.stderr = original_stderr
+
+    @patch("drumgizmo_kits_generator.audio.subprocess.run")
+    def test_create_volume_variations_generic_exception(self, mock_subprocess_run):
+        """Test generic error handling in create_volume_variations."""
+        # Create a test instrument directory
+        instrument_name = "test_instrument"
+        instrument_dir = os.path.join(self.temp_dir, instrument_name)
+        samples_dir = os.path.join(instrument_dir, "samples")
+        os.makedirs(samples_dir, exist_ok=True)
+
+        # Create a test sample file
+        sample_file = os.path.join(samples_dir, f"1-{instrument_name}.wav")
+        with open(sample_file, "w") as f:
+            f.write("Test sample content")
+
+        # Configure the mock to raise a generic exception
+        mock_subprocess_run.side_effect = Exception("Test generic error")
+
+        # Redirect stderr to avoid cluttering test output
+        original_stderr = sys.stderr
+        sys.stderr = open(os.devnull, "w")
+
+        try:
+            # Call the function
+            create_volume_variations(instrument_name, self.temp_dir, ".wav", 3)
+
+            # Verify that subprocess.run was called
+            self.assertEqual(mock_subprocess_run.call_count, 2)
+        finally:
+            # Restore stderr
+            sys.stderr.close()
+            sys.stderr = original_stderr
 
     @patch("subprocess.run")
     def test_create_volume_variations_error(self, mock_run):
