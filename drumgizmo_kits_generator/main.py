@@ -18,7 +18,18 @@ from drumgizmo_kits_generator.audio import (
     create_volume_variations,
     find_audio_files,
 )
-from drumgizmo_kits_generator.config import read_config_file
+from drumgizmo_kits_generator.config import (
+    DEFAULT_EXTENSIONS,
+    DEFAULT_LICENSE,
+    DEFAULT_MIDI_NOTE_MAX,
+    DEFAULT_MIDI_NOTE_MEDIAN,
+    DEFAULT_MIDI_NOTE_MIN,
+    DEFAULT_NAME,
+    DEFAULT_SAMPLERATE,
+    DEFAULT_VELOCITY_LEVELS,
+    DEFAULT_VERSION,
+    read_config_file,
+)
 from drumgizmo_kits_generator.utils import (
     extract_instrument_name,
     get_file_extension,
@@ -32,6 +43,9 @@ from drumgizmo_kits_generator.xml_generator import (
     create_xml_file,
 )
 
+# Default values for command line arguments
+# These are now imported from config.py
+
 
 def parse_arguments():
     """
@@ -40,64 +54,101 @@ def parse_arguments():
     Returns:
         argparse.Namespace: Parsed arguments
     """
-    parser = argparse.ArgumentParser(description="Create a DrumGizmo kit from audio samples")
+    parser = argparse.ArgumentParser(
+        description="Create a DrumGizmo kit from a set of audio samples",
+        epilog="""
+Configuration file options:
+  All command-line options can be specified in a configuration file (INI format).
+  The configuration file takes precedence over default values, but command-line
+  arguments override configuration file settings.
+
+  Examples of configuration file variables:
+    kit_name               Kit name
+    kit_version            Kit version
+    kit_description        Kit description
+    kit_notes              Additional notes about the kit
+    kit_author             Kit author
+    kit_license            Kit license
+    kit_website            Kit website
+    kit_logo               Kit logo filename
+    kit_samplerate         Sample rate in Hz
+    kit_instrument_prefix  Prefix for instrument names
+    kit_extra_files        Additional files to copy
+    kit_velocity_levels    Number of velocity levels to generate
+    kit_midi_note_min      Minimum MIDI note number allowed
+    kit_midi_note_max      Maximum MIDI note number allowed
+    kit_midi_note_median   Median MIDI note for distributing instruments
+    kit_extensions         Audio file extensions to process
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
 
     parser.add_argument(
-        "-s", "--source", required=True, help="Source directory containing audio samples"
+        "-s", "--source", required=True, help="REQUIRED - Source directory containing audio samples"
     )
     parser.add_argument(
-        "-t", "--target", required=True, help="Target directory for the DrumGizmo kit"
+        "-t", "--target", required=True, help="REQUIRED - Target directory for the DrumGizmo kit"
     )
-    parser.add_argument("-c", "--config", help="Configuration file path")
+    parser.add_argument("-c", "--config", help="Configuration file path (INI format)")
     parser.add_argument(
         "--extensions",
-        default="wav,WAV,flac,FLAC,ogg,OGG",
-        help="Comma-separated list of audio file extensions to process (default: wav,WAV,flac,FLAC,ogg,OGG)",
+        default=DEFAULT_EXTENSIONS,
+        help=f"Comma-separated list of audio file extensions to process (default: {DEFAULT_EXTENSIONS})",
     )
 
     parser.add_argument(
         "--velocity-levels",
         type=int,
-        default=10,
-        help="Number of velocity levels to generate (default: 10)",
+        default=DEFAULT_VELOCITY_LEVELS,
+        help=f"Number of velocity levels to generate (default: {DEFAULT_VELOCITY_LEVELS})",
     )
 
     # MIDI mapping arguments
     parser.add_argument(
         "--midi-note-min",
         type=int,
-        default=0,
-        help="Minimum MIDI note number allowed (default: 0)",
+        default=DEFAULT_MIDI_NOTE_MIN,
+        help=f"Minimum MIDI note number allowed (default: {DEFAULT_MIDI_NOTE_MIN})",
     )
     parser.add_argument(
         "--midi-note-max",
         type=int,
-        default=127,
-        help="Maximum MIDI note number allowed (default: 127)",
+        default=DEFAULT_MIDI_NOTE_MAX,
+        help=f"Maximum MIDI note number allowed (default: {DEFAULT_MIDI_NOTE_MAX})",
     )
     parser.add_argument(
         "--midi-note-median",
         type=int,
-        default=60,
-        help="Median MIDI note for distributing instruments around (default: 60)",
+        default=DEFAULT_MIDI_NOTE_MEDIAN,
+        help=f"Median MIDI note for distributing instruments around (default: {DEFAULT_MIDI_NOTE_MEDIAN})",
     )
 
     # Arguments for metadata (can be overridden by the configuration file)
     parser.add_argument("--name", help="Kit name")
-    parser.add_argument("--version", default="1.0", help="Kit version (default: 1.0)")
+    parser.add_argument(
+        "--version",
+        default=DEFAULT_VERSION,
+        help=f"Kit version (default: {DEFAULT_VERSION})",
+    )
     parser.add_argument(
         "--description",
-        default="Kit automatically created with 10 velocity levels",
-        help="Kit description (default: Kit automatically created with 10 velocity levels)",
+        default=f"Kit automatically created with {DEFAULT_VELOCITY_LEVELS} velocity levels",
+        help="Kit description",
     )
     parser.add_argument("--notes", help="Additional notes about the kit")
     parser.add_argument("--author", help="Kit author")
     parser.add_argument(
-        "--license", default="Private license", help="Kit license (default: Private license)"
+        "--license",
+        default=DEFAULT_LICENSE,
+        help=f"Kit license (default: {DEFAULT_LICENSE})",
     )
     parser.add_argument("--website", help="Kit website")
     parser.add_argument("--logo", help="Kit logo filename")
-    parser.add_argument("--samplerate", default="44100", help="Sample rate in Hz (default: 44100)")
+    parser.add_argument(
+        "--samplerate",
+        default=DEFAULT_SAMPLERATE,
+        help=f"Sample rate in Hz (default: {DEFAULT_SAMPLERATE})",
+    )
     parser.add_argument("--instrument-prefix", help="Prefix for instrument names")
     parser.add_argument(
         "--extra-files",
@@ -167,9 +218,9 @@ def prepare_metadata(args):
 
     # Set default values for metadata if not provided
     if "name" not in metadata:
-        metadata["name"] = "DrumGizmo Kit"
+        metadata["name"] = DEFAULT_NAME
     if "version" not in metadata:
-        metadata["version"] = "1.0"
+        metadata["version"] = DEFAULT_VERSION
     if "description" not in metadata:
         metadata[
             "description"
@@ -177,11 +228,11 @@ def prepare_metadata(args):
     if "author" not in metadata:
         metadata["author"] = ""
     if "license" not in metadata:
-        metadata["license"] = "Private license"
+        metadata["license"] = DEFAULT_LICENSE
     if "website" not in metadata:
         metadata["website"] = ""
     if "samplerate" not in metadata:
-        metadata["samplerate"] = "44100"
+        metadata["samplerate"] = DEFAULT_SAMPLERATE
     if "instrument_prefix" not in metadata:
         metadata["instrument_prefix"] = ""
     if "logo" not in metadata:
@@ -191,7 +242,7 @@ def prepare_metadata(args):
 
     # Extract MIDI and velocity parameters from config file
     # These are stored in the metadata dictionary but will be extracted by the main function
-    if "midi_note_min" in metadata and args.midi_note_min == 0:
+    if "midi_note_min" in metadata and args.midi_note_min == DEFAULT_MIDI_NOTE_MIN:
         try:
             metadata["midi_note_min"] = int(metadata["midi_note_min"])
         except ValueError:
@@ -201,7 +252,7 @@ def prepare_metadata(args):
             )
             metadata.pop("midi_note_min")
 
-    if "midi_note_max" in metadata and args.midi_note_max == 127:
+    if "midi_note_max" in metadata and args.midi_note_max == DEFAULT_MIDI_NOTE_MAX:
         try:
             metadata["midi_note_max"] = int(metadata["midi_note_max"])
         except ValueError:
@@ -211,7 +262,7 @@ def prepare_metadata(args):
             )
             metadata.pop("midi_note_max")
 
-    if "midi_note_median" in metadata and args.midi_note_median == 60:
+    if "midi_note_median" in metadata and args.midi_note_median == DEFAULT_MIDI_NOTE_MEDIAN:
         try:
             metadata["midi_note_median"] = int(metadata["midi_note_median"])
         except ValueError:
@@ -221,7 +272,7 @@ def prepare_metadata(args):
             )
             metadata.pop("midi_note_median")
 
-    if "velocity_levels" in metadata and args.velocity_levels == 10:
+    if "velocity_levels" in metadata and args.velocity_levels == DEFAULT_VELOCITY_LEVELS:
         try:
             metadata["velocity_levels"] = int(metadata["velocity_levels"])
         except ValueError:
@@ -230,6 +281,18 @@ def prepare_metadata(args):
                 file=sys.stderr,
             )
             metadata.pop("velocity_levels")
+
+    # Handle extensions from config file
+    if "extensions" in metadata and args.extensions == DEFAULT_EXTENSIONS:
+        extensions_value = metadata["extensions"]
+        if extensions_value:
+            metadata["extensions"] = extensions_value
+        else:
+            print(
+                f"Warning: Invalid extensions value in config file: {metadata['extensions']}",
+                file=sys.stderr,
+            )
+            metadata.pop("extensions")
 
     print("\nFinal metadata after processing:", file=sys.stderr)
     for key, value in metadata.items():
@@ -301,7 +364,10 @@ def main():
         sys.exit(1)
 
     # Search for samples in the source directory
-    extensions = args.extensions.split(",")
+    if "extensions" in metadata:
+        extensions = metadata["extensions"].split(",")
+    else:
+        extensions = args.extensions.split(",")
     samples = find_audio_files(args.source, extensions)
 
     print(f"Searching for samples in: {args.source}", file=sys.stderr)
@@ -315,7 +381,7 @@ def main():
     samples.sort(key=lambda x: os.path.basename(x).lower())
     print("Samples sorted alphabetically", file=sys.stderr)
 
-    # Get MIDI and velocity parameters from metadata or command line arguments
+    # Initialize MIDI and velocity parameters from command line arguments
     midi_note_min = args.midi_note_min
     midi_note_max = args.midi_note_max
     midi_note_median = args.midi_note_median
@@ -334,6 +400,32 @@ def main():
     # pylint: disable-next=consider-using-get
     if "velocity_levels" in metadata:
         velocity_levels = metadata["velocity_levels"]
+
+    # Validate parameters
+    if midi_note_min < 0 or midi_note_min > 127:
+        print(
+            f"Warning: Invalid midi_note_min value: {midi_note_min}, using default {DEFAULT_MIDI_NOTE_MIN}",
+            file=sys.stderr,
+        )
+        midi_note_min = DEFAULT_MIDI_NOTE_MIN
+    if midi_note_max < 0 or midi_note_max > 127:
+        print(
+            f"Warning: Invalid midi_note_max value: {midi_note_max}, using default {DEFAULT_MIDI_NOTE_MAX}",
+            file=sys.stderr,
+        )
+        midi_note_max = DEFAULT_MIDI_NOTE_MAX
+    if midi_note_median < 0 or midi_note_median > 127:
+        print(
+            f"Warning: Invalid midi_note_median value: {midi_note_median}, using default {DEFAULT_MIDI_NOTE_MEDIAN}",
+            file=sys.stderr,
+        )
+        midi_note_median = DEFAULT_MIDI_NOTE_MEDIAN
+    if velocity_levels < 1:
+        print(
+            f"Warning: Invalid velocity_levels value: {velocity_levels}, using default {DEFAULT_VELOCITY_LEVELS}",
+            file=sys.stderr,
+        )
+        velocity_levels = DEFAULT_VELOCITY_LEVELS
 
     # Process each sample
     instruments = []
