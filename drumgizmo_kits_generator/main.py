@@ -50,7 +50,6 @@ def parse_arguments():
     )
     parser.add_argument("-c", "--config", help="Configuration file path")
     parser.add_argument(
-        "-e",
         "--extensions",
         default="wav,WAV,flac,FLAC,ogg,OGG",
         help="Comma-separated list of audio file extensions to process (default: wav,WAV,flac,FLAC,ogg,OGG)",

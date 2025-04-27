@@ -2,6 +2,11 @@
 
 A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), a multichannel drum sampler, from a directory of audio sources.
 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/e-picas/drumgizmo-kits-generator/quality.yml?branch=master)
+![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fe-picas%2Fdrumgizmo-kits-generator%2Frefs%2Fheads%2Fmaster%2Fpyproject.toml)
+![GitHub License](https://img.shields.io/github/license/e-picas/drumgizmo-kits-generator)
+
+
 ## Features
 
 - Generate DrumGizmo kits from audio samples
@@ -16,7 +21,7 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 
 - [Python 3.8](https://www.python.org/downloads/) or higher
 - [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing
-- [PyLint](https://pypi.org/project/pylint/) and [Python Coverage](https://coverage.readthedocs.io/) for development
+- some other Python dependencies for development (see the `requirements-dev.txt` file)
 
 ## Installation
 
@@ -33,33 +38,31 @@ python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target -c /path/t
 ### Options
 
 ```
-Options:
-  -h, --help            Show this help message
+options:
+  -h, --help            show this help message and exit
   -s SOURCE, --source SOURCE
                         Source directory containing audio samples
   -t TARGET, --target TARGET
                         Target directory for the DrumGizmo kit
   -c CONFIG, --config CONFIG
-                        Configuration file for kit metadata
-  -n NAME, --name NAME  Kit name
-  -v VERSION, --version VERSION
-                        Kit version
-  -d DESCRIPTION, --description DESCRIPTION
-                        Kit description
-  -a AUTHOR, --author AUTHOR
-                        Kit author
-  -l LICENSE, --license LICENSE
-                        Kit license
-  -w WEBSITE, --website WEBSITE
-                        Kit website
-  -r SAMPLERATE, --samplerate SAMPLERATE
-                        Kit sample rate
-  -p INSTRUMENT_PREFIX, --instrument-prefix INSTRUMENT_PREFIX
+                        Configuration file path
+  --extensions EXTENSIONS
+                        Comma-separated list of audio file extensions to process (default: wav,WAV,flac,FLAC,ogg,OGG)
+  --name NAME           Kit name
+  --version VERSION     Kit version (default: 1.0)
+  --description DESCRIPTION
+                        Kit description (default: Kit automatically created with 10 velocity levels)
+  --notes NOTES         Additional notes about the kit
+  --author AUTHOR       Kit author
+  --license LICENSE     Kit license (default: Private license)
+  --website WEBSITE     Kit website
+  --logo LOGO           Kit logo filename
+  --samplerate SAMPLERATE
+                        Sample rate in Hz (default: 44100)
+  --instrument-prefix INSTRUMENT_PREFIX
                         Prefix for instrument names
-  -e EXTENSIONS, --extensions EXTENSIONS
-                        Audio file extensions to search for (comma-separated)
   --extra-files EXTRA_FILES
-                        Additional files to copy to the kit (comma-separated)
+                        Comma-separated list of additional files to copy to the target directory
 ```
 
 ### Configuration File
