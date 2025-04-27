@@ -11,6 +11,7 @@ help:
 install:
 	pip install -r requirements-dev.txt
 	pre-commit install
+	pre-commit install --hook-type commit-msg
 
 lint:
 	pylint $$(git ls-files '*.py')
@@ -20,3 +21,6 @@ test:
 
 coverage:
 	coverage run -m unittest discover tests && coverage report -m
+
+git-hooks-test:
+	pre-commit run --all-files

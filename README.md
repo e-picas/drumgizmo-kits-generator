@@ -117,6 +117,16 @@ git clone https://github.com/e-picas/drumgizmo-kits-generator.git
 cd drumgizmo-kits-generator
 ```
 
+### Install the project
+
+To install the dependencies and git hooks, run:
+
+```bash
+make install
+```
+
+The hooks will run the linter and tests before each commit and validate that your commit message follows the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/).
+
 ### Tests & coverage
 
 To run unit tests:
