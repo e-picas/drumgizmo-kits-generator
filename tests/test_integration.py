@@ -391,8 +391,6 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             self.temp_dir,
             "-c",
             os.path.join(self.source_dir, "drumgizmo-kit.ini"),
-            "--velocity-levels",
-            "10",
         ]
 
         # Run the main function
