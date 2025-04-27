@@ -9,6 +9,17 @@ Contains global variables and constants used across the application.
 import os
 import sys
 
+# Default values for command line arguments
+DEFAULT_EXTENSIONS = "wav,WAV,flac,FLAC,ogg,OGG"
+DEFAULT_VELOCITY_LEVELS = 10
+DEFAULT_MIDI_NOTE_MIN = 0
+DEFAULT_MIDI_NOTE_MAX = 127
+DEFAULT_MIDI_NOTE_MEDIAN = 60
+DEFAULT_NAME = "DrumGizmo Kit"
+DEFAULT_VERSION = "1.0"
+DEFAULT_LICENSE = "Private license"
+DEFAULT_SAMPLERATE = "44100"
+
 # List of audio channels used in XML files
 CHANNELS = [
     "AmbL",
@@ -95,6 +106,7 @@ def read_config_file(config_file):
                     "kit_midi_note_max": "midi_note_max",
                     "kit_midi_note_median": "midi_note_median",
                     "kit_velocity_levels": "velocity_levels",
+                    "kit_extensions": "extensions",
                 }
 
                 if key in key_mapping:

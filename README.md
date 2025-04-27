@@ -42,17 +42,25 @@ python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target -c /path/t
 options:
   -h, --help            show this help message and exit
   -s SOURCE, --source SOURCE
-                        Source directory containing audio samples
+                        REQUIRED - Source directory containing audio samples
   -t TARGET, --target TARGET
-                        Target directory for the DrumGizmo kit
+                        REQUIRED - Target directory for the DrumGizmo kit
   -c CONFIG, --config CONFIG
-                        Configuration file path
+                        Configuration file path (INI format)
   --extensions EXTENSIONS
                         Comma-separated list of audio file extensions to process (default: wav,WAV,flac,FLAC,ogg,OGG)
+  --velocity-levels VELOCITY_LEVELS
+                        Number of velocity levels to generate (default: 10)
+  --midi-note-min MIDI_NOTE_MIN
+                        Minimum MIDI note number allowed (default: 0)
+  --midi-note-max MIDI_NOTE_MAX
+                        Maximum MIDI note number allowed (default: 127)
+  --midi-note-median MIDI_NOTE_MEDIAN
+                        Median MIDI note for distributing instruments around (default: 60)
   --name NAME           Kit name
   --version VERSION     Kit version (default: 1.0)
   --description DESCRIPTION
-                        Kit description (default: Kit automatically created with 10 velocity levels)
+                        Kit description
   --notes NOTES         Additional notes about the kit
   --author AUTHOR       Kit author
   --license LICENSE     Kit license (default: Private license)
@@ -68,21 +76,50 @@ options:
 
 ### Configuration File
 
-You can specify kit metadata in a configuration file (e.g., `drumgizmo-kit.ini`):
+You can specify kit metadata and generation options in a configuration file (e.g., `drumgizmo-kit.ini`):
 
 ```ini
-KIT_NAME = "My Drum Kit"
-KIT_VERSION = "1.0.0"
-KIT_DESCRIPTION = "An acoustic drum kit"
-KIT_NOTES = "Recorded in a professional studio"
-KIT_AUTHOR = "Your Name"
-KIT_LICENSE = "CC-BY-SA"
-KIT_WEBSITE = "https://your-site.com"
-KIT_SAMPLERATE = "44100"
-KIT_INSTRUMENT_PREFIX = "MyKit"
-KIT_LOGO = "logo.png"
-KIT_EXTRA_FILES = "README.txt,LICENSE.txt,photo.jpg"
+# Kit metadata
+kit_name = "My Drum Kit"
+kit_version = "1.0.0"
+kit_description = "An acoustic drum kit"
+kit_notes = "Recorded in a professional studio"
+kit_author = "Your Name"
+kit_license = "CC-BY-SA"
+kit_website = "https://your-site.com"
+kit_samplerate = "44100"
+kit_instrument_prefix = "MyKit"
+kit_logo = "logo.png"
+kit_extra_files = "README.txt,LICENSE.txt,photo.jpg"
+
+# Generation options
+kit_velocity_levels = "10"
+kit_midi_note_min = "0"
+kit_midi_note_max = "127"
+kit_midi_note_median = "60"
+kit_extensions = "wav,WAV,flac,FLAC,ogg,OGG"
 ```
+
+All command-line options have equivalent configuration file settings. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
+
+| Config file variable | Command-line option | Description |
+|---------------------|---------------------|-------------|
+| `kit_name` | `--name` | Kit name |
+| `kit_version` | `--version` | Kit version |
+| `kit_description` | `--description` | Kit description |
+| `kit_notes` | `--notes` | Additional notes about the kit |
+| `kit_author` | `--author` | Kit author |
+| `kit_license` | `--license` | Kit license |
+| `kit_website` | `--website` | Kit website |
+| `kit_logo` | `--logo` | Kit logo filename |
+| `kit_samplerate` | `--samplerate` | Sample rate in Hz |
+| `kit_instrument_prefix` | `--instrument-prefix` | Prefix for instrument names |
+| `kit_extra_files` | `--extra-files` | Additional files to copy |
+| `kit_velocity_levels` | `--velocity-levels` | Number of velocity levels to generate |
+| `kit_midi_note_min` | `--midi-note-min` | Minimum MIDI note number allowed |
+| `kit_midi_note_max` | `--midi-note-max` | Maximum MIDI note number allowed |
+| `kit_midi_note_median` | `--midi-note-median` | Median MIDI note for distributing instruments |
+| `kit_extensions` | `--extensions` | Audio file extensions to process |
 
 ## Generated Kit Structure
 
