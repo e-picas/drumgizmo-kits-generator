@@ -306,6 +306,97 @@ class TestXmlGenerator(unittest.TestCase):
             self.assertNotIn(note, midi_notes, f"MIDI note {note} should be unique")
             midi_notes.add(note)
 
+    def test_create_midimap_xml_with_custom_midi_params(self):
+        """Test creating the MIDI map XML file with custom MIDI parameters."""
+        # Test with custom MIDI parameters
+        midi_note_min = 40
+        midi_note_max = 80
+        midi_note_median = 60
+
+        # Create a list of 7 instruments to test odd number distribution
+        instruments = ["Kick", "Snare", "Hi-Hat", "Tom1", "Tom2", "Crash", "Ride"]
+
+        # Call the function to test
+        create_midimap_xml(
+            instruments,
+            self.temp_dir,
+            midi_note_min=midi_note_min,
+            midi_note_max=midi_note_max,
+            midi_note_median=midi_note_median,
+        )
+
+        # Verify that the file has been created
+        xml_file = os.path.join(self.temp_dir, "midimap.xml")
+        self.assertTrue(os.path.exists(xml_file), "midimap.xml file should be created")
+
+        # Parse the XML file and verify its content
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        maps = root.findall("map")
+
+        # Sort instruments alphabetically to match the function's behavior
+        sorted_instruments = sorted(instruments, key=lambda x: x.lower())
+
+        # Verify the number of map elements
+        self.assertEqual(
+            len(maps),
+            len(sorted_instruments),
+            f"Should have {len(sorted_instruments)} map elements",
+        )
+
+        # Verify that all notes are within the allowed range
+        for map_entry in maps:
+            note = int(map_entry.attrib["note"])
+            self.assertGreaterEqual(
+                note, midi_note_min, f"MIDI note {note} should be >= {midi_note_min}"
+            )
+            self.assertLessEqual(
+                note, midi_note_max, f"MIDI note {note} should be <= {midi_note_max}"
+            )
+
+        # For odd number of instruments, the middle instrument should be at or near the median
+        # Get the notes in the order they appear in the XML
+        notes = [int(map_entry.attrib["note"]) for map_entry in maps]
+
+        # Verify distribution around median
+        # For 7 instruments, we expect notes to be distributed like: median-3, median-2, median-1, median, median+1, median+2, median+3
+        # But since we sort alphabetically, the actual distribution depends on the sorting
+        self.assertEqual(len(notes), 7, "Should have 7 notes")
+
+        # Verify that the range of notes matches the number of instruments
+        self.assertEqual(
+            max(notes) - min(notes) + 1,
+            len(instruments),
+            "Range of notes should match number of instruments",
+        )
+
+        # Test with a range that's too small for the number of instruments
+        midi_note_min = 60
+        midi_note_max = 65  # Only 6 notes available (60-65)
+
+        # Call the function with 7 instruments but only 6 available notes
+        create_midimap_xml(
+            instruments,
+            self.temp_dir,
+            midi_note_min=midi_note_min,
+            midi_note_max=midi_note_max,
+            midi_note_median=62,
+        )
+
+        # Parse the XML file again
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        maps = root.findall("map")
+
+        # Verify that we only have 6 instruments mapped (one should be skipped)
+        self.assertEqual(len(maps), 6, "Should have 6 map elements when range is limited")
+
+        # Verify that all mapped notes are within the allowed range
+        for map_entry in maps:
+            note = int(map_entry.attrib["note"])
+            self.assertGreaterEqual(note, midi_note_min)
+            self.assertLessEqual(note, midi_note_max)
+
     @patch("datetime.datetime")
     def test_create_drumkit_xml_with_timestamp(self, mock_datetime):
         """Test creating the drumkit XML file with a consistent timestamp."""

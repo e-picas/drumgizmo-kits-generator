@@ -386,6 +386,13 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             os.path.join(self.source_dir, "drumgizmo-kit.ini"),
             "--velocity-levels",
             "10",
+            # Use original MIDI mapping (starting from note 35)
+            "--midi-note-min",
+            "35",
+            "--midi-note-max",
+            "127",
+            "--midi-note-median",
+            "35",
         ]
 
         # Run the main function
@@ -453,6 +460,13 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             os.path.join(self.source_dir, "drumgizmo-kit.ini"),
             "--velocity-levels",
             "4",
+            # Use original MIDI mapping (starting from note 35)
+            "--midi-note-min",
+            "35",
+            "--midi-note-max",
+            "127",
+            "--midi-note-median",
+            "35",
         ]
 
         # Run the main function

@@ -62,6 +62,26 @@ def parse_arguments():
         help="Number of velocity levels to generate (default: 10)",
     )
 
+    # MIDI mapping arguments
+    parser.add_argument(
+        "--midi-note-min",
+        type=int,
+        default=0,
+        help="Minimum MIDI note number allowed (default: 0)",
+    )
+    parser.add_argument(
+        "--midi-note-max",
+        type=int,
+        default=127,
+        help="Maximum MIDI note number allowed (default: 127)",
+    )
+    parser.add_argument(
+        "--midi-note-median",
+        type=int,
+        default=60,
+        help="Median MIDI note for distributing instruments around (default: 60)",
+    )
+
     # Arguments for metadata (can be overridden by the configuration file)
     parser.add_argument("--name", help="Kit name")
     parser.add_argument("--version", default="1.0", help="Kit version (default: 1.0)")
@@ -293,7 +313,13 @@ def main():
     create_drumkit_xml(instruments, args.target, metadata)
 
     # Create midimap.xml file
-    create_midimap_xml(instruments, args.target)
+    create_midimap_xml(
+        instruments,
+        args.target,
+        midi_note_min=args.midi_note_min,
+        midi_note_max=args.midi_note_max,
+        midi_note_median=args.midi_note_median,
+    )
 
     # Copy logo if specified
     if "logo" in metadata and metadata["logo"]:
