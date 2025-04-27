@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 # Import the module to test
 # pylint: disable-next=wrong-import-position
-from config import CHANNELS, MAIN_CHANNELS, read_config_file
+from drumgizmo_kits_generator.config import CHANNELS, MAIN_CHANNELS, read_config_file
 
 
 class TestConfig(unittest.TestCase):

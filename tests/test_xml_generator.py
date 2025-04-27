@@ -19,7 +19,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 # Import the module to test
 # pylint: disable-next=wrong-import-position
-from xml_generator import create_drumkit_xml, create_midimap_xml, create_xml_file
+from drumgizmo_kits_generator.xml_generator import (
+    create_drumkit_xml,
+    create_midimap_xml,
+    create_xml_file,
+)
 
 
 class TestXmlGenerator(unittest.TestCase):
