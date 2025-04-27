@@ -2,17 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      force_level:
-        description: 'Force a specific version bump level'
-        required: false
-        default: 'auto'
-        type: choice
-        options:
-          - 'auto'
-          - patch
-          - minor
-          - major
 
 jobs:
   make-release:
@@ -42,24 +31,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install python-semantic-release tomlkit
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-
-      - name: Run semantic-release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FORCE_LEVEL: ${{ inputs.force_level }}
-        run: |
-          if [ "$FORCE_LEVEL" != "auto" ]; then
-            semantic-release version --$FORCE_LEVEL
-          else
-            semantic-release version
-          fi
-
-      - name: Push changes
-        uses: ad-m/github-push-action@master
+      - name: Action | Semantic Version Release
+        id: release
+        # Adjust tag with desired version if applicable.
+        uses: python-semantic-release/python-semantic-release@v9.21.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
+          github_token: ${{ secrets.GH_TOKEN }}
+          git_committer_name: "github-actions"
+          git_committer_email: "actions@users.noreply.github.com"
+
+      - name: Publish | Upload to GitHub Release Assets
+        uses: python-semantic-release/publish-action@v9.21.0
+        if: steps.release.outputs.released == 'true'
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          tag: ${{ steps.release.outputs.tag }}
