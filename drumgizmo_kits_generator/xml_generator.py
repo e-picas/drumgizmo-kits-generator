@@ -185,13 +185,19 @@ def create_drumkit_xml(instruments, kit_dir, metadata):
     return xml_file
 
 
-def create_midimap_xml(instruments, kit_dir):
+# pylint: disable-next=too-many-locals
+def create_midimap_xml(
+    instruments, kit_dir, midi_note_min=0, midi_note_max=127, midi_note_median=60
+):
     """
     Creates the midimap.xml file for the kit.
 
     Args:
         instruments (list): List of instrument names
         kit_dir (str): Target directory for the kit
+        midi_note_min (int): Minimum MIDI note number allowed
+        midi_note_max (int): Maximum MIDI note number allowed
+        midi_note_median (int): Median MIDI note for distributing instruments around
 
     Returns:
         str: Path to the created XML file
@@ -206,15 +212,52 @@ def create_midimap_xml(instruments, kit_dir):
     # Sort instruments alphabetically
     sorted_instruments = sorted(instruments, key=lambda x: x.lower())
 
+    # Calculate MIDI note distribution
+    num_instruments = len(sorted_instruments)
+
+    # If we have an even number of instruments, we'll place half before the median and half after
+    # If we have an odd number, we'll place the middle instrument at the median
+    if num_instruments % 2 == 0:  # Even number of instruments
+        start_note = midi_note_median - (num_instruments // 2)
+    else:  # Odd number of instruments
+        start_note = midi_note_median - (num_instruments // 2)
+
+    # Ensure we don't go below the minimum note
+    start_note = max(start_note, midi_note_min)
+
+    # Ensure we don't go above the maximum note
+    end_note = start_note + num_instruments - 1
+    if end_note > midi_note_max:
+        # If we would exceed the maximum, shift the start note down
+        shift = end_note - midi_note_max
+        start_note = max(midi_note_min, start_note - shift)
+
+        # If we still can't fit all instruments, we'll need to warn the user
+        if start_note + num_instruments - 1 > midi_note_max:
+            print(
+                f"Warning: Cannot fit all {num_instruments} instruments within the MIDI note range "
+                f"{midi_note_min}-{midi_note_max}. Some instruments will not be mapped.",
+                file=sys.stderr,
+            )
+
     # Print the MIDI mapping
     print("\nMIDI mapping (alphabetical order):", file=sys.stderr)
 
-    # Add instruments to midimap, starting from MIDI note 35
+    # Add instruments to midimap
     for i, instrument in enumerate(sorted_instruments):
-        midi_note = 35 + i
+        midi_note = start_note + i
+
+        # Skip if outside the allowed range
+        if midi_note < midi_note_min or midi_note > midi_note_max:
+            print(
+                f"  Warning: Skipping {instrument} (would be assigned to note {midi_note})",
+                file=sys.stderr,
+            )
+            continue
+
         print(f"  MIDI Note {midi_note}: {instrument}", file=sys.stderr)
 
-        # Add instrument to midimap using the format expected by tests
+        # Add instrument to midimap
         ET.SubElement(root, "map", note=str(midi_note), instr=instrument, velmin="0", velmax="127")
 
     # Create XML tree

@@ -91,6 +91,10 @@ def read_config_file(config_file):
                     "kit_samplerate": "samplerate",
                     "kit_instrument_prefix": "instrument_prefix",
                     "kit_extra_files": "extra_files",
+                    "kit_midi_note_min": "midi_note_min",
+                    "kit_midi_note_max": "midi_note_max",
+                    "kit_midi_note_median": "midi_note_median",
+                    "kit_velocity_levels": "velocity_levels",
                 }
 
                 if key in key_mapping:

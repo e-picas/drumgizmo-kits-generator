@@ -7,6 +7,7 @@ Uses the config, audio, xml_generator and utils modules to create a complete kit
 """
 
 import argparse
+import datetime
 import os
 import shutil
 import sys
@@ -21,7 +22,6 @@ from drumgizmo_kits_generator.config import read_config_file
 from drumgizmo_kits_generator.utils import (
     extract_instrument_name,
     get_file_extension,
-    get_timestamp,
     prepare_instrument_directory,
     prepare_target_directory,
     print_summary,
@@ -60,6 +60,26 @@ def parse_arguments():
         type=int,
         default=10,
         help="Number of velocity levels to generate (default: 10)",
+    )
+
+    # MIDI mapping arguments
+    parser.add_argument(
+        "--midi-note-min",
+        type=int,
+        default=0,
+        help="Minimum MIDI note number allowed (default: 0)",
+    )
+    parser.add_argument(
+        "--midi-note-max",
+        type=int,
+        default=127,
+        help="Maximum MIDI note number allowed (default: 127)",
+    )
+    parser.add_argument(
+        "--midi-note-median",
+        type=int,
+        default=60,
+        help="Median MIDI note for distributing instruments around (default: 60)",
     )
 
     # Arguments for metadata (can be overridden by the configuration file)
@@ -106,79 +126,115 @@ def prepare_metadata(args):
         metadata.update(config_metadata)
         print(f"Metadata loaded from config file: {config_metadata}", file=sys.stderr)
 
-    # Override with command line arguments ONLY if they are explicitly specified
-    # (not using default values)
+    # Update metadata with command line arguments
     if args.name:
         metadata["name"] = args.name
-    elif "name" not in metadata:
-        metadata["name"] = "DrumGizmoKit"
-
-    # For version, only use command line value if it's not the default or if no config value exists
-    if args.version and (args.version != "1.0" or "version" not in metadata):
+    if args.version:
         metadata["version"] = args.version
-    elif "version" not in metadata:
-        metadata["version"] = "1.0"
-
-    # For description, only use command line value if it's not the default or if no config value exists
-    default_desc = "Kit automatically created with 10 velocity levels"
-    if args.description and (args.description != default_desc or "description" not in metadata):
+    if args.description:
         metadata["description"] = args.description
     elif "description" not in metadata:
-        metadata["description"] = default_desc
-
+        # Only set default description if not provided in config or command line
+        metadata[
+            "description"
+        ] = f"Kit automatically created with {args.velocity_levels} velocity levels"
     if args.notes:
         metadata["notes"] = args.notes
-    elif "notes" not in metadata:
-        # Use source directory name as sample information
-        source_name = os.path.basename(os.path.abspath(args.source))
-        metadata["notes"] = f"DrumGizmo kit generated from royalty free samples '{source_name}'"
-
+    elif "notes" in metadata:
+        # Append generation timestamp to existing notes
+        metadata[
+            "notes"
+        ] += f" - Generated with create_drumgizmo_kit.py at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    else:
+        # Create new notes with generation timestamp
+        metadata[
+            "notes"
+        ] = f"Generated with create_drumgizmo_kit.py at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"
     if args.author:
         metadata["author"] = args.author
-    elif "author" not in metadata:
-        metadata["author"] = os.environ.get("USER", "Unknown")
-
-    # For license, only use command line value if it's not the default or if no config value exists
-    if args.license and (args.license != "Private license" or "license" not in metadata):
+    if args.license:
         metadata["license"] = args.license
-    elif "license" not in metadata:
-        metadata["license"] = "Private license"
-
     if args.website:
         metadata["website"] = args.website
-
-    if args.logo:
-        metadata["logo"] = args.logo
-
-    # For samplerate, only use command line value if it's not the default or if no config value exists
-    if args.samplerate and (args.samplerate != "44100" or "samplerate" not in metadata):
+    if args.samplerate:
         metadata["samplerate"] = args.samplerate
-    elif "samplerate" not in metadata:
-        metadata["samplerate"] = "44100"
-
     if args.instrument_prefix:
         metadata["instrument_prefix"] = args.instrument_prefix
-
-    # For extra files, use command line value if specified, otherwise use config value
+    if args.logo:
+        metadata["logo"] = args.logo
     if args.extra_files:
         metadata["extra_files"] = args.extra_files
 
-    # Add date and script name to the description
-    timestamp = get_timestamp()
-    if "notes" in metadata and metadata["notes"]:
-        # Don't modify notes if they already exist, except to add the date
-        if " - Generated with create_drumgizmo_kit.py at " not in metadata["notes"]:
-            metadata[
-                "notes"
-            ] = f"{metadata['notes']} - Generated with create_drumgizmo_kit.py at {timestamp}"
-    else:
-        metadata["notes"] = f"Generated with create_drumgizmo_kit.py at {timestamp}"
+    # Set default values for metadata if not provided
+    if "name" not in metadata:
+        metadata["name"] = "DrumGizmo Kit"
+    if "version" not in metadata:
+        metadata["version"] = "1.0"
+    if "description" not in metadata:
+        metadata[
+            "description"
+        ] = f"Kit automatically created with {args.velocity_levels} velocity levels"
+    if "author" not in metadata:
+        metadata["author"] = ""
+    if "license" not in metadata:
+        metadata["license"] = "Private license"
+    if "website" not in metadata:
+        metadata["website"] = ""
+    if "samplerate" not in metadata:
+        metadata["samplerate"] = "44100"
+    if "instrument_prefix" not in metadata:
+        metadata["instrument_prefix"] = ""
+    if "logo" not in metadata:
+        metadata["logo"] = ""
+    if "extra_files" not in metadata:
+        metadata["extra_files"] = ""
 
-    # Display final metadata for debugging
+    # Extract MIDI and velocity parameters from config file
+    # These are stored in the metadata dictionary but will be extracted by the main function
+    if "midi_note_min" in metadata and args.midi_note_min == 0:
+        try:
+            metadata["midi_note_min"] = int(metadata["midi_note_min"])
+        except ValueError:
+            print(
+                f"Warning: Invalid midi_note_min value in config file: {metadata['midi_note_min']}",
+                file=sys.stderr,
+            )
+            metadata.pop("midi_note_min")
+
+    if "midi_note_max" in metadata and args.midi_note_max == 127:
+        try:
+            metadata["midi_note_max"] = int(metadata["midi_note_max"])
+        except ValueError:
+            print(
+                f"Warning: Invalid midi_note_max value in config file: {metadata['midi_note_max']}",
+                file=sys.stderr,
+            )
+            metadata.pop("midi_note_max")
+
+    if "midi_note_median" in metadata and args.midi_note_median == 60:
+        try:
+            metadata["midi_note_median"] = int(metadata["midi_note_median"])
+        except ValueError:
+            print(
+                f"Warning: Invalid midi_note_median value in config file: {metadata['midi_note_median']}",
+                file=sys.stderr,
+            )
+            metadata.pop("midi_note_median")
+
+    if "velocity_levels" in metadata and args.velocity_levels == 10:
+        try:
+            metadata["velocity_levels"] = int(metadata["velocity_levels"])
+        except ValueError:
+            print(
+                f"Warning: Invalid velocity_levels value in config file: {metadata['velocity_levels']}",
+                file=sys.stderr,
+            )
+            metadata.pop("velocity_levels")
+
     print("\nFinal metadata after processing:", file=sys.stderr)
     for key, value in metadata.items():
         print(f"  {key}: {value}", file=sys.stderr)
-    print("", file=sys.stderr)
+    print("\n", file=sys.stderr)
 
     return metadata
 
@@ -229,7 +285,7 @@ def copy_extra_files(source_dir, target_dir, extra_files_str):
     return copied_files
 
 
-# pylint: disable-next=too-many-locals
+# pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def main():
     """
     Main function of the script.
@@ -259,6 +315,26 @@ def main():
     samples.sort(key=lambda x: os.path.basename(x).lower())
     print("Samples sorted alphabetically", file=sys.stderr)
 
+    # Get MIDI and velocity parameters from metadata or command line arguments
+    midi_note_min = args.midi_note_min
+    midi_note_max = args.midi_note_max
+    midi_note_median = args.midi_note_median
+    velocity_levels = args.velocity_levels
+
+    # Override with values from config file if available
+    # pylint: disable-next=consider-using-get
+    if "midi_note_min" in metadata:
+        midi_note_min = metadata["midi_note_min"]
+    # pylint: disable-next=consider-using-get
+    if "midi_note_max" in metadata:
+        midi_note_max = metadata["midi_note_max"]
+    # pylint: disable-next=consider-using-get
+    if "midi_note_median" in metadata:
+        midi_note_median = metadata["midi_note_median"]
+    # pylint: disable-next=consider-using-get
+    if "velocity_levels" in metadata:
+        velocity_levels = metadata["velocity_levels"]
+
     # Process each sample
     instruments = []
     instrument_to_sample = {}  # Map to keep track of which sample was used for each instrument
@@ -284,16 +360,27 @@ def main():
             continue
 
         # Create volume variations
-        create_volume_variations(instrument, args.target, extension, args.velocity_levels)
+        create_volume_variations(instrument, args.target, extension, velocity_levels)
 
         # Create XML file for the instrument
-        create_xml_file(instrument, args.target, extension, args.velocity_levels)
+        create_xml_file(
+            instrument,
+            args.target,
+            extension,
+            velocity_levels,
+        )
 
     # Create drumkit.xml file
     create_drumkit_xml(instruments, args.target, metadata)
 
     # Create midimap.xml file
-    create_midimap_xml(instruments, args.target)
+    create_midimap_xml(
+        instruments,
+        args.target,
+        midi_note_min=midi_note_min,
+        midi_note_max=midi_note_max,
+        midi_note_median=midi_note_median,
+    )
 
     # Copy logo if specified
     if "logo" in metadata and metadata["logo"]:
