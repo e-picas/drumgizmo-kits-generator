@@ -35,7 +35,7 @@ def write_pretty_xml(tree, file_path):
         f.write(dom.toprettyxml(indent="  "))
 
 
-def create_xml_file(instrument, kit_dir, extension):
+def create_xml_file(instrument, kit_dir, extension, velocity_levels=10):
     """
     Creates the XML file for an instrument.
 
@@ -43,6 +43,7 @@ def create_xml_file(instrument, kit_dir, extension):
         instrument (str): Name of the instrument
         kit_dir (str): Target directory for the kit
         extension (str): Audio file extension (with the dot)
+        velocity_levels (int): Number of velocity levels to generate (default: 10)
     """
     xml_file = os.path.join(kit_dir, instrument, f"{instrument}.xml")
 
@@ -54,12 +55,12 @@ def create_xml_file(instrument, kit_dir, extension):
     # Create samples element
     samples = ET.SubElement(root, "samples")
 
-    # Add 10 samples with power values from 0 to 1
-    for i in range(1, 11):
+    # Add velocity_levels samples with power values from 0 to 1
+    for i in range(1, velocity_levels + 1):
         # Calculate power value (0-1) based on volume
         # Sample 1 (100% volume) -> power=1.0
-        # Sample 10 (10% volume) -> power=0.1
-        power = 1.0 - (i - 1) * 0.1
+        # Last sample (lowest volume) -> power=1/velocity_levels
+        power = 1.0 - ((i - 1) / velocity_levels)
 
         sample = ET.SubElement(samples, "sample", name=f"{instrument}-{i}", power=f"{power:.6f}")
 

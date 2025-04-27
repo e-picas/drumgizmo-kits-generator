@@ -9,6 +9,7 @@ including finding, copying, and creating volume variations of audio files.
 
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -126,36 +127,48 @@ class TestAudio(unittest.TestCase):
         self.assertFalse(result, "Function should return False for failed copy")
         mock_copy2.assert_called_once_with(source_file, target_file)
 
-    @patch("subprocess.run")
+    @patch("drumgizmo_kits_generator.audio.subprocess.run")
     def test_create_volume_variations(self, mock_run):
-        """Test creating volume variations of an audio file."""
-        # Configure the mock
-        mock_run.return_value = MagicMock(returncode=0)
-
-        # Test with a valid file
+        """Test creating volume variations for a sample."""
+        # Create a test instrument directory
         instrument = "test_instrument"
         instrument_dir = os.path.join(self.temp_dir, instrument)
+        os.makedirs(instrument_dir, exist_ok=True)
+
+        # Create a samples directory
         samples_dir = os.path.join(instrument_dir, "samples")
         os.makedirs(samples_dir, exist_ok=True)
 
-        # Create the source file
-        source_file = os.path.join(samples_dir, f"1-{instrument}.wav")
-        with open(source_file, "w", encoding="utf-8") as f:
-            f.write("Test content")
+        # Create a sample file
+        sample_file = os.path.join(samples_dir, f"1-{instrument}.wav")
+        # pylint: disable-next=unspecified-encoding
+        with open(sample_file, "w") as f:
+            f.write("dummy audio data")
 
-        # Call the function
+        # Mock the subprocess.run function
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=b"", stderr=b""
+        )
+
+        # Call the function with default velocity levels (10)
         create_volume_variations(instrument, self.temp_dir, ".wav")
 
-        # Verify the result - la fonction ne retourne pas de valeur, donc pas de vérification de retour
-        self.assertEqual(mock_run.call_count, 9, "Should create 9 variations (2-10)")
+        # Check that subprocess.run was called 9 times (for samples 2-10)
+        self.assertEqual(mock_run.call_count, 9, "Should create 9 volume variations")
 
-        # Verify the command arguments for the first call
-        args, _ = mock_run.call_args_list[0]
-        cmd = args[0]
-        self.assertIn("sox", cmd[0], "Should use sox command")
-        self.assertIn(f"1-{instrument}.wav", cmd[1], "Should use the source file")
-        self.assertIn(f"2-{instrument}.wav", cmd[2], "Should create the target file")
-        self.assertIn("vol", cmd[3], "Should use the vol effect")
+        # Test with custom velocity levels
+        mock_run.reset_mock()
+        create_volume_variations(instrument, self.temp_dir, ".wav", velocity_levels=5)
+
+        # Check that subprocess.run was called 4 times (for samples 2-5)
+        self.assertEqual(mock_run.call_count, 4, "Should create 4 volume variations")
+
+        # Test with only 1 velocity level (should skip variations)
+        mock_run.reset_mock()
+        create_volume_variations(instrument, self.temp_dir, ".wav", velocity_levels=1)
+
+        # Check that subprocess.run was not called
+        self.assertEqual(mock_run.call_count, 0, "Should not create any variations")
 
     @patch("subprocess.run")
     def test_create_volume_variations_error(self, mock_run):

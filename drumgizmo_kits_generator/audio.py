@@ -13,23 +13,31 @@ import subprocess
 import sys
 
 
-def create_volume_variations(instrument, kit_dir, extension):
+def create_volume_variations(instrument, kit_dir, extension, velocity_levels=10):
     """
-    Creates 9 volume variations for a given sample.
+    Creates volume variations for a given sample.
 
     Args:
         instrument (str): Name of the instrument
         kit_dir (str): Target directory for the kit
         extension (str): Audio file extension (with the dot)
+        velocity_levels (int): Number of velocity levels to generate (default: 10)
     """
     instrument_dir = os.path.join(kit_dir, instrument)
     samples_dir = os.path.join(instrument_dir, "samples")
 
     print(f"Creating volume variations for: {instrument}", file=sys.stderr)
 
-    # Create 9 versions with a 10% volume decrease each time
-    for i in range(2, 11):
-        volume = 1.1 - (i / 10)
+    # Skip if only one velocity level is requested
+    if velocity_levels <= 1:
+        print("Skipping volume variations (only 1 velocity level requested)", file=sys.stderr)
+        return
+
+    # Create velocity_levels-1 versions with decreasing volume
+    for i in range(2, velocity_levels + 1):
+        # Calculate volume factor: from 0.9 down to 0.1 for 10 levels
+        # For different number of levels, scale accordingly
+        volume = 1.0 - ((i - 1) / velocity_levels)
         source_file = os.path.join(samples_dir, f"1-{instrument}{extension}")
         dest_file = os.path.join(samples_dir, f"{i}-{instrument}{extension}")
 

@@ -208,9 +208,12 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             raise
 
     # pylint: disable-next=too-many-return-statements
-    def verify_directory_structure(self):
+    def verify_directory_structure(self, velocity_levels=3):
         """
         Verify that the directory structure matches the expected structure.
+
+        Args:
+            velocity_levels: Number of velocity levels to expect
 
         Returns:
             bool: True if the structure matches
@@ -236,7 +239,7 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
                 print(f"Missing instrument XML file: {xml_file}")
                 return False
 
-            # Check that each instrument has a samples directory with 10 samples
+            # Check that each instrument has a samples directory with the correct number of samples
             samples_dir = os.path.join(instrument_dir, "samples")
             if not os.path.isdir(samples_dir):
                 print(f"Missing samples directory for instrument: {instrument}")
@@ -244,8 +247,10 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
 
             # Count the number of sample files
             sample_count = len([f for f in os.listdir(samples_dir) if f.endswith(".wav")])
-            if sample_count != 10:
-                print(f"Expected 10 sample files for {instrument}, found {sample_count}")
+            if sample_count != velocity_levels:
+                print(
+                    f"Expected {velocity_levels} sample files for {instrument}, found {sample_count}"
+                )
                 return False
 
         # Check that extra files were copied
@@ -258,9 +263,12 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
         return True
 
     # pylint: disable-next=too-many-return-statements,too-many-locals,too-many-branches
-    def verify_xml_content(self):
+    def verify_xml_content(self, velocity_levels=3):
         """
         Verify that the XML files have the expected content structure.
+
+        Args:
+            velocity_levels: Number of velocity levels to expect
 
         Returns:
             bool: True if the XML content is valid
@@ -350,8 +358,8 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
 
                 # Check samples
                 samples = root.findall(".//sample")
-                if len(samples) != 10:
-                    print(f"Expected 10 samples in {xml_file}, found {len(samples)}")
+                if len(samples) != velocity_levels:
+                    print(f"Expected {velocity_levels} samples in {xml_file}, found {len(samples)}")
                     return False
 
             # pylint: disable-next=broad-exception-caught
@@ -363,6 +371,10 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
 
     def test_full_integration(self):
         """Test the complete processing pipeline by comparing generated output with reference."""
+        # Create a temporary directory for this test
+        temp_dir = tempfile.mkdtemp()
+        self.temp_dir = temp_dir
+
         # Set up command line arguments for the test
         sys.argv = [
             "create_drumgizmo_kit.py",
@@ -372,6 +384,8 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             self.temp_dir,
             "-c",
             os.path.join(self.source_dir, "drumgizmo-kit.ini"),
+            "--velocity-levels",
+            "10",
         ]
 
         # Run the main function
@@ -379,13 +393,14 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
 
         # First verify the directory structure
         self.assertTrue(
-            self.verify_directory_structure(),
-            "Generated directory structure does not match expected structure",
+            self.verify_directory_structure(velocity_levels=10),
+            "Generated directory structure does not match expected structure for 10 velocity levels",
         )
 
         # Then verify the XML content structure
         self.assertTrue(
-            self.verify_xml_content(), "Generated XML content does not have the expected structure"
+            self.verify_xml_content(velocity_levels=10),
+            "Generated XML content does not have the expected structure for 10 velocity levels",
         )
 
         # Compare the generated output with the reference output
@@ -419,6 +434,74 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
         # Assert that the comparison was successful
         self.assertTrue(
             comparison_result["all_match"], "Generated output does not match reference output"
+        )
+
+    def test_full_integration_4_levels(self):
+        """Test the complete processing pipeline with 4 velocity levels."""
+        # Create a temporary directory for this test
+        temp_dir = tempfile.mkdtemp()
+        self.temp_dir = temp_dir
+
+        # Set up command line arguments for the test with 4 velocity levels
+        sys.argv = [
+            "create_drumgizmo_kit.py",
+            "-s",
+            os.path.join(self.source_dir),
+            "-t",
+            self.temp_dir,
+            "-c",
+            os.path.join(self.source_dir, "drumgizmo-kit.ini"),
+            "--velocity-levels",
+            "4",
+        ]
+
+        # Run the main function
+        main_module.main()
+
+        # First verify the directory structure
+        self.assertTrue(
+            self.verify_directory_structure(velocity_levels=4),
+            "Generated directory structure does not match expected structure for 4 velocity levels",
+        )
+
+        # Then verify the XML content structure
+        self.assertTrue(
+            self.verify_xml_content(velocity_levels=4),
+            "Generated XML content does not have the expected structure for 4 velocity levels",
+        )
+
+        # Compare the generated output with the reference output for 4 velocity levels
+        reference_dir = os.path.join(os.path.dirname(__file__), "target-4-levels")
+        comparison_result = self.compare_directories(
+            reference_dir, self.temp_dir, ignore_patterns=[r"\.git", r"__pycache__"]
+        )
+
+        # Print detailed information about the comparison
+        if not comparison_result["all_match"]:
+            if comparison_result["missing_in_dir2"]:
+                print("\nFiles missing in generated output (4 levels):")
+                for file in sorted(comparison_result["missing_in_dir2"]):
+                    print(f"  {file}")
+
+            if comparison_result["missing_in_dir1"]:
+                print("\nExtra files in generated output (4 levels):")
+                for file in sorted(comparison_result["missing_in_dir1"]):
+                    print(f"  {file}")
+
+            if comparison_result["mismatch_files"]:
+                print("\nFiles with different content (4 levels):")
+                for file in sorted(comparison_result["mismatch_files"]):
+                    print(f"  {file}")
+
+            if comparison_result["error_files"]:
+                print("\nErrors during comparison (4 levels):")
+                for file, error in comparison_result["error_files"]:
+                    print(f"  {file}: {error}")
+
+        # Assert that the comparison was successful
+        self.assertTrue(
+            comparison_result["all_match"],
+            "Generated output does not match reference output for 4 velocity levels",
         )
 
 
