@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v1.1.2 (2025-04-27)
+
+### Bug Fixes
+
+- Try to update the version number in pyproject.toml
+  ([`2a6bfed`](https://github.com/e-picas/drumgizmo-kits-generator/commit/2a6bfedeb2b050a678d3765bbff551ef1c499e35))
+
+
 ## v1.1.1 (2025-04-27)
 
 ### Bug Fixes
