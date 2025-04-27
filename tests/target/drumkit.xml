@@ -2,14 +2,14 @@
 <drumkit version="1.0" name="Test Kit" samplerate="44100">
   <metadata>
     <title>Test Kit</title>
-    <description>This is a description</description>
-    <notes>DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at 2025-04-27 15:45</notes>
-    <license>CC-BY-SA</license>
+    <description>Kit automatically created with 10 velocity levels</description>
+    <notes>DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at 2025-04-27 17:29</notes>
+    <license>Private license</license>
     <author>Piero</author>
     <samplerate>44100</samplerate>
     <website>https://picas.fr/</website>
     <logo src="pngtree-music-notes-png-image_8660757.png"/>
-    <created>Generated on 2025-04-27 15:45:31 with drumgizmo-kits-generator v1.1.2 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
+    <created>Generated on 2025-04-27 17:29:06 with drumgizmo-kits-generator v1.1.2 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
   </metadata>
   <channels>
     <channel name="AmbL"/>
