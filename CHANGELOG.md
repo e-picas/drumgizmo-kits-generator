@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v1.2.0 (2025-04-27)
+
+### Features
+
+- Create a velocity-levels variable
+  ([#8](https://github.com/e-picas/drumgizmo-kits-generator/pull/8),
+  [`8701845`](https://github.com/e-picas/drumgizmo-kits-generator/commit/87018455fc5d1438f49d8be1003a2733a4e55813))
+
+- Enhance config values ([#10](https://github.com/e-picas/drumgizmo-kits-generator/pull/10),
+  [`bb88900`](https://github.com/e-picas/drumgizmo-kits-generator/commit/bb88900287904bf2a8af3f000caf746988bf489e))
+
+
 ## v1.1.2 (2025-04-27)
 
 ### Bug Fixes
