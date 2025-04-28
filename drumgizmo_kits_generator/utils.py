@@ -145,6 +145,5 @@ def print_summary(metadata, instruments, target_dir):
     print(f"Author: \"{metadata.get('author', 'Unknown')}\"", file=sys.stderr)
     print(f"License: {metadata.get('license', 'Unknown')}", file=sys.stderr)
     print(f"Sample rate: {metadata.get('samplerate', 'Unknown')} Hz", file=sys.stderr)
-    print(f"Instrument prefix: \"{metadata.get('instrument_prefix', 'None')}\"", file=sys.stderr)
     print(f"Website: \"{metadata.get('website', 'None')}\"", file=sys.stderr)
     print(f"Logo: \"{metadata.get('logo', 'None')}\"", file=sys.stderr)

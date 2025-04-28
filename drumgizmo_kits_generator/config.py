@@ -100,7 +100,6 @@ def read_config_file(config_file):
                     "kit_website": "website",
                     "kit_logo": "logo",
                     "kit_samplerate": "samplerate",
-                    "kit_instrument_prefix": "instrument_prefix",
                     "kit_extra_files": "extra_files",
                     "kit_midi_note_min": "midi_note_min",
                     "kit_midi_note_max": "midi_note_max",

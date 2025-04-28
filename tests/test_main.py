@@ -50,12 +50,12 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
             temp.write('kit_version = "1.0"\n')
             temp.write('kit_description = "This is a description"\n')
             temp.write('kit_notes = "DrumGizmo kit generated for testing purpose"\n')
-            temp.write('kit_author = "Test Author"\n')
-            temp.write('kit_license = "Test License"\n')
-            temp.write('kit_website = "http://example.com"\n')
-            temp.write('kit_logo = "test_logo.png"\n')
-            temp.write('kit_samplerate = "48000"\n')
-            temp.write('kit_instrument_prefix = "Test"\n')
+            temp.write('kit_author = "Piero"\n')
+            temp.write('kit_license = "Private license"\n')
+            temp.write('kit_website = "https://picas.fr/"\n')
+            temp.write('kit_samplerate = "44100"\n')
+            temp.write('kit_logo = "pngtree-music-notes-png-image_8660757.png"\n')
+            temp.write('kit_extra_files = "Lorem Ipsum.pdf"\n')
             temp_name = temp.name
 
         # Create mock arguments
@@ -71,7 +71,6 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         args.website = None
         args.logo = None
         args.samplerate = None
-        args.instrument_prefix = None
         args.extra_files = None
 
         # Call the function to test
@@ -90,16 +89,19 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
             metadata["notes"],
             "Notes should be read from config",
         )
-        self.assertEqual(metadata["author"], "Test Author", "Author should be read from config")
-        self.assertEqual(metadata["license"], "Test License", "License should be read from config")
+        self.assertEqual(metadata["author"], "Piero", "Author should be read from config")
         self.assertEqual(
-            metadata["website"], "http://example.com", "Website should be read from config"
+            metadata["license"], "Private license", "License should be read from config"
         )
-        self.assertEqual(metadata["logo"], "test_logo.png", "Logo should be read from config")
-        self.assertEqual(metadata["samplerate"], "48000", "Sample rate should be read from config")
         self.assertEqual(
-            metadata["instrument_prefix"], "Test", "Instrument prefix should be read from config"
+            metadata["website"], "https://picas.fr/", "Website should be read from config"
         )
+        self.assertEqual(
+            metadata["logo"],
+            "pngtree-music-notes-png-image_8660757.png",
+            "Logo should be read from config",
+        )
+        self.assertEqual(metadata["samplerate"], "44100", "Sample rate should be read from config")
 
         # Test command line arguments overriding config values
         args.name = "Override Kit"
@@ -130,7 +132,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         args.author = "Command Line Author"
         args.license = "Command Line License"
         args.samplerate = "96000"
-        args.instrument_prefix = "CL"
+        args.extra_files = "command_line_file.txt"
 
         # Call the function again
         metadata = main_module.prepare_metadata(args)
@@ -154,7 +156,9 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         )
         self.assertEqual(metadata["samplerate"], "96000", "Sample rate should be from command line")
         self.assertEqual(
-            metadata["instrument_prefix"], "CL", "Instrument prefix should be from command line"
+            metadata["extra_files"],
+            "command_line_file.txt",
+            "Extra files should be from command line",
         )
 
     def test_prepare_metadata_validation(self):
@@ -181,7 +185,6 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         args.website = None
         args.logo = None
         args.samplerate = None
-        args.instrument_prefix = None
         args.extra_files = None
         args.midi_note_min = None
         args.midi_note_max = None

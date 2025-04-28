@@ -78,7 +78,6 @@ python create_drumgizmo_kit.py -h
 | `--description` | The description of the generated kit - [`drumkit.xml`](#generated-kit-structure) metadata | - |
 | `--extensions` | Comma-separated list of audio file extensions to process | `wav,WAV,flac,FLAC,ogg,OGG` |
 | `--extra-files` | Comma-separated list of additional files to copy to the target directory - Local paths from the `source` directory | - |
-| `--instrument-prefix` | Prefix used for the instrument names | - |
 | `--license` | The license of the generated kit - [`drumkit.xml`](#generated-kit-structure) metadata | `Private license` |
 | `--logo` | Path of the kit logo filename - Local path from the `source` directory - [`drumkit.xml`](#generated-kit-structure) metadata | - |
 | `--midi-note-max` | Maximum MIDI note allowed - [`midimap.xml`](#generated-kit-structure) generation | `127` (<=127) |
@@ -106,7 +105,6 @@ kit_author = "Your Name"
 kit_license = "CC-BY-SA"
 kit_website = "https://your-site.com"
 kit_samplerate = "44100"
-kit_instrument_prefix = "MyKit"
 kit_logo = "logo.png"
 kit_extra_files = "README.txt,LICENSE.txt,photo.jpg"
 
