@@ -9,6 +9,8 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=e-picas_drumgizmo-kits-generator&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=e-picas_drumgizmo-kits-generator)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=e-picas_drumgizmo-kits-generator&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=e-picas_drumgizmo-kits-generator)
 
+![DrumGizmo](https://img.shields.io/badge/DrumGizmo-%3E%3D0.9.20-orange?style=plastic&link=https%3A%2F%2Fdrumgizmo.org%2Fwiki%2Fdoku.php%3Fid%3Dstart)
+
 ## Features
 
 - 🚀 **Generate DrumGizmo kits from a set of audio samples**
@@ -48,7 +50,7 @@ kit/
 
 - [Python 3.8](https://www.python.org/downloads/) or higher
 - [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing
-- some other Python dependencies for development only (see the `requirements-dev.txt` file)
+- some other Python dependencies for development only (see the [`requirements-dev.txt`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/requirements-dev.txt) file)
 
 ### Installation
 
@@ -69,9 +71,9 @@ python create_drumgizmo_kit.py -h
 
 | Option | Description | Default |
 |----------------------|---------------------|-------------|
-| `-s` / `--source` | (REQUIRED) - Source directory containing audio samples | - |
-| `-t` / `--target` | (REQUIRED) - Target directory for the DrumGizmo kit | - |
-| `-c` / `--config` | Configuration file path to use (*INI* format) | - |
+| `-s` / `--source` | REQUIRED - Source directory containing audio samples | - |
+| `-t` / `--target` | REQUIRED - Target directory for the DrumGizmo kit | - |
+| `-c` / `--config` | [Configuration file](#configuration-file) path to use (*INI* format) | - |
 | `--name` | The name of the generated kit | `DrumGizmo Kit` |
 | `--version` | The version of the generated kit | `1.0` |
 | `--description` | The description of the generated kit | - |
@@ -123,7 +125,7 @@ If you find a bug or want to request a new feature, just [open an issue](https:/
 ### Development
 
 To fix a bug or make a proposal in this app, you may commit to a personal branch, push it to the repo and then
-make a "Pull request" explaining your modification.
+[make a pull request](https://github.com/e-picas/drumgizmo-kits-generator/compare) explaining your modification.
 
 #### Get the sources
 
@@ -168,7 +170,7 @@ make lint
 
 ### Releases
 
-The releases are built manually with an automated process with [python-semantic-release](https://python-semantic-release.readthedocs.io/en/latest/).
+The releases are built manually with an automated process using [python-semantic-release](https://python-semantic-release.readthedocs.io/en/latest/).
 
 ### Security
 
