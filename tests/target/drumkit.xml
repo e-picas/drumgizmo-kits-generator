@@ -2,14 +2,14 @@
 <drumkit version="1.0" name="Test Kit" samplerate="44100">
   <metadata>
     <title>Test Kit</title>
-    <description>Kit automatically created with 10 velocity levels</description>
-    <notes>DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at 2025-04-27 17:29</notes>
-    <license>Private license</license>
+    <description>This is a description</description>
+    <notes>DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at 2025-04-28 23:54</notes>
     <author>Piero</author>
+    <license>Private license</license>
     <samplerate>44100</samplerate>
     <website>https://picas.fr/</website>
     <logo src="pngtree-music-notes-png-image_8660757.png"/>
-    <created>Generated on 2025-04-27 17:29:06 with drumgizmo-kits-generator v1.1.2 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
+    <created>Generated on 2025-04-28 23:54:36 with drumgizmo-kits-generator v1.3.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
   </metadata>
   <channels>
     <channel name="AmbL"/>
@@ -28,7 +28,7 @@
     <channel name="Tom3"/>
   </channels>
   <instruments>
-    <instrument name="Bass-Drum-1" file="Bass-Drum-1/Bass-Drum-1.xml">
+    <instrument name="E-Mu-Proteus-FX-Wacky-Snare" file="E-Mu-Proteus-FX-Wacky-Snare/E-Mu-Proteus-FX-Wacky-Snare.xml">
       <channelmap in="AmbL" out="AmbL" main="true"/>
       <channelmap in="AmbR" out="AmbR" main="true"/>
       <channelmap in="Hihat" out="Hihat"/>
@@ -44,7 +44,23 @@
       <channelmap in="Tom2" out="Tom2"/>
       <channelmap in="Tom3" out="Tom3"/>
     </instrument>
-    <instrument name="E-Mu-Proteus-FX-Wacky-Snare" file="E-Mu-Proteus-FX-Wacky-Snare/E-Mu-Proteus-FX-Wacky-Snare.xml">
+    <instrument name="Example" file="Example/Example.xml">
+      <channelmap in="AmbL" out="AmbL" main="true"/>
+      <channelmap in="AmbR" out="AmbR" main="true"/>
+      <channelmap in="Hihat" out="Hihat"/>
+      <channelmap in="Kdrum_back" out="Kdrum_back"/>
+      <channelmap in="Kdrum_front" out="Kdrum_front"/>
+      <channelmap in="Hihat" out="Hihat"/>
+      <channelmap in="OHL" out="OHL" main="true"/>
+      <channelmap in="OHR" out="OHR" main="true"/>
+      <channelmap in="Ride" out="Ride"/>
+      <channelmap in="Snare_bottom" out="Snare_bottom"/>
+      <channelmap in="Snare_top" out="Snare_top"/>
+      <channelmap in="Tom1" out="Tom1"/>
+      <channelmap in="Tom2" out="Tom2"/>
+      <channelmap in="Tom3" out="Tom3"/>
+    </instrument>
+    <instrument name="gs-16b-1c-44100hz" file="gs-16b-1c-44100hz/gs-16b-1c-44100hz.xml">
       <channelmap in="AmbL" out="AmbL" main="true"/>
       <channelmap in="AmbR" out="AmbR" main="true"/>
       <channelmap in="Hihat" out="Hihat"/>

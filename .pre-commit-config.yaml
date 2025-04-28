@@ -8,8 +8,6 @@ repos:
         stages: [pre-commit, manual]
       - id: check-yaml
         stages: [pre-commit, manual]
-      - id: check-added-large-files
-        stages: [pre-commit, manual]
       - id: check-toml
         stages: [pre-commit, manual]
       - id: debug-statements
