@@ -1,6 +1,0 @@
-<?xml version="1.0" ?>
-<midimap>
-  <map note="59" instr="E-Mu-Proteus-FX-Wacky-Snare" velmin="0" velmax="127"/>
-  <map note="60" instr="Example" velmin="0" velmax="127"/>
-  <map note="61" instr="gs-16b-1c-44100hz" velmin="0" velmax="127"/>
-</midimap>

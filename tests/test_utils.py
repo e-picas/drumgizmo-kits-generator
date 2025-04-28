@@ -12,6 +12,7 @@ formatting.
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -24,6 +25,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 # pylint: disable-next=wrong-import-position
 from drumgizmo_kits_generator.utils import (
     extract_instrument_name,
+    get_audio_samplerate,
     get_file_extension,
     get_timestamp,
     prepare_instrument_directory,
@@ -182,6 +184,55 @@ class TestUtils(unittest.TestCase):
                 expected,
                 f"Should extract '{expected}' from '{file_path}'",
             )
+
+    def test_get_audio_samplerate(self):
+        """Test getting the sample rate of an audio file."""
+        # Create a temporary audio file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+            temp_path = temp_file.name
+
+        # Create a test WAV file with SoX at 44100 Hz
+        try:
+            subprocess.run(
+                ["sox", "-n", temp_path, "rate", "44100", "trim", "0", "0.1"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        except (subprocess.SubprocessError, FileNotFoundError):
+            self.skipTest("SoX is not available or failed to create test file")
+
+        # Test getting the sample rate
+        sample_rate = get_audio_samplerate(temp_path)
+        self.assertEqual(44100, sample_rate, "Should return the correct sample rate")
+
+        # Clean up
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass
+
+    def test_get_audio_samplerate_nonexistent_file(self):
+        """Test getting the sample rate of a non-existent file."""
+        sample_rate = get_audio_samplerate("nonexistent.wav")
+        self.assertIsNone(sample_rate, "Should return None for non-existent file")
+
+    def test_get_audio_samplerate_invalid_file(self):
+        """Test getting the sample rate of an invalid audio file."""
+        # Create a temporary file that is not a valid audio file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+            temp_path = temp_file.name
+            temp_file.write(b"This is not a valid WAV file")
+
+        # Test getting the sample rate
+        sample_rate = get_audio_samplerate(temp_path)
+        self.assertIsNone(sample_rate, "Should return None for invalid audio file")
+
+        # Clean up
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass
 
     @patch("sys.stderr", new_callable=MagicMock)
     def test_print_summary(self, mock_stderr):

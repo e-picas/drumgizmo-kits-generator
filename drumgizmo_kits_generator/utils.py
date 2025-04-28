@@ -9,6 +9,7 @@ Contains various helper functions.
 import datetime
 import os
 import shutil
+import subprocess
 import sys
 
 
@@ -117,6 +118,37 @@ def get_file_extension(file_path):
     _, extension = os.path.splitext(file_path)
 
     return extension
+
+
+def get_audio_samplerate(audio_file):
+    """
+    Get the sample rate of an audio file using SoX.
+
+    Args:
+        audio_file (str): Path to the audio file
+
+    Returns:
+        int: Sample rate in Hz, or None if the file could not be read
+    """
+    try:
+        # Use SoX to get the sample rate
+        result = subprocess.run(
+            ["soxi", "-r", audio_file],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        # Parse the output (should be just the sample rate)
+        samplerate = int(result.stdout.strip())
+        return samplerate
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting sample rate: {e}", file=sys.stderr)
+        print(f"Command error: {e.stderr}", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"Error getting sample rate: {e}", file=sys.stderr)
+        return None
 
 
 def print_summary(metadata, instruments, target_dir):
