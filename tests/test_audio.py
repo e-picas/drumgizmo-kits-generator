@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 # Import the module to test
 # pylint: disable-next=wrong-import-position
 from drumgizmo_kits_generator.audio import (
+    convert_sample_rate,
     copy_sample_file,
     create_volume_variations,
     find_audio_files,
@@ -260,6 +261,180 @@ class TestAudio(unittest.TestCase):
         # Verify the result - la fonction continue même en cas d'erreur
         # La fonction ne retourne pas de valeur et continue malgré les erreurs
         self.assertEqual(mock_run.call_count, 9, "La fonction devrait continuer malgré les erreurs")
+
+    def test_convert_sample_rate(self):
+        """Test converting the sample rate of a file."""
+        # Create a temporary source file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as source_file:
+            source_path = source_file.name
+
+        # Create a temporary destination file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as dest_file:
+            dest_path = dest_file.name
+
+        # Create a test WAV file with SoX
+        try:
+            subprocess.run(
+                ["sox", "-n", source_path, "rate", "44100", "trim", "0", "0.1"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        except (subprocess.SubprocessError, FileNotFoundError):
+            self.skipTest("SoX is not available or failed to create test file")
+
+        # Test converting the sample rate
+        result = convert_sample_rate(source_path, dest_path, "48000")
+        self.assertTrue(result, "Sample rate conversion should succeed")
+
+        # Check that the destination file exists
+        self.assertTrue(os.path.exists(dest_path), "Destination file should exist")
+
+        # Check that the sample rate was actually converted
+        try:
+            output = subprocess.run(
+                ["soxi", "-r", dest_path],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            sample_rate = output.stdout.strip()
+            self.assertEqual("48000", sample_rate, "Sample rate should be 48000 Hz")
+        except (subprocess.SubprocessError, FileNotFoundError):
+            self.skipTest("soxi is not available or failed to get sample rate")
+
+        # Clean up
+        try:
+            os.unlink(source_path)
+            os.unlink(dest_path)
+        except OSError:
+            pass
+
+    def test_convert_sample_rate_error(self):
+        """Test error handling in convert_sample_rate."""
+        # Test with non-existent source file
+        result = convert_sample_rate("nonexistent.wav", "output.wav", "48000")
+        self.assertFalse(result, "Should return False for non-existent source file")
+
+    def test_copy_sample_file_with_conversion(self):
+        """Test copying a sample file with sample rate conversion."""
+        # Create a temporary source file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as source_file:
+            source_path = source_file.name
+
+        # Create a temporary destination file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as dest_file:
+            dest_path = dest_file.name
+
+        # Create a test WAV file with SoX
+        try:
+            subprocess.run(
+                ["sox", "-n", source_path, "rate", "44100", "trim", "0", "0.1"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        except (subprocess.SubprocessError, FileNotFoundError):
+            self.skipTest("SoX is not available or failed to create test file")
+
+        # Test copying with sample rate conversion
+        result = copy_sample_file(source_path, dest_path, "48000")
+        self.assertTrue(result, "File copy with conversion should succeed")
+
+        # Check that the destination file exists
+        self.assertTrue(os.path.exists(dest_path), "Destination file should exist")
+
+        # Check that the sample rate was actually converted
+        try:
+            output = subprocess.run(
+                ["soxi", "-r", dest_path],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            sample_rate = output.stdout.strip()
+            self.assertEqual("48000", sample_rate, "Sample rate should be 48000 Hz")
+        except (subprocess.SubprocessError, FileNotFoundError):
+            self.skipTest("soxi is not available or failed to get sample rate")
+
+        # Clean up
+        try:
+            os.unlink(source_path)
+            os.unlink(dest_path)
+        except OSError:
+            pass
+
+    def test_copy_sample_file_same_rate(self):
+        """Test copying a sample file when source and target sample rates are the same."""
+        # Create a temporary source file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as source_file:
+            source_path = source_file.name
+
+        # Create a temporary destination file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as dest_file:
+            dest_path = dest_file.name
+
+        # Create a test WAV file with SoX
+        try:
+            subprocess.run(
+                ["sox", "-n", source_path, "rate", "44100", "trim", "0", "0.1"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        except (subprocess.SubprocessError, FileNotFoundError):
+            self.skipTest("SoX is not available or failed to create test file")
+
+        # Test copying with the same sample rate
+        result = copy_sample_file(source_path, dest_path, "44100")
+        self.assertTrue(result, "File copy with same rate should succeed")
+
+        # Check that the destination file exists
+        self.assertTrue(os.path.exists(dest_path), "Destination file should exist")
+
+        # Clean up
+        try:
+            os.unlink(source_path)
+            os.unlink(dest_path)
+        except OSError:
+            pass
+
+    def test_copy_sample_file_no_conversion(self):
+        """Test copying a sample file without sample rate conversion."""
+        # Create a temporary source file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as source_file:
+            source_path = source_file.name
+
+        # Create a temporary destination file
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as dest_file:
+            dest_path = dest_file.name
+
+        # Create a test WAV file with SoX
+        try:
+            subprocess.run(
+                ["sox", "-n", source_path, "rate", "44100", "trim", "0", "0.1"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        except (subprocess.SubprocessError, FileNotFoundError):
+            self.skipTest("SoX is not available or failed to create test file")
+
+        # Test copying without sample rate conversion
+        result = copy_sample_file(source_path, dest_path)
+        self.assertTrue(result, "File copy without conversion should succeed")
+
+        # Check that the destination file exists
+        self.assertTrue(os.path.exists(dest_path), "Destination file should exist")
+
+        # Clean up
+        try:
+            os.unlink(source_path)
+            os.unlink(dest_path)
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":
