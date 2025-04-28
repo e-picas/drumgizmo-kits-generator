@@ -2,28 +2,28 @@
 
 A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), a multichannel drum sampler, from a directory of audio sources.
 
-![GitHub Release](https://img.shields.io/github/v/release/e-picas/drumgizmo-kits-generator)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/e-picas/drumgizmo-kits-generator/quality.yml?branch=master)
-![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fe-picas%2Fdrumgizmo-kits-generator%2Frefs%2Fheads%2Fmaster%2Fpyproject.toml)
-![GitHub License](https://img.shields.io/github/license/e-picas/drumgizmo-kits-generator)
+[![GitHub Release](https://img.shields.io/github/v/release/e-picas/drumgizmo-kits-generator)](https://github.com/e-picas/drumgizmo-kits-generator/releases)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/e-picas/drumgizmo-kits-generator/quality.yml?branch=master)](https://github.com/e-picas/drumgizmo-kits-generator/actions?query=branch%3Amaster)
+[![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fe-picas%2Fdrumgizmo-kits-generator%2Frefs%2Fheads%2Fmaster%2Fpyproject.toml)](https://www.python.org/)
+[![GitHub License](https://img.shields.io/github/license/e-picas/drumgizmo-kits-generator)](https://github.com/e-picas/drumgizmo-kits-generator?tab=MIT-1-ov-file#readme)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=e-picas_drumgizmo-kits-generator&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=e-picas_drumgizmo-kits-generator)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=e-picas_drumgizmo-kits-generator&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=e-picas_drumgizmo-kits-generator)
 
-![DrumGizmo](https://img.shields.io/badge/DrumGizmo-%3E%3D0.9.20-orange?style=plastic&link=https%3A%2F%2Fdrumgizmo.org%2Fwiki%2Fdoku.php%3Fid%3Dstart)
+[![DrumGizmo](https://img.shields.io/badge/DrumGizmo-%3E%3D0.9.20-orange?style=plastic)](https%3A%2F%2Fdrumgizmo.org%2Fwiki%2Fdoku.php%3Fid%3Dstart)
 
 ## Features
 
 - 🚀 **Generate DrumGizmo kits from a set of audio samples**
 - 🎙️ **Support for multiple audio formats (WAV, FLAC, OGG)**
-- ✨ **Automatic creation of volume variations (10 levels by default)**
+- ✨ **Automatic creation of volume variations to manage velocity (10 levels by default)**
 - 🧮 **Alphabetical sorting of instruments and assignment of consecutive MIDI notes**
-- 🏷️ **Read metadata from a configuration file**
+- 🏷️ **Read metadata and configuration from a configuration file**
 - 📜 **Copy additional files to the final kit**
 - ⬛ **Complete command-line interface**
 
 ## Generated Kit Structure
 
-The generated kit will have the following structure:
+Following the [DrumGizmo file format documentation](https://drumgizmo.org/wiki/doku.php?id=documentation:file_formats), the generated kit will have the following structure:
 
 ```
 kit/
@@ -71,25 +71,24 @@ python create_drumgizmo_kit.py -h
 
 | Option | Description | Default |
 |----------------------|---------------------|-------------|
-| `-s` / `--source` | REQUIRED - Source directory containing audio samples | - |
-| `-t` / `--target` | REQUIRED - Target directory for the DrumGizmo kit | - |
-| `-c` / `--config` | [Configuration file](#configuration-file) path to use (*INI* format) | - |
-| `--name` | The name of the generated kit | `DrumGizmo Kit` |
-| `--version` | The version of the generated kit | `1.0` |
-| `--description` | The description of the generated kit | - |
-| `--notes` | Additional notes about the kit | - |
-| `--author` | The author(s) of the generated kit | - |
-| `--license` | The license of the generated kit | `Private license` |
-| `--website` | The website of the generated kit | - |
-| `--logo` | The kit logo filename | - |
-| `--samplerate` | Sample rate of the kit's samples in Hz | `44100` |
-| `--instrument-prefix` | Prefix used for instrument names | - |
-| `--extra-files` | Comma-separated list of additional files to copy to the target directory | - |
-| `--velocity-levels` | Number of velocity levels to generate | `10` |
-| `--midi-note-min` | Minimum MIDI note number allowed | `0` |
-| `--midi-note-max` | Maximum MIDI note number allowed | `127` |
-| `--midi-note-median` | Median MIDI note for distributing instruments around | `60` (C4 key) |
+| `-s` / `--source` | The path of your sources directory containing the audio samples - Samples must be in the root directory (no recursion) | *REQUIRED* |
+| `-t` / `--target` | The path of the target directory where the kit will be generated - It will be created if it does not exist - Its contents are **deleted** before each run (you should probably use a temporary directory first) | *REQUIRED* |
+| `-c` / `--config` | Path of a [configuration file](#configuration-file) to use (*INI* format) | - |
+| `--author` | The author(s) of the generated kit - [`drumkit.xml`](#generated-kit-structure) metadata | - |
+| `--description` | The description of the generated kit - [`drumkit.xml`](#generated-kit-structure) metadata | - |
 | `--extensions` | Comma-separated list of audio file extensions to process | `wav,WAV,flac,FLAC,ogg,OGG` |
+| `--extra-files` | Comma-separated list of additional files to copy to the target directory - Local paths from the `source` directory | - |
+| `--license` | The license of the generated kit - [`drumkit.xml`](#generated-kit-structure) metadata | `Private license` |
+| `--logo` | Path of the kit logo filename - Local path from the `source` directory - [`drumkit.xml`](#generated-kit-structure) metadata | - |
+| `--midi-note-max` | Maximum MIDI note allowed - [`midimap.xml`](#generated-kit-structure) generation | `127` (<=127) |
+| `--midi-note-median` | Median MIDI note for distributing instruments around - [`midimap.xml`](#generated-kit-structure) generation | `60` (*C4* key) |
+| `--midi-note-min` | Minimum MIDI note allowed - [`midimap.xml`](#generated-kit-structure) generation | `1` (>=1) |
+| `--name` | The name of the generated kit - [`drumkit.xml`](#generated-kit-structure) metadata | `DrumGizmo Kit` |
+| `--notes` | Additional notes about the kit - An automatic string with the version of the python app and the generation date is suffixed - [`drumkit.xml`](#generated-kit-structure) metadata | - |
+| `--samplerate` | Sample rate of the kit's samples (in *Hz*) - [`drumkit.xml`](#generated-kit-structure) metadata | `44100` |
+| `--velocity-levels` | Total number of velocity levels to generate in the target (the original sample + `velocity-levels`-1 automatically generated) | `10` |
+| `--version` | The version of the generated kit - You may use it to manage your kit's versions over the time - [`drumkit.xml`](#generated-kit-structure) metadata | `1.0` |
+| `--website` | The website of the generated kit - [`drumkit.xml`](#generated-kit-structure) metadata | - |
 
 #### Configuration file
 
@@ -182,4 +181,4 @@ This project is licensed under the [MIT](LICENSE) license.
 ### Author(s)
 
 - This software is generated by [Claude 3.7 Sonnet](https://claude.ai/) guided by myself ^^
-- "myself" is e-Picas (<https://github.com/e-picas>)
+- "myself" is **[@e-Picas](https://github.com/e-picas)**
