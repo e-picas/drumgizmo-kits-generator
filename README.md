@@ -85,7 +85,7 @@ python create_drumgizmo_kit.py -h
 | `--midi-note-min` | Minimum MIDI note allowed - [`midimap.xml`](#generated-kit-structure) generation | `1` (>=1) |
 | `--name` | The name of the generated kit - [`drumkit.xml`](#generated-kit-structure) metadata | `DrumGizmo Kit` |
 | `--notes` | Additional notes about the kit - An automatic string with the version of the python app and the generation date is suffixed - [`drumkit.xml`](#generated-kit-structure) metadata | - |
-| `--samplerate` | Sample rate of the kit's samples (in *Hz*) - [`drumkit.xml`](#generated-kit-structure) metadata | `44100` |
+| `--samplerate` | Sample rate of the kit's samples (in *Hz*) - All generated samples will be changed to this rate including original - [`drumkit.xml`](#generated-kit-structure) metadata | `44100` |
 | `--velocity-levels` | Total number of velocity levels to generate in the target (the original sample + `velocity-levels`-1 automatically generated) | `10` |
 | `--version` | The version of the generated kit - You may use it to manage your kit's versions over the time - [`drumkit.xml`](#generated-kit-structure) metadata | `1.0` |
 | `--website` | The website of the generated kit - [`drumkit.xml`](#generated-kit-structure) metadata | - |
