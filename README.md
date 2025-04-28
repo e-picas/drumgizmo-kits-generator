@@ -106,7 +106,6 @@ kit_author = "Your Name"
 kit_license = "CC-BY-SA"
 kit_website = "https://your-site.com"
 kit_samplerate = "44100"
-kit_instrument_prefix = "MyKit"
 kit_logo = "logo.png"
 kit_extra_files = "README.txt,LICENSE.txt,photo.jpg"
 

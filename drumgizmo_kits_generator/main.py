@@ -72,7 +72,6 @@ Configuration file options:
     kit_website            Kit website
     kit_logo               Kit logo filename
     kit_samplerate         Sample rate in Hz
-    kit_instrument_prefix  Prefix for instrument names
     kit_extra_files        Additional files to copy
     kit_velocity_levels    Number of velocity levels to generate
     kit_midi_note_min      Minimum MIDI note number allowed
@@ -139,16 +138,14 @@ Configuration file options:
         help=f"Kit license (default: {DEFAULT_LICENSE})",
     )
     parser.add_argument("--website", help="Kit website")
-    parser.add_argument("--logo", help="Kit logo filename")
     parser.add_argument(
         "--samplerate",
         default=DEFAULT_SAMPLERATE,
         help=f"Sample rate in Hz (default: {DEFAULT_SAMPLERATE})",
     )
-    parser.add_argument("--instrument-prefix", help="Prefix for instrument names")
+    parser.add_argument("--logo", help="Logo file to include in the kit")
     parser.add_argument(
-        "--extra-files",
-        help="Comma-separated list of additional files to copy to the target directory",
+        "--extra-files", help="Comma-separated list of additional files to include in the kit"
     )
 
     return parser.parse_args()
@@ -205,8 +202,6 @@ def prepare_metadata(args):
         metadata["website"] = args.website
     if args.samplerate:
         metadata["samplerate"] = args.samplerate
-    if args.instrument_prefix:
-        metadata["instrument_prefix"] = args.instrument_prefix
     if args.logo:
         metadata["logo"] = args.logo
     if args.extra_files:
@@ -229,8 +224,6 @@ def prepare_metadata(args):
         metadata["website"] = ""
     if "samplerate" not in metadata:
         metadata["samplerate"] = DEFAULT_SAMPLERATE
-    if "instrument_prefix" not in metadata:
-        metadata["instrument_prefix"] = ""
     if "logo" not in metadata:
         metadata["logo"] = ""
     if "extra_files" not in metadata:

@@ -42,7 +42,6 @@ KIT_AUTHOR="Test Author"
 KIT_LICENSE="Test License"
 KIT_WEBSITE="http://example.com"
 KIT_SAMPLERATE="48000"
-KIT_INSTRUMENT_PREFIX="TempTest"
 KIT_LOGO="test_logo.png"
 KIT_EXTRA_FILES="file1.txt,file2.txt"
 """
@@ -77,7 +76,6 @@ KIT_EXTRA_FILES="file1.txt,file2.txt"
         self.assertEqual(config["license"], "CC-BY-SA", "License should match")
         self.assertEqual(config["website"], "https://picas.fr/", "Website should match")
         self.assertEqual(config["samplerate"], "44100", "Sample rate should match")
-        self.assertEqual(config["instrument_prefix"], "Test", "Instrument prefix should match")
         self.assertEqual(
             config["logo"], "pngtree-music-notes-png-image_8660757.png", "Logo should match"
         )
@@ -85,7 +83,7 @@ KIT_EXTRA_FILES="file1.txt,file2.txt"
 
         # Verify the config is a dictionary with the expected number of keys
         self.assertIsInstance(config, dict, "Config should be a dictionary")
-        self.assertGreaterEqual(len(config), 11, "Config should have at least 11 keys")
+        self.assertGreaterEqual(len(config), 10, "Config should have at least 10 keys")
 
     def test_read_temp_config_file(self):
         """Test reading a temporary configuration file with custom values."""
@@ -103,7 +101,6 @@ KIT_EXTRA_FILES="file1.txt,file2.txt"
         self.assertEqual(config["license"], "Test License", "License should match")
         self.assertEqual(config["website"], "http://example.com", "Website should match")
         self.assertEqual(config["samplerate"], "48000", "Sample rate should match")
-        self.assertEqual(config["instrument_prefix"], "TempTest", "Instrument prefix should match")
         self.assertEqual(config["logo"], "test_logo.png", "Logo should match")
         self.assertEqual(config["extra_files"], "file1.txt,file2.txt", "Extra files should match")
 
