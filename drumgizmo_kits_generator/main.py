@@ -374,7 +374,12 @@ def main():
     midi_note_min = args.midi_note_min
     midi_note_max = args.midi_note_max
     midi_note_median = args.midi_note_median
-    velocity_levels = args.velocity_levels
+
+    # Process velocity levels
+    if "velocity_levels" in metadata:
+        velocity_levels = int(metadata["velocity_levels"])
+    else:
+        velocity_levels = args.velocity_levels
 
     # Override with values from config file if available
     # pylint: disable-next=consider-using-get
@@ -386,9 +391,6 @@ def main():
     # pylint: disable-next=consider-using-get
     if "midi_note_median" in metadata:
         midi_note_median = metadata["midi_note_median"]
-    # pylint: disable-next=consider-using-get
-    if "velocity_levels" in metadata:
-        velocity_levels = metadata["velocity_levels"]
 
     # Validate parameters
     if midi_note_min < 0 or midi_note_min > 127:
@@ -437,11 +439,17 @@ def main():
         samples_dir = os.path.join(args.target, instrument, "samples")
         dest_file = os.path.join(samples_dir, f"1-{instrument}{extension}")
 
-        if not copy_sample_file(sample, dest_file):
+        # Get the target sample rate from metadata if available
+        target_samplerate = metadata.get("samplerate", None)
+
+        # Copy the sample file, converting the sample rate if needed
+        if not copy_sample_file(sample, dest_file, target_samplerate):
             continue
 
         # Create volume variations
-        create_volume_variations(instrument, args.target, extension, velocity_levels)
+        create_volume_variations(
+            instrument, args.target, extension, velocity_levels, target_samplerate
+        )
 
         # Create XML file for the instrument
         create_instrument_xml(

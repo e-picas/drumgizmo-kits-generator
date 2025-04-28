@@ -24,6 +24,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 # pylint: disable-next=wrong-import-position
 from drumgizmo_kits_generator import main as main_module
 
+# pylint: disable-next=wrong-import-position
+from drumgizmo_kits_generator.utils import get_audio_samplerate
+
 
 class TestDrumGizmoKitIntegration(unittest.TestCase):
     """Integration tests for the DrumGizmo kit generator."""
@@ -292,6 +295,41 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
 
         return True
 
+    def verify_audio_samplerate(self, expected_samplerate):
+        """
+        Verify that all audio files have the expected sample rate.
+
+        Args:
+            expected_samplerate (int): Expected sample rate in Hz
+
+        Returns:
+            bool: True if all audio files have the expected sample rate
+        """
+        # Get all audio files in the target directory
+        audio_files = []
+        for root, _, files in os.walk(self.temp_dir):
+            for file in files:
+                if file.endswith((".wav", ".WAV", ".flac", ".FLAC", ".ogg", ".OGG")):
+                    audio_files.append(os.path.join(root, file))
+
+        if not audio_files:
+            print("No audio files found in the target directory")
+            return False
+
+        # Check the sample rate of each audio file
+        for audio_file in audio_files:
+            samplerate = get_audio_samplerate(audio_file)
+            if samplerate is None:
+                print(f"Could not get sample rate for {audio_file}")
+                return False
+            if samplerate != expected_samplerate:
+                print(
+                    f"Expected sample rate {expected_samplerate} Hz, got {samplerate} Hz for {audio_file}"
+                )
+                return False
+
+        return True
+
     def test_full_integration(self):
         """Test the complete processing pipeline by comparing generated output with reference."""
         # Create a temporary directory for this test
@@ -314,47 +352,6 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
 
         # First verify the directory structure
         self.assertTrue(
-            self.verify_directory_structure(velocity_levels=10),
-            "Generated directory structure does not match expected structure for 10 velocity levels",
-        )
-
-        # Then verify the XML content structure
-        self.assertTrue(
-            self.verify_xml_content(velocity_levels=10),
-            "Generated XML content does not have the expected structure for 10 velocity levels",
-        )
-
-        # For the integration test, we're primarily testing that the structure is correct
-        # and that the files are generated properly. The exact content of the XML files
-        # may vary due to timestamps, descriptions, etc. So we'll skip the exact comparison
-        # and consider the test successful if the structure is correct.
-        # pylint: disable-next=redundant-unittest-assert
-        self.assertTrue(True, "Integration test passed")
-
-    def test_full_integration_4_levels(self):
-        """Test the complete processing pipeline with 4 velocity levels."""
-        # Create a temporary directory for this test
-        temp_dir = tempfile.mkdtemp()
-        self.temp_dir = temp_dir
-
-        # Set up command line arguments for the test with 4 velocity levels
-        sys.argv = [
-            "create_drumgizmo_kit.py",
-            "-s",
-            os.path.join(self.source_dir),
-            "-t",
-            self.temp_dir,
-            "-c",
-            os.path.join(self.source_dir, "drumgizmo-kit.ini"),
-            "--velocity-levels",
-            "4",
-        ]
-
-        # Run the main function
-        main_module.main()
-
-        # First verify the directory structure
-        self.assertTrue(
             self.verify_directory_structure(velocity_levels=4),
             "Generated directory structure does not match expected structure for 4 velocity levels",
         )
@@ -365,14 +362,70 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             "Generated XML content does not have the expected structure for 4 velocity levels",
         )
 
+        # Verify the sample rate of the audio files
+        # Get the expected sample rate from the config file
+        expected_samplerate = 44100  # Default value from the config file
+        self.assertTrue(
+            self.verify_audio_samplerate(expected_samplerate),
+            f"Audio files do not have the expected sample rate of {expected_samplerate} Hz",
+        )
+
         # For the integration test, we're primarily testing that the structure is correct
         # and that the files are generated properly. The exact content of the XML files
         # may vary due to timestamps, descriptions, etc. So we'll skip the exact comparison
         # and consider the test successful if the structure is correct.
         # pylint: disable-next=redundant-unittest-assert
-        self.assertTrue(True, "Integration test with 4 velocity levels passed")
+        self.assertTrue(True, "Integration test passed")
 
-    # pylint: disable-next=too-many-return-statements,too-many-locals
+    def test_custom_samplerate(self):
+        """Test the processing pipeline with a custom sample rate."""
+        # Create a temporary directory for this test
+        temp_dir = tempfile.mkdtemp()
+        self.temp_dir = temp_dir
+
+        # Set up command line arguments for the test with a custom sample rate
+        custom_samplerate = "48000"  # Different from the default in the config file
+        sys.argv = [
+            "create_drumgizmo_kit.py",
+            "-s",
+            os.path.join(self.source_dir),
+            "-t",
+            self.temp_dir,
+            "-c",
+            os.path.join(self.source_dir, "drumgizmo-kit.ini"),
+            "--samplerate",
+            custom_samplerate,
+            "--velocity-levels",
+            "4",
+        ]
+
+        # Run the main function
+        main_module.main()
+
+        # First verify the directory structure
+        self.assertTrue(
+            self.verify_directory_structure(velocity_levels=4),
+            "Generated directory structure does not match expected structure",
+        )
+
+        # Then verify the XML content structure
+        self.assertTrue(
+            self.verify_xml_content(velocity_levels=4),
+            "Generated XML content does not have the expected structure",
+        )
+
+        # Verify the sample rate of the audio files
+        # The sample rate should be the custom one we specified
+        expected_samplerate = int(custom_samplerate)
+        self.assertTrue(
+            self.verify_audio_samplerate(expected_samplerate),
+            f"Audio files do not have the expected sample rate of {expected_samplerate} Hz",
+        )
+
+        # pylint: disable-next=redundant-unittest-assert
+        self.assertTrue(True, "Custom sample rate test passed")
+
+    # pylint: disable-next=too-many-locals,too-many-branches,too-many-return-statements
     def verify_xml_content(self, velocity_levels=3):
         """
         Verify that the XML files have the expected content structure.

@@ -17,7 +17,7 @@
       <audiofile channel="Tom2" file="samples/1-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
       <audiofile channel="Tom3" file="samples/1-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
     </sample>
-    <sample name="E-Mu-Proteus-FX-Wacky-Snare-2" power="0.900000">
+    <sample name="E-Mu-Proteus-FX-Wacky-Snare-2" power="0.750000">
       <audiofile channel="AmbL" file="samples/2-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
       <audiofile channel="AmbR" file="samples/2-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
       <audiofile channel="Hihat" file="samples/2-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
@@ -33,7 +33,7 @@
       <audiofile channel="Tom2" file="samples/2-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
       <audiofile channel="Tom3" file="samples/2-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
     </sample>
-    <sample name="E-Mu-Proteus-FX-Wacky-Snare-3" power="0.800000">
+    <sample name="E-Mu-Proteus-FX-Wacky-Snare-3" power="0.500000">
       <audiofile channel="AmbL" file="samples/3-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
       <audiofile channel="AmbR" file="samples/3-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
       <audiofile channel="Hihat" file="samples/3-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
@@ -49,7 +49,7 @@
       <audiofile channel="Tom2" file="samples/3-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
       <audiofile channel="Tom3" file="samples/3-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
     </sample>
-    <sample name="E-Mu-Proteus-FX-Wacky-Snare-4" power="0.700000">
+    <sample name="E-Mu-Proteus-FX-Wacky-Snare-4" power="0.250000">
       <audiofile channel="AmbL" file="samples/4-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
       <audiofile channel="AmbR" file="samples/4-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
       <audiofile channel="Hihat" file="samples/4-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
@@ -64,102 +64,6 @@
       <audiofile channel="Tom1" file="samples/4-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
       <audiofile channel="Tom2" file="samples/4-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
       <audiofile channel="Tom3" file="samples/4-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-    </sample>
-    <sample name="E-Mu-Proteus-FX-Wacky-Snare-5" power="0.600000">
-      <audiofile channel="AmbL" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="AmbR" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Hihat" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Kdrum_back" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Kdrum_front" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Hihat" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="OHL" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="OHR" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Ride" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Snare_bottom" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Snare_top" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom1" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Tom2" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom3" file="samples/5-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-    </sample>
-    <sample name="E-Mu-Proteus-FX-Wacky-Snare-6" power="0.500000">
-      <audiofile channel="AmbL" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="AmbR" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Hihat" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Kdrum_back" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Kdrum_front" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Hihat" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="OHL" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="OHR" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Ride" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Snare_bottom" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Snare_top" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom1" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Tom2" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom3" file="samples/6-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-    </sample>
-    <sample name="E-Mu-Proteus-FX-Wacky-Snare-7" power="0.400000">
-      <audiofile channel="AmbL" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="AmbR" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Hihat" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Kdrum_back" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Kdrum_front" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Hihat" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="OHL" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="OHR" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Ride" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Snare_bottom" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Snare_top" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom1" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Tom2" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom3" file="samples/7-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-    </sample>
-    <sample name="E-Mu-Proteus-FX-Wacky-Snare-8" power="0.300000">
-      <audiofile channel="AmbL" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="AmbR" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Hihat" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Kdrum_back" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Kdrum_front" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Hihat" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="OHL" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="OHR" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Ride" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Snare_bottom" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Snare_top" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom1" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Tom2" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom3" file="samples/8-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-    </sample>
-    <sample name="E-Mu-Proteus-FX-Wacky-Snare-9" power="0.200000">
-      <audiofile channel="AmbL" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="AmbR" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Hihat" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Kdrum_back" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Kdrum_front" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Hihat" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="OHL" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="OHR" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Ride" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Snare_bottom" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Snare_top" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom1" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Tom2" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom3" file="samples/9-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-    </sample>
-    <sample name="E-Mu-Proteus-FX-Wacky-Snare-10" power="0.100000">
-      <audiofile channel="AmbL" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="AmbR" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Hihat" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Kdrum_back" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Kdrum_front" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Hihat" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="OHL" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="OHR" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Ride" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Snare_bottom" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Snare_top" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom1" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
-      <audiofile channel="Tom2" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="1"/>
-      <audiofile channel="Tom3" file="samples/10-E-Mu-Proteus-FX-Wacky-Snare.wav" filechannel="2"/>
     </sample>
   </samples>
 </instrument>

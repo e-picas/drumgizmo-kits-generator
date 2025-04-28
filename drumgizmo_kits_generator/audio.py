@@ -13,7 +13,9 @@ import subprocess
 import sys
 
 
-def create_volume_variations(instrument, kit_dir, extension, velocity_levels=10):
+def create_volume_variations(
+    instrument, kit_dir, extension, velocity_levels=10, target_samplerate=None
+):
     """
     Creates volume variations for a given sample.
 
@@ -22,6 +24,7 @@ def create_volume_variations(instrument, kit_dir, extension, velocity_levels=10)
         kit_dir (str): Target directory for the kit
         extension (str): Audio file extension (with the dot)
         velocity_levels (int): Number of velocity levels to generate (default: 10)
+        target_samplerate (str, optional): Target sample rate in Hz
     """
     instrument_dir = os.path.join(kit_dir, instrument)
     samples_dir = os.path.join(instrument_dir, "samples")
@@ -48,12 +51,21 @@ def create_volume_variations(instrument, kit_dir, extension, velocity_levels=10)
 
         # Use SoX to create a version with reduced volume
         try:
-            subprocess.run(
-                ["sox", source_file, dest_file, "vol", str(volume)],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
+            # If a target sample rate is provided, include it in the command
+            if target_samplerate:
+                subprocess.run(
+                    ["sox", source_file, "-r", target_samplerate, dest_file, "vol", str(volume)],
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+            else:
+                subprocess.run(
+                    ["sox", source_file, dest_file, "vol", str(volume)],
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
         except subprocess.CalledProcessError as e:
             print(f"Error creating volume variation: {e}", file=sys.stderr)
             print(f"Command output: {e.stdout.decode()}", file=sys.stderr)
@@ -62,13 +74,51 @@ def create_volume_variations(instrument, kit_dir, extension, velocity_levels=10)
             print(f"Error creating volume variation: {e}", file=sys.stderr)
 
 
-def copy_sample_file(source_file, dest_file):
+def convert_sample_rate(source_file, dest_file, target_samplerate):
     """
-    Copy a sample file to the destination.
+    Convert a sample file to the target sample rate.
 
     Args:
         source_file (str): Path to the source file
         dest_file (str): Path to the destination file
+        target_samplerate (str): Target sample rate in Hz
+
+    Returns:
+        bool: True if the file was converted successfully, False otherwise
+    """
+    try:
+        # Create destination directory if it doesn't exist
+        dest_dir = os.path.dirname(dest_file)
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
+
+        # Use SoX to convert the sample rate
+        subprocess.run(
+            ["sox", source_file, "-r", target_samplerate, dest_file],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error converting sample rate: {e}", file=sys.stderr)
+        print(f"Command output: {e.stdout.decode()}", file=sys.stderr)
+        print(f"Command error: {e.stderr.decode()}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"Error converting sample rate: {e}", file=sys.stderr)
+        return False
+
+
+def copy_sample_file(source_file, dest_file, target_samplerate=None):
+    """
+    Copy a sample file to the destination, optionally converting the sample rate.
+
+    Args:
+        source_file (str): Path to the source file
+        dest_file (str): Path to the destination file
+        target_samplerate (str, optional): Target sample rate in Hz. If provided,
+                                          the file will be converted to this sample rate.
 
     Returns:
         bool: True if the file was copied successfully, False otherwise
@@ -79,7 +129,15 @@ def copy_sample_file(source_file, dest_file):
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
 
-        # Copy the file
+        # If a target sample rate is provided, convert the file
+        if target_samplerate:
+            print(
+                f"Converting {os.path.basename(source_file)} to {target_samplerate} Hz",
+                file=sys.stderr,
+            )
+            return convert_sample_rate(source_file, dest_file, target_samplerate)
+
+        # Otherwise, just copy the file
         shutil.copy2(source_file, dest_file)
         return True
     except Exception as e:
