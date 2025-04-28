@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drumgizmo-kits-generator"
-version = "1.3.0"
+version = "1.4.0"
 description = "Tool to generate DrumGizmo kits from audio samples with multiple velocity levels"
 readme = "README.md"
 authors = [

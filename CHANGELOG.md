@@ -1,6 +1,41 @@
 # CHANGELOG
 
 
+## v1.4.0 (2025-04-28)
+
+### Bug Fixes
+
+- Delete unused 'instrument-prefix' option
+  ([#16](https://github.com/e-picas/drumgizmo-kits-generator/pull/16),
+  [`ef20c20`](https://github.com/e-picas/drumgizmo-kits-generator/commit/ef20c208f7426e5406a67503e90dfdc4391d6908))
+
+- Force uniform samplerate of samples
+  ([#18](https://github.com/e-picas/drumgizmo-kits-generator/pull/18),
+  [`cea74aa`](https://github.com/e-picas/drumgizmo-kits-generator/commit/cea74aa1e89175c221bf0be9be1cc2b534e8c816))
+
+* fix: force uniform samplerate of samples
+
+* fix: add some unit tests
+
+### Documentation
+
+- Review the README [skip ci] ([#15](https://github.com/e-picas/drumgizmo-kits-generator/pull/15),
+  [`86a475a`](https://github.com/e-picas/drumgizmo-kits-generator/commit/86a475afe96a9109e5d0d6155c4215f71a1ca403))
+
+* docs: review the README [skip ci]
+
+* docs: Update README.md [skip ci]
+
+- Update README.md [skip ci]
+  ([`97b7f9c`](https://github.com/e-picas/drumgizmo-kits-generator/commit/97b7f9c1eb86e027bdda9605ec9e634f427b6f5a))
+
+### Features
+
+- New test file formats OGG & FLAC
+  ([#17](https://github.com/e-picas/drumgizmo-kits-generator/pull/17),
+  [`8fb589e`](https://github.com/e-picas/drumgizmo-kits-generator/commit/8fb589e88ee41d8f18664ee2c2b525ceaa6515ed))
+
+
 ## v1.3.0 (2025-04-27)
 
 ### Bug Fixes
