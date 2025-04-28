@@ -40,15 +40,34 @@ python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target -c /path/t
 python create_drumgizmo_kit.py -h
 ```
 
-The following common arguments are in use:
+### Options
 
-*  `-s` / `--source`: **REQUIRED** - Source directory containing audio samples
-*  `-t` / `--target`: **REQUIRED** - Target directory for the DrumGizmo kit
-*  `-c` / `--config`: Configuration file path to use (*INI* format)
+| Option | Description | Default |
+|----------------------|---------------------|-------------|
+| `-s` / `--source` | (REQUIRED) - Source directory containing audio samples | - |
+| `-t` / `--target` | (REQUIRED) - Target directory for the DrumGizmo kit | - |
+| `-c` / `--config` | Configuration file path to use (*INI* format) | - |
+| `--name` | The name of the generated kit | `DrumGizmo Kit` |
+| `--version` | The version of the generated kit | `1.0` |
+| `--description` | The description of the generated kit | - |
+| `--notes` | Additional notes about the kit | - |
+| `--author` | The author(s) of the generated kit | - |
+| `--license` | The license of the generated kit | `Private license` |
+| `--website` | The website of the generated kit | - |
+| `--logo` | The kit logo filename | - |
+| `--samplerate` | Sample rate of the kit's samples in Hz | `44100` |
+| `--instrument-prefix` | Prefix used for instrument names | - |
+| `--extra-files` | Comma-separated list of additional files to copy to the target directory | - |
+| `--velocity-levels` | Number of velocity levels to generate | `10` |
+| `--midi-note-min` | Minimum MIDI note number allowed | `0` |
+| `--midi-note-max` | Maximum MIDI note number allowed | `127` |
+| `--midi-note-median` | Median MIDI note for distributing instruments around | `60` (C4 key) |
+| `--extensions` | Comma-separated list of audio file extensions to process | `wav,WAV,flac,FLAC,ogg,OGG` |
 
-### Configuration & options
+### Configuration file
 
-You can specify kit metadata and generation options in a configuration file (e.g., `drumgizmo-kit.ini`):
+You can specify kit metadata and generation options in a configuration file (e.g., `drumgizmo-kit.ini`).
+All command-line options have equivalent configuration file settings. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
 
 ```ini
 # Kit metadata
@@ -63,28 +82,14 @@ kit_samplerate = "44100"
 kit_instrument_prefix = "MyKit"
 kit_logo = "logo.png"
 kit_extra_files = "README.txt,LICENSE.txt,photo.jpg"
+
+# Generation option
+kit_velocity_levels=4
+kit_midi_note_min=40
+kit_midi_note_max=100
+kit_midi_note_median=80
+kit_extensions=mp3,wav
 ```
-
-All command-line options have equivalent configuration file settings. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
-
-| Config file variable | Command-line option | Description | Default |
-|----------------------|---------------------|-------------|---------|
-| `kit_name` | `--name` | The name of the generated kit | "DrumGizmo Kit" |
-| `kit_version` | `--version` | The version of the generated kit | "1.0" |
-| `kit_description` | `--description` | The description of the generated kit | *null* |
-| `kit_notes` | `--notes` | Additional notes about the kit | *null* |
-| `kit_author` | `--author` | The author(s) of the generated kit | *null* |
-| `kit_license` | `--license` | The license of the generated kit | "Private license" |
-| `kit_website` | `--website` | The website of the generated kit | *null* |
-| `kit_logo` | `--logo` | The kit logo filename | *null* |
-| `kit_samplerate` | `--samplerate` | Sample rate of the kit's samples in Hz | 44100 |
-| `kit_instrument_prefix` | `--instrument-prefix` | Prefix used for instrument names | *null* |
-| `kit_extra_files` | `--extra-files` | Comma-separated list of additional files to copy to the target directory | *null* |
-| `kit_velocity_levels` | `--velocity-levels` | Number of velocity levels to generate | 10 |
-| `kit_midi_note_min` | `--midi-note-min` | Minimum MIDI note number allowed | 0 |
-| `kit_midi_note_max` | `--midi-note-max` | Maximum MIDI note number allowed | 127 |
-| `kit_midi_note_median` | `--midi-note-median` | Median MIDI note for distributing instruments around | 60 (C4 key) |
-| `kit_extensions` | `--extensions` | Comma-separated list of audio file extensions to process | "wav,WAV,flac,FLAC,ogg,OGG" |
 
 ## Generated Kit Structure
 
