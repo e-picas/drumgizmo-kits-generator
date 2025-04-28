@@ -9,7 +9,7 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=e-picas_drumgizmo-kits-generator&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=e-picas_drumgizmo-kits-generator)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=e-picas_drumgizmo-kits-generator&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=e-picas_drumgizmo-kits-generator)
 
-[![DrumGizmo](https://img.shields.io/badge/DrumGizmo-%3E%3D0.9.20-orange?style=plastic)](https%3A%2F%2Fdrumgizmo.org%2Fwiki%2Fdoku.php%3Fid%3Dstart)
+[![DrumGizmo](https://img.shields.io/badge/DrumGizmo-%3E%3D0.9.20-orange?style=plastic)](https://drumgizmo.org/)
 
 ## Features
 
@@ -73,7 +73,7 @@ python create_drumgizmo_kit.py -h
 |----------------------|---------------------|-------------|
 | `-s` / `--source` | The path of your sources directory containing the audio samples - Samples must be in the root directory (no recursion) | *REQUIRED* |
 | `-t` / `--target` | The path of the target directory where the kit will be generated - It will be created if it does not exist - Its contents are **deleted** before each run (you should probably use a temporary directory first) | *REQUIRED* |
-| `-c` / `--config` | Path of a [configuration file](#configuration-file) to use (*INI* format) | - |
+| `-c` / `--config` | Path of a [configuration file](#configuration-file) to use | - |
 | `--author` | The author(s) of the generated kit - [`drumkit.xml`](#generated-kit-structure) metadata | - |
 | `--description` | The description of the generated kit - [`drumkit.xml`](#generated-kit-structure) metadata | - |
 | `--extensions` | Comma-separated list of audio file extensions to process | `wav,WAV,flac,FLAC,ogg,OGG` |
@@ -113,7 +113,7 @@ kit_velocity_levels=4
 kit_midi_note_min=40
 kit_midi_note_max=100
 kit_midi_note_median=80
-kit_extensions=mp3,wav
+kit_extensions=flac,wav
 ```
 
 ## Contributing
