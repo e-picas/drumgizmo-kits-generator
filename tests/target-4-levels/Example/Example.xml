@@ -1,0 +1,69 @@
+<?xml version="1.0" ?>
+<instrument version="2.0" name="Example">
+  <samples>
+    <sample name="Example-1" power="1.000000">
+      <audiofile channel="AmbL" file="samples/1-Example.ogg" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/1-Example.ogg" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/1-Example.ogg" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/1-Example.ogg" filechannel="2"/>
+      <audiofile channel="Kdrum_front" file="samples/1-Example.ogg" filechannel="1"/>
+      <audiofile channel="Hihat" file="samples/1-Example.ogg" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/1-Example.ogg" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/1-Example.ogg" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/1-Example.ogg" filechannel="1"/>
+      <audiofile channel="Snare_bottom" file="samples/1-Example.ogg" filechannel="2"/>
+      <audiofile channel="Snare_top" file="samples/1-Example.ogg" filechannel="1"/>
+      <audiofile channel="Tom1" file="samples/1-Example.ogg" filechannel="2"/>
+      <audiofile channel="Tom2" file="samples/1-Example.ogg" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/1-Example.ogg" filechannel="2"/>
+    </sample>
+    <sample name="Example-2" power="0.750000">
+      <audiofile channel="AmbL" file="samples/2-Example.ogg" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/2-Example.ogg" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/2-Example.ogg" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/2-Example.ogg" filechannel="2"/>
+      <audiofile channel="Kdrum_front" file="samples/2-Example.ogg" filechannel="1"/>
+      <audiofile channel="Hihat" file="samples/2-Example.ogg" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/2-Example.ogg" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/2-Example.ogg" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/2-Example.ogg" filechannel="1"/>
+      <audiofile channel="Snare_bottom" file="samples/2-Example.ogg" filechannel="2"/>
+      <audiofile channel="Snare_top" file="samples/2-Example.ogg" filechannel="1"/>
+      <audiofile channel="Tom1" file="samples/2-Example.ogg" filechannel="2"/>
+      <audiofile channel="Tom2" file="samples/2-Example.ogg" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/2-Example.ogg" filechannel="2"/>
+    </sample>
+    <sample name="Example-3" power="0.500000">
+      <audiofile channel="AmbL" file="samples/3-Example.ogg" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/3-Example.ogg" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/3-Example.ogg" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/3-Example.ogg" filechannel="2"/>
+      <audiofile channel="Kdrum_front" file="samples/3-Example.ogg" filechannel="1"/>
+      <audiofile channel="Hihat" file="samples/3-Example.ogg" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/3-Example.ogg" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/3-Example.ogg" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/3-Example.ogg" filechannel="1"/>
+      <audiofile channel="Snare_bottom" file="samples/3-Example.ogg" filechannel="2"/>
+      <audiofile channel="Snare_top" file="samples/3-Example.ogg" filechannel="1"/>
+      <audiofile channel="Tom1" file="samples/3-Example.ogg" filechannel="2"/>
+      <audiofile channel="Tom2" file="samples/3-Example.ogg" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/3-Example.ogg" filechannel="2"/>
+    </sample>
+    <sample name="Example-4" power="0.250000">
+      <audiofile channel="AmbL" file="samples/4-Example.ogg" filechannel="1"/>
+      <audiofile channel="AmbR" file="samples/4-Example.ogg" filechannel="2"/>
+      <audiofile channel="Hihat" file="samples/4-Example.ogg" filechannel="1"/>
+      <audiofile channel="Kdrum_back" file="samples/4-Example.ogg" filechannel="2"/>
+      <audiofile channel="Kdrum_front" file="samples/4-Example.ogg" filechannel="1"/>
+      <audiofile channel="Hihat" file="samples/4-Example.ogg" filechannel="2"/>
+      <audiofile channel="OHL" file="samples/4-Example.ogg" filechannel="1"/>
+      <audiofile channel="OHR" file="samples/4-Example.ogg" filechannel="2"/>
+      <audiofile channel="Ride" file="samples/4-Example.ogg" filechannel="1"/>
+      <audiofile channel="Snare_bottom" file="samples/4-Example.ogg" filechannel="2"/>
+      <audiofile channel="Snare_top" file="samples/4-Example.ogg" filechannel="1"/>
+      <audiofile channel="Tom1" file="samples/4-Example.ogg" filechannel="2"/>
+      <audiofile channel="Tom2" file="samples/4-Example.ogg" filechannel="1"/>
+      <audiofile channel="Tom3" file="samples/4-Example.ogg" filechannel="2"/>
+    </sample>
+  </samples>
+</instrument>
