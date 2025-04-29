@@ -6,17 +6,23 @@ labels: ''
 assignees: ''
 
 ---
-**Minimal configuration & run output illustrating the issue**
+## Minimal configuration & run output illustrating the issue
+
 Audio files metadata, specific conditions etc...
 
 Paste the output of the run.
 
-**What did you expect?**
+## What did you expect?
+
 Paste a public job url.
 
-**Host information**
-Ubuntu
-Python 3.12.2
+## Host information
 
-**Additional context**
+* OS system:
+* Python version:
+* SoX version:
+* Dependencies:
+
+## Additional context
+
 Add any other context about the problem here.
