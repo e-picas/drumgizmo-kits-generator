@@ -29,6 +29,7 @@ from drumgizmo_kits_generator.config import (
     DEFAULT_VELOCITY_LEVELS,
     DEFAULT_VERSION,
     read_config_file,
+    update_channels_config,
 )
 from drumgizmo_kits_generator.utils import (
     extract_instrument_name,
@@ -78,6 +79,8 @@ Configuration file options:
     kit_midi_note_max      Maximum MIDI note number allowed
     kit_midi_note_median   Median MIDI note for distributing instruments
     kit_extensions         Audio file extensions to process
+    kit_channels           Comma-separated list of audio channels to use
+    kit_main_channels      Comma-separated list of main audio channels
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -145,7 +148,18 @@ Configuration file options:
     )
     parser.add_argument("--logo", help="Logo file to include in the kit")
     parser.add_argument(
-        "--extra-files", help="Comma-separated list of additional files to include in the kit"
+        "--extra-files",
+        help="Comma-separated list of additional files to include in the kit",
+    )
+
+    # Channel configuration arguments
+    parser.add_argument(
+        "--channels",
+        help="Comma-separated list of audio channels to use in the kit",
+    )
+    parser.add_argument(
+        "--main-channels",
+        help="Comma-separated list of main audio channels (with main='true' attribute)",
     )
 
     return parser.parse_args()
@@ -206,6 +220,12 @@ def prepare_metadata(args):
         metadata["logo"] = args.logo
     if args.extra_files:
         metadata["extra_files"] = args.extra_files
+
+    # Process channels and main-channels options
+    if args.channels:
+        metadata["channels"] = args.channels
+    if args.main_channels:
+        metadata["main_channels"] = args.main_channels
 
     # Set default values for metadata if not provided
     if "name" not in metadata:
@@ -282,6 +302,9 @@ def prepare_metadata(args):
                 file=sys.stderr,
             )
             metadata.pop("extensions")
+
+    # Update channels configuration
+    update_channels_config(metadata)
 
     print("\nFinal metadata after processing:", file=sys.stderr)
     for key, value in metadata.items():
