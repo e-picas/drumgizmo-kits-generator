@@ -106,6 +106,8 @@ The app will alternately use each original sample "channels" and assign them to 
 "Tom3"
 ```
 
+Use the [`channels`](#options) and [`main-channels`](#options) options to set them up to your needs.
+
 ### MIDI keys repartition
 
 The samples will all be attached to consecutive MIDI notes around the [`midi-note-median`](#options) with some limits set by the [`midi-note-min`](#options) and [`midi-note-max`](#options) options. An error will be triggered if your project have more samples than the allowed MIDI notes.
