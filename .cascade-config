@@ -35,7 +35,7 @@ The DrumGizmo Kit Generator is a Python tool that generates kits for DrumGizmo f
 5. Enhanced robustness against invalid inputs
 
 ## Dependencies
-- Python 3.6+ (for f-strings)
+- Python 3.9+ (for modern Python features)
 - SoX (for sample rate conversion)
 
 ## Tests

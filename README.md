@@ -128,7 +128,7 @@ We use [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio p
 
 ### Prerequisites
 
-- [Python 3.8](https://www.python.org/downloads/) or higher
+- [Python 3.9](https://www.python.org/downloads/) or higher
 - [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing - Tested with version 14.4.2
 - some other Python dependencies for development only (see the [`requirements-dev.txt`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/requirements-dev.txt) file)
 
