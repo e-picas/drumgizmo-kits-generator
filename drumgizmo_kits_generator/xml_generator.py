@@ -13,7 +13,6 @@ import xml.dom.minidom
 import xml.etree.ElementTree as ET
 
 from drumgizmo_kits_generator.config import (
-    CHANNELS,
     DEFAULT_LICENSE,
     DEFAULT_MIDI_NOTE_MAX,
     DEFAULT_MIDI_NOTE_MEDIAN,
@@ -22,7 +21,8 @@ from drumgizmo_kits_generator.config import (
     DEFAULT_SAMPLERATE,
     DEFAULT_VELOCITY_LEVELS,
     DEFAULT_VERSION,
-    MAIN_CHANNELS,
+    get_channels,
+    get_main_channels,
 )
 from drumgizmo_kits_generator.constants import APP_LINK, APP_NAME, APP_VERSION
 
@@ -77,7 +77,7 @@ def create_instrument_xml(instrument, kit_dir, extension, velocity_levels=DEFAUL
 
         # Add audiofiles for each channel
         # Alternate filechannel between channels to use both stereo channels
-        for index, channel in enumerate(CHANNELS):
+        for index, channel in enumerate(get_channels()):
             # Alternate between filechannel 1 and 2 based on channel index
             filechannel = "1" if index % 2 == 0 else "2"
 
@@ -169,7 +169,7 @@ def create_drumkit_xml(instruments, kit_dir, metadata):
     # Add channels
     channels_elem = ET.SubElement(root, "channels")
 
-    for channel in CHANNELS:
+    for channel in get_channels():
         ET.SubElement(channels_elem, "channel", name=channel)
 
     # Add instruments
@@ -182,8 +182,8 @@ def create_drumkit_xml(instruments, kit_dir, metadata):
         )
 
         # Add channelmaps for each channel
-        for channel in CHANNELS:
-            if channel in MAIN_CHANNELS:
+        for channel in get_channels():
+            if channel in get_main_channels():
                 ET.SubElement(
                     instrument_elem, "channelmap", **{"in": channel, "out": channel, "main": "true"}
                 )

@@ -160,11 +160,13 @@ python create_drumgizmo_kit.py -h
 | `-t` / `--target` | The path of the target directory where the kit will be generated - It will be created if it does not exist - Its contents are **deleted** before each run (you should probably use a temporary directory first) | *REQUIRED* |
 | `-c` / `--config` | Path of a [configuration file](#configuration-file) to use | - |
 | `--author` | The author(s) of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
+| `--channels` | Comma-separated list of [audio channels](#about-samples-channels) to use in the kit | *see ["channels"](#about-samples-channels)* |
 | `--description` | The description of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 | `--extensions` | Comma-separated list of [audio file extensions](#note-about-audio-files-formats) to process | `wav,WAV,flac,FLAC,ogg,OGG` |
 | `--extra-files` | Comma-separated list of additional files to copy to the target directory - Local paths from the `source` directory | - |
 | `--license` | The license of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | `Private license` |
 | `--logo` | Path of the kit logo filename - Local path from the `source` directory - [`drumkit.xml`](#kit-metadata) metadata | - |
+| `--main-channels` | Comma-separated list of [**main** audio channels](#about-samples-channels) to use in the kit | *see ["channels"](#about-samples-channels)* |
 | `--midi-note-max` | Maximum MIDI note allowed - [`midimap.xml`](#midi-keys-repartition) generation | `127` (<=127) |
 | `--midi-note-median` | Median MIDI note for distributing instruments around - [`midimap.xml`](#midi-keys-repartition) generation | `60` (*C4* key) |
 | `--midi-note-min` | Minimum MIDI note allowed - [`midimap.xml`](#midi-keys-repartition) generation | `1` (>=1) |
@@ -199,6 +201,8 @@ kit_midi_note_min=40
 kit_midi_note_max=100
 kit_midi_note_median=80
 kit_extensions=flac,wav
+kit_channels=AmbL,AmbR,Hihat,Kdrum,OHL,OHR,Ride,Snare,Tom1,Tom2,Tom3
+kit_main_channels=AmbL,AmbR,OHL,OHR
 ```
 
 ## Contributing
