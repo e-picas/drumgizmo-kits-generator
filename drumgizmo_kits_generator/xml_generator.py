@@ -190,7 +190,7 @@ def add_metadata_elements(metadata_elem: ET.Element, metadata: Dict[str, Any]) -
     # Add logo information if available
     if "logo" in metadata:
         logo = ET.SubElement(metadata_elem, "logo")
-        logo.text = metadata["logo"]
+        logo.set("src", metadata["logo"])
 
     # Add creation timestamp with app information (required by tests)
     created = ET.SubElement(metadata_elem, "created")
@@ -210,10 +210,7 @@ def add_channels_element(root: ET.Element) -> None:
 
     # Add each channel
     for channel in get_channels():
-        if channel in get_main_channels():
-            ET.SubElement(channels_elem, "channel", name=channel, main="true")
-        else:
-            ET.SubElement(channels_elem, "channel", name=channel)
+        ET.SubElement(channels_elem, "channel", name=channel)
 
 
 def add_instruments_element(root: ET.Element, instruments: List[str]) -> None:

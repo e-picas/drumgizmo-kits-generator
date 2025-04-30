@@ -40,18 +40,17 @@ DEFAULT_SAMPLERATE = "44100"
 DEFAULT_CHANNELS: List[str] = [
     "AmbL",
     "AmbR",
-    "Kick",
-    "Snare",
+    "Hihat",
+    "Kdrum_back",
+    "Kdrum_front",
+    "OHL",
+    "OHR",
+    "Ride",
+    "Snare_bottom",
+    "Snare_top",
     "Tom1",
     "Tom2",
     "Tom3",
-    "HiHat",
-    "Ride",
-    "OHL",
-    "OHR",
-    "Room1",
-    "Room2",
-    "Bleed",
 ]
 
 # Default main channels

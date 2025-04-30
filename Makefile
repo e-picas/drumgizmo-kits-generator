@@ -23,7 +23,7 @@ lint:
 
 ## Run the tests
 test:
-	python3 -m pytest
+	python3 -m pytest -v
 
 ## Get coverage info
 coverage:
