@@ -45,16 +45,16 @@ class TestConfig(unittest.TestCase):
         # pylint: disable-next=consider-using-with
         self.temp_config.write(
             """
-KIT_NAME="Temp Test Kit"
-KIT_VERSION="2.0"
-KIT_DESCRIPTION="Temporary test description"
-KIT_NOTES="Temporary test notes"
-KIT_AUTHOR="Test Author"
-KIT_LICENSE="Test License"
-KIT_WEBSITE="http://example.com"
-KIT_SAMPLERATE="48000"
-KIT_LOGO="test_logo.png"
-KIT_EXTRA_FILES="file1.txt,file2.txt"
+kit_name="Temp Test Kit"
+kit_version="2.0"
+kit_description="Temporary test description"
+kit_notes="Temporary test notes"
+kit_author="Test Author"
+kit_license="Test License"
+kit_website="http://example.com"
+kit_samplerate="48000"
+kit_logo="test_logo.png"
+kit_extra_files="file1.txt,file2.txt"
 """
         )
         self.temp_config.close()
@@ -143,8 +143,8 @@ KIT_EXTRA_FILES="file1.txt,file2.txt"
         with tempfile.NamedTemporaryFile(delete=False, mode="w") as temp_config:
             temp_config.write(
                 """
-KIT_NAME="Channel Test Kit"
-KIT_VERSION="1.0"
+kit_name="Channel Test Kit"
+kit_version="1.0"
 KIT_CHANNELS="Left,Right,Center"
 KIT_MAIN_CHANNELS="Center"
 """
@@ -180,8 +180,8 @@ KIT_MAIN_CHANNELS="Center"
         with tempfile.NamedTemporaryFile(delete=False, mode="w") as temp_config:
             temp_config.write(
                 """
-KIT_NAME="Special Channel Test Kit"
-KIT_VERSION="1.0"
+kit_name="Special Channel Test Kit"
+kit_version="1.0"
 KIT_CHANNELS="Left Channel, Right Channel, Center 123"
 KIT_MAIN_CHANNELS="Center 123"
 """
