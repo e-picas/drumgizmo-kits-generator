@@ -360,7 +360,165 @@ def copy_extra_files(source_dir, target_dir, extra_files_str):
     return copied_files
 
 
-# pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
+def validate_midi_parameters(midi_note_min, midi_note_max, midi_note_median):
+    """
+    Validate MIDI parameters and return corrected values if needed.
+
+    Args:
+        midi_note_min (int): Minimum MIDI note number
+        midi_note_max (int): Maximum MIDI note number
+        midi_note_median (int): Median MIDI note number
+
+    Returns:
+        tuple: Validated (midi_note_min, midi_note_max, midi_note_median)
+    """
+    # Validate MIDI note min
+    if midi_note_min < 0 or midi_note_min > 127:
+        print(
+            f"Warning: Invalid midi_note_min value: {midi_note_min}, using default {DEFAULT_MIDI_NOTE_MIN}",
+            file=sys.stderr,
+        )
+        midi_note_min = DEFAULT_MIDI_NOTE_MIN
+
+    # Validate MIDI note max
+    if midi_note_max < 0 or midi_note_max > 127:
+        print(
+            f"Warning: Invalid midi_note_max value: {midi_note_max}, using default {DEFAULT_MIDI_NOTE_MAX}",
+            file=sys.stderr,
+        )
+        midi_note_max = DEFAULT_MIDI_NOTE_MAX
+
+    # Validate MIDI note median
+    if midi_note_median < 0 or midi_note_median > 127:
+        print(
+            f"Warning: Invalid midi_note_median value: {midi_note_median}, using default {DEFAULT_MIDI_NOTE_MEDIAN}",
+            file=sys.stderr,
+        )
+        midi_note_median = DEFAULT_MIDI_NOTE_MEDIAN
+
+    return midi_note_min, midi_note_max, midi_note_median
+
+
+def validate_velocity_levels(velocity_levels):
+    """
+    Validate velocity levels parameter and return corrected value if needed.
+
+    Args:
+        velocity_levels (int): Number of velocity levels
+
+    Returns:
+        int: Validated velocity levels
+    """
+    if velocity_levels < 1:
+        print(
+            f"Warning: Invalid velocity_levels value: {velocity_levels}, using default {DEFAULT_VELOCITY_LEVELS}",
+            file=sys.stderr,
+        )
+        velocity_levels = DEFAULT_VELOCITY_LEVELS
+
+    return velocity_levels
+
+
+def process_sample(sample, target_dir, velocity_levels, target_samplerate=None):
+    """
+    Process a single audio sample.
+
+    Args:
+        sample (str): Path to the audio sample
+        target_dir (str): Target directory for the DrumGizmo kit
+        velocity_levels (int): Number of velocity levels to generate
+        target_samplerate (int, optional): Target sample rate for conversion
+
+    Returns:
+        tuple: (instrument_name, success_flag)
+    """
+    # Extract instrument name
+    instrument = extract_instrument_name(sample)
+
+    # Get file extension
+    extension = get_file_extension(sample)
+
+    # Prepare directory for the instrument
+    if not prepare_instrument_directory(instrument, target_dir):
+        return instrument, False
+
+    # Copy original sample
+    samples_dir = os.path.join(target_dir, instrument, "samples")
+    dest_file = os.path.join(samples_dir, f"1-{instrument}{extension}")
+
+    # Copy the sample file, converting the sample rate if needed
+    if not copy_sample_file(sample, dest_file, target_samplerate):
+        return instrument, False
+
+    # Create volume variations
+    create_volume_variations(instrument, target_dir, extension, velocity_levels, target_samplerate)
+
+    # Create XML file for the instrument
+    create_instrument_xml(
+        instrument,
+        target_dir,
+        extension,
+        velocity_levels,
+    )
+
+    return instrument, True
+
+
+def copy_logo_file(source_dir, target_dir, logo_filename):
+    """
+    Copy logo file from source to target directory.
+
+    Args:
+        source_dir (str): Source directory
+        target_dir (str): Target directory
+        logo_filename (str): Logo filename
+
+    Returns:
+        bool: True if logo was copied successfully, False otherwise
+    """
+    if not logo_filename:
+        return False
+
+    logo_source = os.path.join(source_dir, logo_filename)
+    logo_dest = os.path.join(target_dir, logo_filename)
+
+    if os.path.exists(logo_source):
+        try:
+            shutil.copy2(logo_source, logo_dest)
+            print(f"Logo file copied: {logo_filename}", file=sys.stderr)
+            return True
+        except Exception as e:
+            print(f"Warning: Could not copy logo file: {e}", file=sys.stderr)
+
+    return False
+
+
+def print_instrument_mapping(instrument_to_sample):
+    """
+    Print mapping of instruments to original sample files.
+
+    Args:
+        instrument_to_sample (dict): Dictionary mapping instrument names to sample filenames
+    """
+    print("\nInstrument to sample mapping:", file=sys.stderr)
+    for instrument, sample in instrument_to_sample.items():
+        print(f"  {instrument}: {sample}", file=sys.stderr)
+
+
+def print_extra_files(extra_files_copied):
+    """
+    Print list of extra files copied.
+
+    Args:
+        extra_files_copied (list): List of extra files copied
+    """
+    if extra_files_copied:
+        print("\nExtra files copied:", file=sys.stderr)
+        for file in extra_files_copied:
+            print(f"  {file}", file=sys.stderr)
+
+
+# pylint: disable-next=too-many-locals
 def main():
     """
     Main function of the script.
@@ -393,94 +551,33 @@ def main():
     samples.sort(key=lambda x: os.path.basename(x).lower())
     print("Samples sorted alphabetically", file=sys.stderr)
 
-    # Initialize MIDI and velocity parameters from command line arguments
-    midi_note_min = args.midi_note_min
-    midi_note_max = args.midi_note_max
-    midi_note_median = args.midi_note_median
-
-    # Process velocity levels
-    if "velocity_levels" in metadata:
-        velocity_levels = int(metadata["velocity_levels"])
-    else:
-        velocity_levels = args.velocity_levels
-
-    # Override with values from config file if available
-    # pylint: disable-next=consider-using-get
-    if "midi_note_min" in metadata:
-        midi_note_min = metadata["midi_note_min"]
-    # pylint: disable-next=consider-using-get
-    if "midi_note_max" in metadata:
-        midi_note_max = metadata["midi_note_max"]
-    # pylint: disable-next=consider-using-get
-    if "midi_note_median" in metadata:
-        midi_note_median = metadata["midi_note_median"]
+    # Initialize MIDI and velocity parameters
+    midi_note_min = metadata.get("midi_note_min", args.midi_note_min)
+    midi_note_max = metadata.get("midi_note_max", args.midi_note_max)
+    midi_note_median = metadata.get("midi_note_median", args.midi_note_median)
+    velocity_levels = int(metadata.get("velocity_levels", args.velocity_levels))
 
     # Validate parameters
-    if midi_note_min < 0 or midi_note_min > 127:
-        print(
-            f"Warning: Invalid midi_note_min value: {midi_note_min}, using default {DEFAULT_MIDI_NOTE_MIN}",
-            file=sys.stderr,
-        )
-        midi_note_min = DEFAULT_MIDI_NOTE_MIN
-    if midi_note_max < 0 or midi_note_max > 127:
-        print(
-            f"Warning: Invalid midi_note_max value: {midi_note_max}, using default {DEFAULT_MIDI_NOTE_MAX}",
-            file=sys.stderr,
-        )
-        midi_note_max = DEFAULT_MIDI_NOTE_MAX
-    if midi_note_median < 0 or midi_note_median > 127:
-        print(
-            f"Warning: Invalid midi_note_median value: {midi_note_median}, using default {DEFAULT_MIDI_NOTE_MEDIAN}",
-            file=sys.stderr,
-        )
-        midi_note_median = DEFAULT_MIDI_NOTE_MEDIAN
-    if velocity_levels < 1:
-        print(
-            f"Warning: Invalid velocity_levels value: {velocity_levels}, using default {DEFAULT_VELOCITY_LEVELS}",
-            file=sys.stderr,
-        )
-        velocity_levels = DEFAULT_VELOCITY_LEVELS
+    midi_note_min, midi_note_max, midi_note_median = validate_midi_parameters(
+        midi_note_min, midi_note_max, midi_note_median
+    )
+    velocity_levels = validate_velocity_levels(velocity_levels)
+
+    # Get the target sample rate from metadata if available
+    target_samplerate = metadata.get("samplerate", None)
 
     # Process each sample
     instruments = []
     instrument_to_sample = {}  # Map to keep track of which sample was used for each instrument
 
     for sample in samples:
-        # Extract instrument name
-        instrument = extract_instrument_name(sample)
-        instruments.append(instrument)
-        instrument_to_sample[instrument] = os.path.basename(sample)
-
-        # Get file extension
-        extension = get_file_extension(sample)
-
-        # Prepare directory for the instrument
-        if not prepare_instrument_directory(instrument, args.target):
-            continue
-
-        # Copy original sample
-        samples_dir = os.path.join(args.target, instrument, "samples")
-        dest_file = os.path.join(samples_dir, f"1-{instrument}{extension}")
-
-        # Get the target sample rate from metadata if available
-        target_samplerate = metadata.get("samplerate", None)
-
-        # Copy the sample file, converting the sample rate if needed
-        if not copy_sample_file(sample, dest_file, target_samplerate):
-            continue
-
-        # Create volume variations
-        create_volume_variations(
-            instrument, args.target, extension, velocity_levels, target_samplerate
+        instrument, success = process_sample(
+            sample, args.target, velocity_levels, target_samplerate
         )
 
-        # Create XML file for the instrument
-        create_instrument_xml(
-            instrument,
-            args.target,
-            extension,
-            velocity_levels,
-        )
+        if success:
+            instruments.append(instrument)
+            instrument_to_sample[instrument] = os.path.basename(sample)
 
     # Create drumkit.xml file
     create_drumkit_xml(instruments, args.target, metadata)
@@ -495,16 +592,8 @@ def main():
     )
 
     # Copy logo if specified
-    if "logo" in metadata and metadata["logo"]:
-        logo_source = os.path.join(args.source, metadata["logo"])
-        logo_dest = os.path.join(args.target, metadata["logo"])
-
-        if os.path.exists(logo_source):
-            try:
-                shutil.copy2(logo_source, logo_dest)
-                print(f"Logo file copied: {metadata['logo']}", file=sys.stderr)
-            except Exception as e:
-                print(f"Warning: Could not copy logo file: {e}", file=sys.stderr)
+    if "logo" in metadata:
+        copy_logo_file(args.source, args.target, metadata["logo"])
 
     # Copy extra files if specified
     extra_files_copied = []
@@ -513,17 +602,8 @@ def main():
 
     # Display summary
     print_summary(metadata, instruments, args.target)
-
-    # Print mapping of instruments to original sample files
-    print("\nInstrument to sample mapping:", file=sys.stderr)
-    for instrument, sample in instrument_to_sample.items():
-        print(f"  {instrument}: {sample}", file=sys.stderr)
-
-    # Print extra files copied
-    if extra_files_copied:
-        print("\nExtra files copied:", file=sys.stderr)
-        for file in extra_files_copied:
-            print(f"  {file}", file=sys.stderr)
+    print_instrument_mapping(instrument_to_sample)
+    print_extra_files(extra_files_copied)
 
 
 if __name__ == "__main__":
