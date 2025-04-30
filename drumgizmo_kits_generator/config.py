@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Configuration module for DrumGizmo kit generator.
-Contains global variables and constants used across the application.
+Contains functions for reading and processing configuration files.
 """
 
 import os
@@ -10,90 +10,6 @@ import sys
 from typing import Any, Dict, List, Tuple
 
 from drumgizmo_kits_generator.constants import DEFAULT_CHANNELS, DEFAULT_MAIN_CHANNELS
-
-# Configuration storage
-_config = {
-    "channels": DEFAULT_CHANNELS.copy(),
-    "main_channels": DEFAULT_MAIN_CHANNELS.copy(),
-}
-
-
-def get_channels() -> List[str]:
-    """
-    Get the current list of audio channels.
-
-    Returns:
-        List of audio channel names
-    """
-    return _config["channels"]
-
-
-def get_main_channels() -> List[str]:
-    """
-    Get the current list of main audio channels.
-
-    Returns:
-        List of main audio channel names
-    """
-    return _config["main_channels"]
-
-
-def update_channels_config(metadata: Dict[str, Any]) -> None:
-    """
-    Update the channels configuration from metadata.
-
-    Args:
-        metadata: Dictionary containing metadata with channels and main_channels
-    """
-    if "channels" in metadata:
-        try:
-            # Split comma-separated list of channels and remove whitespace at beginning and end
-            channels_list = [ch.strip() for ch in str(metadata["channels"]).split(",")]
-            # Filter out empty strings
-            channels_list = [ch for ch in channels_list if ch]
-            if channels_list:
-                _config["channels"] = channels_list
-                print(
-                    f"Using custom channels from metadata: {_config['channels']}", file=sys.stderr
-                )
-        except ValueError as e:
-            print(
-                f"Warning: Invalid channels value in metadata: {metadata['channels']} - Value error: {e}",
-                file=sys.stderr,
-            )
-        except TypeError as e:
-            print(
-                f"Warning: Invalid channels value in metadata: {metadata['channels']} - Type error: {e}",
-                file=sys.stderr,
-            )
-
-    if "main_channels" in metadata:
-        try:
-            # Split comma-separated list of main channels and remove whitespace at beginning and end
-            main_channels_list = [ch.strip() for ch in str(metadata["main_channels"]).split(",")]
-            # Filter out empty strings
-            main_channels_list = [ch for ch in main_channels_list if ch]
-            if main_channels_list:
-                _config["main_channels"] = main_channels_list
-                print(
-                    f"Using custom main channels from metadata: {_config['main_channels']}",
-                    file=sys.stderr,
-                )
-        except ValueError as e:
-            print(
-                f"Warning: Invalid main_channels value in metadata: {metadata['main_channels']} - Value error: {e}",
-                file=sys.stderr,
-            )
-        except TypeError as e:
-            print(
-                f"Warning: Invalid main_channels value in metadata: {metadata['main_channels']} - Type error: {e}",
-                file=sys.stderr,
-            )
-
-
-# For backward compatibility
-CHANNELS = DEFAULT_CHANNELS
-MAIN_CHANNELS = DEFAULT_MAIN_CHANNELS
 
 
 def parse_config_line(line: str) -> Tuple[str, str]:
@@ -189,14 +105,10 @@ def read_config_file(config_file: str) -> Dict[str, Any]:
                 if key in key_mapping:
                     metadata[key_mapping[key]] = value
 
-        # Update channels configuration
-        update_channels_config(metadata)
+        # Process channels and main_channels
+        process_channels_config(metadata)
 
-        if metadata:
-            print("Metadata read from configuration:", file=sys.stderr)
-            for key, value in metadata.items():
-                print(f"  {key}: {value}", file=sys.stderr)
-        else:
+        if not metadata:
             print("No valid metadata found in the configuration file", file=sys.stderr)
     except UnicodeDecodeError as e:
         print(f"Error reading configuration file: Unicode decode error: {e}", file=sys.stderr)
@@ -205,5 +117,154 @@ def read_config_file(config_file: str) -> Dict[str, Any]:
     except OSError as e:
         print(f"Error reading configuration file: File system error: {e}", file=sys.stderr)
 
-    print(f"Metadata loaded from config file: {metadata}", file=sys.stderr)
     return metadata
+
+
+def clean_channel_name(channel: str) -> str:
+    """
+    Clean a channel name by removing list formatting characters.
+
+    Args:
+        channel: Channel name to clean
+
+    Returns:
+        Cleaned channel name
+    """
+    # Remove list formatting characters and quotes
+    return str(channel).strip("[]'\"")
+
+
+def _process_channel_list(
+    channels_value: Any, default_channels: str, channel_type: str = "channels"
+) -> List[str]:
+    """
+    Process a channel list from metadata.
+
+    Args:
+        channels_value: Value from metadata
+        default_channels: Default channels to use if the list is invalid
+        channel_type: Type of channels ('channels' or 'main_channels')
+
+    Returns:
+        List of channels
+    """
+    try:
+        # Handle the case where channels_value is already a list
+        if isinstance(channels_value, list):
+            # Clean each channel name in the list
+            channels_list = [clean_channel_name(ch) for ch in channels_value]
+            # Filter out empty strings
+            channels_list = [ch for ch in channels_list if ch]
+            if channels_list:
+                print(
+                    f"Using custom {channel_type} from metadata: {channels_list}", file=sys.stderr
+                )
+                return channels_list
+
+        # Handle the case where channels_value is a string
+        # Split comma-separated list of channels and remove whitespace at beginning and end
+        channels_list = [ch.strip() for ch in str(channels_value).split(",")]
+        # Clean each channel name
+        channels_list = [clean_channel_name(ch) for ch in channels_list]
+        # Filter out empty strings
+        channels_list = [ch for ch in channels_list if ch]
+
+        if channels_list:
+            print(f"Using custom {channel_type} from metadata: {channels_list}", file=sys.stderr)
+            return channels_list
+
+        # Use default channels if the list is empty
+        print(f"Empty {channel_type} list, using default: {default_channels}", file=sys.stderr)
+        # Split the default channels string into a list
+        default_channels_list = [ch.strip() for ch in default_channels.split(",")]
+        return [ch for ch in default_channels_list if ch]
+    except (ValueError, TypeError) as e:
+        print(
+            f"Warning: Invalid {channel_type} value in metadata: {channels_value} - Error: {e}",
+            file=sys.stderr,
+        )
+        # Split the default channels string into a list
+        default_channels_list = [ch.strip() for ch in default_channels.split(",")]
+        return [ch for ch in default_channels_list if ch]
+
+
+def process_channels_config(metadata: Dict[str, Any]) -> None:
+    """
+    Process channels and main_channels in metadata.
+
+    Args:
+        metadata: Dictionary containing metadata with channels and main_channels
+    """
+    # Process channels
+    if "channels" in metadata:
+        metadata["channels"] = _process_channel_list(
+            metadata["channels"], DEFAULT_CHANNELS, "channels"
+        )
+    else:
+        # Set default channels if not provided
+        metadata["channels"] = _process_channel_list(DEFAULT_CHANNELS, DEFAULT_CHANNELS, "channels")
+
+    # Process main_channels
+    if "main_channels" in metadata:
+        main_channels_list = _process_channel_list(
+            metadata["main_channels"], DEFAULT_MAIN_CHANNELS, "main_channels"
+        )
+
+        # Validate that all main channels exist in the channels list
+        channels_list = metadata["channels"]
+        invalid_channels = [ch for ch in main_channels_list if ch not in channels_list]
+        if invalid_channels:
+            print(
+                f"Warning: The following main channels do not exist in channels list: {invalid_channels}",
+                file=sys.stderr,
+            )
+            # Remove invalid channels from the main channels list
+            main_channels_list = [ch for ch in main_channels_list if ch in channels_list]
+
+        # Only update if there are valid main channels
+        if main_channels_list:
+            metadata["main_channels"] = main_channels_list
+        else:
+            print(
+                f"Warning: No valid main channels found, using default: {DEFAULT_MAIN_CHANNELS}",
+                file=sys.stderr,
+            )
+            metadata["main_channels"] = _process_channel_list(
+                DEFAULT_MAIN_CHANNELS, DEFAULT_MAIN_CHANNELS, "main_channels"
+            )
+    else:
+        # Set default main channels if not provided
+        metadata["main_channels"] = _process_channel_list(
+            DEFAULT_MAIN_CHANNELS, DEFAULT_MAIN_CHANNELS, "main_channels"
+        )
+
+
+def get_channels_from_metadata(metadata: Dict[str, Any]) -> List[str]:
+    """
+    Get the list of audio channels from metadata.
+
+    Args:
+        metadata: Dictionary containing metadata with channels
+
+    Returns:
+        List of audio channel names
+    """
+    return metadata.get(
+        "channels", _process_channel_list(DEFAULT_CHANNELS, DEFAULT_CHANNELS, "channels")
+    )
+
+
+def get_main_channels_from_metadata(metadata: Dict[str, Any]) -> List[str]:
+    """
+    Get the list of main audio channels from metadata.
+
+    Args:
+        metadata: Dictionary containing metadata with main_channels
+
+    Returns:
+        List of main audio channel names
+    """
+    return metadata.get(
+        "main_channels",
+        _process_channel_list(DEFAULT_MAIN_CHANNELS, DEFAULT_MAIN_CHANNELS, "main_channels"),
+    )

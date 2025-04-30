@@ -1,7 +1,135 @@
 # DrumGizmo Kit Generator - Cascade Configuration
 
 ## Project Description
-The DrumGizmo Kit Generator is a Python tool that generates kits for DrumGizmo from audio samples. It creates complete kits with velocity variations, MIDI mappings, and custom audio channel configurations.
+The DrumGizmo Kit Generator is a Python tool that generates kits for DrumGizmo from audio samples. It creates complete kits with velocity variations, MIDI mappings, and custom audio channel configurations. It uses SoX to convert audio files to the target samplerate and generate the volumes variations.
+
+## Important Notes
+- All code, comments, documentation, and commit messages should be written in English
+
+## Rules for command line options and configuration entries
+source              The audio samples source directory
+                    Type string (path)
+                    Required command line option
+                    Must be an existing directory path in the system
+                    A warning must be printed if the directory contains more than (midi_note_max - midi_note_min) audio files
+target              The generated kit target directory
+                    Type string (path)
+                    Required command line option
+                    The parent directory must be an existing path in the system
+                    The directory contents are deleted before generating the new ones
+config              A configuration file to load
+                    Type string (path)
+                    Must be an existing file path in the system
+name                Kit name
+                    Type string
+                    Can not be empty
+                    If an empty value is set, an error is raised
+                    Default "DrumGizmo Kit"
+version             Kit version
+                    Type string
+                    Default "1.0"
+description         Kit description
+                    Type string
+                    Default null
+notes               Additional notes about the kit
+                    Type string
+                    Default null
+author              Kit author
+                    Type string
+                    Default null
+license             Kit license
+                    Type string
+                    Default "Private license"
+website             Kit website
+                    Type string (URL)
+                    Default null
+logo                Kit logo filename
+                    Type string
+                    Must be the local path of an existing file in the sources
+                    If the file does not exist, an error is raised
+                    Default null
+samplerate          Sample rate in Hz
+                    Type number
+                    Can not be empty
+                    If an empty value is set, the default value is used
+                    Must be > 0
+                    Default 44100
+extra_files         Additional files to copy
+                    Type list of strings
+                    Each list item must be left and right trimed
+                    Comma-separated list of local paths of existing files in the sources
+                    If one or more of the files does not exist, an error is raised
+                    Default null
+velocity_levels     Number of velocity levels to generate
+                    Type number
+                    Can not be empty
+                    If an empty value is set, the default value is used
+                    Must be > 0
+                    Default 10
+midi_note_min       Minimum MIDI note number allowed
+                    Type number
+                    Can not be empty
+                    If an empty value is set, the default value is used
+                    Must be > 0
+                    Must be < 127
+                    Must be < midi_note_max
+                    Must be <= midi_note_median
+                    Default 0
+midi_note_max       Maximum MIDI note number allowed
+                    Type number
+                    Can not be empty
+                    If an empty value is set, the default value is used
+                    Must be > 0
+                    Must be < 127
+                    Must be < midi_note_min
+                    Must be >= midi_note_median
+                    Default 127
+midi_note_median    Median MIDI note for distributing instruments
+                    Type number
+                    Can not be empty
+                    If an empty value is set, the default value is used
+                    Must be > 0
+                    Must be < 127
+                    Must be >= midi_note_min
+                    Must be <= midi_note_max
+                    Default 60
+extensions          Audio file extensions to process
+                    Type list of strings
+                    Can not be empty
+                    If an empty value is set, an error is raised
+                    Comma-separated list of file extensions
+                    Each list item must be left and right trimed
+                    Default "wav,WAV,flac,FLAC,ogg,OGG"
+channels            Comma-separated list of audio channels to use
+                    Type list of strings
+                    Can not be empty
+                    If an empty value is set, an error is raised
+                    Each list item must be left and right trimed
+                    Each list item can have a space inside
+                    The order of the list items must be kept as-is
+                    Default "AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
+main_channels       Comma-separated list of main audio channels
+                    Type list of strings
+                    Can be empty
+                    Each list item must be left and right trimed
+                    Each list item can have a space inside
+                    Each list item must exist in the channels list
+                    Default "AmbL,AmbR,OHL,OHR"
+
+## Application process steps
+1. Load configuration: defaults then configuration file then command line options
+2. Validate configuration: raise errors if invalid values are set
+3. Process audio files: convert to target samplerate and duplicate for velocity variations
+4. Generate XML files: drumkit.xml, midimap.xml, instrument.xml, etc.
+5. Copy extra files
+6. Copy logo
+
+## Project commands
+- to install it: `make install`
+- to format the code: `make format`
+- to run the linter: `make lint`
+- to run the tests: `make test`
+- to generate a test kit (for debug): `make generate`
 
 ## Project Structure
 - `drumgizmo_kits_generator/` - Main module
@@ -19,21 +147,6 @@ The DrumGizmo Kit Generator is a Python tool that generates kits for DrumGizmo f
   - `sources/` - Audio files and other resources for testing
   - `target/` - Verification kit generated from `sources/` for testing
 
-## Main Features
-1. DrumGizmo kit generation from audio samples
-2. Creation of velocity variations for each instrument
-3. Generation of XML files for DrumGizmo (drumkit.xml, midimap.xml, etc.)
-4. Automatic sample rate conversion
-5. Customization of audio channels and main channels
-6. Validation of MIDI and velocity configurations
-
-## Recent Changes
-1. Removal of the "instrument_prefix" variable from the code
-2. Addition of automatic sample rate conversion using SoX
-3. Improved handling of custom audio channels
-4. Validation of MIDI and velocity values
-5. Enhanced robustness against invalid inputs
-
 ## Dependencies
 - Python 3.9+ (for modern Python features)
 - SoX (for sample rate conversion)
@@ -46,17 +159,4 @@ The DrumGizmo Kit Generator is a Python tool that generates kits for DrumGizmo f
   - main.py: 88%
   - xml_generator.py: 100%
   - utils.py: 88%
-- Running tests: `python3 -m unittest discover`
-
-## Areas for Improvement
-1. Better error handling in audio processing functions
-2. Additional tests for edge cases and invalid inputs
-3. Refactoring of the main.py module to reduce complexity
-4. Improved code documentation
-5. Additional features for further kit customization
-
-## Important Notes
-- Channel values can contain spaces or be numbers
-- The `update_channels_config` function handles non-string values by converting them to strings
-- Tests use 4 velocity levels by default, as per the configuration in drumgizmo-kit.ini
-- All code, comments, documentation, and commit messages should be written in English
+- Running tests: `python3 -m unittest discover` or `pytest`

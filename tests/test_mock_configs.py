@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: disable=too-many-instance-attributes,too-few-public-methods,too-many-locals,broad-exception-caught,redundant-unittest-assert,too-many-branches,too-many-statements,unused-variable
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-locals
+# pylint: disable=broad-exception-caught
+# pylint: disable=redundant-unittest-assert
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-statements
+# pylint: disable=unused-variable
+# pylint: disable=import-outside-toplevel,wrong-import-position
 """
 Tests for validating mock configuration files.
 
@@ -20,15 +28,12 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import the modules to test
-# pylint: disable=wrong-import-position
 from drumgizmo_kits_generator.config import read_config_file
 from drumgizmo_kits_generator.validators import (
     validate_midi_and_velocity_params,
     validate_midi_parameters,
     validate_velocity_levels,
 )
-
-# pylint: enable=wrong-import-position
 
 
 class TestMockConfigs(unittest.TestCase):

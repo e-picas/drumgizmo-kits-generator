@@ -28,6 +28,14 @@ def validate_metadata_numeric_value(metadata: Dict[str, Any], key: str) -> None:
     if key in metadata:
         try:
             metadata[key] = int(metadata[key])
+
+            # Validate that samplerate is greater than 0
+            if key == "samplerate" and metadata[key] <= 0:
+                print(
+                    f"Warning: {key} must be greater than 0, using default",
+                    file=sys.stderr,
+                )
+                metadata.pop(key)
         except ValueError:
             print(
                 f"Warning: Invalid {key} value in config file: {metadata[key]}",
@@ -90,6 +98,8 @@ def validate_midi_parameters(
         Tuple containing validated (midi_note_min, midi_note_max, midi_note_median)
     """
     # Get MIDI parameters from metadata or args
+    # Note: metadata values come from the config file or command line arguments
+    # that have already been processed in update_metadata_from_args
     midi_note_min = metadata.get("midi_note_min", args.midi_note_min)
     midi_note_max = metadata.get("midi_note_max", args.midi_note_max)
     midi_note_median = metadata.get("midi_note_median", args.midi_note_median)
@@ -118,6 +128,29 @@ def validate_midi_parameters(
         )
         midi_note_median = DEFAULT_MIDI_NOTE_MEDIAN
 
+    # Validate relational constraints
+    if midi_note_min > midi_note_max:
+        print(
+            f"Warning: midi_note_min ({midi_note_min}) is greater than midi_note_max ({midi_note_max}), adjusting to defaults",
+            file=sys.stderr,
+        )
+        midi_note_min = DEFAULT_MIDI_NOTE_MIN
+        midi_note_max = DEFAULT_MIDI_NOTE_MAX
+
+    if midi_note_min > midi_note_median:
+        print(
+            f"Warning: midi_note_min ({midi_note_min}) is greater than midi_note_median ({midi_note_median}), adjusting midi_note_min to default",
+            file=sys.stderr,
+        )
+        midi_note_min = DEFAULT_MIDI_NOTE_MIN
+
+    if midi_note_max < midi_note_median:
+        print(
+            f"Warning: midi_note_max ({midi_note_max}) is less than midi_note_median ({midi_note_median}), adjusting midi_note_max to default",
+            file=sys.stderr,
+        )
+        midi_note_max = DEFAULT_MIDI_NOTE_MAX
+
     return midi_note_min, midi_note_max, midi_note_median
 
 
@@ -133,6 +166,8 @@ def validate_velocity_levels(args: argparse.Namespace, metadata: Dict[str, Any])
         Validated velocity_levels
     """
     # Get velocity levels from metadata or args
+    # Note: metadata values come from the config file or command line arguments
+    # that have already been processed in update_metadata_from_args
     try:
         velocity_levels = int(metadata.get("velocity_levels", args.velocity_levels))
     except (ValueError, TypeError):

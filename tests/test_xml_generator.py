@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pylint: disable=import-outside-toplevel,wrong-import-position
 """
 Unit tests for the XML generator module of the DrumGizmo kit generator.
 
@@ -17,14 +18,11 @@ from unittest.mock import patch
 # Add the parent directory to the path to be able to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# pylint: disable=wrong-import-position
 from drumgizmo_kits_generator.xml_generator import (
     create_drumkit_xml,
     create_instrument_xml,
     create_midimap_xml,
 )
-
-# pylint: enable=wrong-import-position
 
 
 class TestXmlGenerator(unittest.TestCase):

@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: disable=too-many-instance-attributes,too-few-public-methods,too-many-locals,broad-exception-caught,redundant-unittest-assert,too-many-branches,too-many-statements,unused-variable
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-locals
+# pylint: disable=broad-exception-caught
+# pylint: disable=redundant-unittest-assert
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-statements
+# pylint: disable=unused-variable
+# pylint: disable=import-outside-toplevel,wrong-import-position
 """
 Tests for validating command line arguments.
 
@@ -20,7 +28,6 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import the modules to test
-# pylint: disable=wrong-import-position
 import argparse
 
 from drumgizmo_kits_generator.validators import (
@@ -28,8 +35,6 @@ from drumgizmo_kits_generator.validators import (
     validate_midi_parameters,
     validate_velocity_levels,
 )
-
-# pylint: enable=wrong-import-position
 
 
 class TestCommandLineArgs(unittest.TestCase):
@@ -99,27 +104,28 @@ class TestCommandLineArgs(unittest.TestCase):
             args = argparse.Namespace(midi_note_min=60, midi_note_max=50, midi_note_median=55)
 
             min_note, max_note, median_note = validate_midi_parameters(args, metadata)
-            # In the current implementation, this constraint is not enforced
-            # self.assertLessEqual(min_note, max_note, "MIDI note min should be <= MIDI note max")
-            self.assertEqual(min_note, 60, "MIDI note min should be preserved")
-            self.assertEqual(max_note, 50, "MIDI note max should be preserved")
+            self.assertLessEqual(min_note, max_note, "MIDI note min should be <= MIDI note max")
+            self.assertEqual(min_note, 0, "MIDI note min should be adjusted to default")
+            self.assertEqual(max_note, 127, "MIDI note max should be adjusted to default")
 
             # Test MIDI note min > MIDI note median
             args = argparse.Namespace(midi_note_min=70, midi_note_max=127, midi_note_median=60)
 
             min_note, max_note, median_note = validate_midi_parameters(args, metadata)
-            # In the current implementation, this constraint is not enforced
-            # self.assertLessEqual(min_note, median_note, "MIDI note min should be <= MIDI note median")
-            self.assertEqual(min_note, 70, "MIDI note min should be preserved")
+            self.assertLessEqual(
+                min_note, median_note, "MIDI note min should be <= MIDI note median"
+            )
+            self.assertEqual(min_note, 0, "MIDI note min should be adjusted to default")
             self.assertEqual(median_note, 60, "MIDI note median should be preserved")
 
             # Test MIDI note max < MIDI note median
             args = argparse.Namespace(midi_note_min=0, midi_note_max=50, midi_note_median=60)
 
             min_note, max_note, median_note = validate_midi_parameters(args, metadata)
-            # In the current implementation, this constraint is not enforced
-            # self.assertGreaterEqual(max_note, median_note, "MIDI note max should be >= MIDI note median")
-            self.assertEqual(max_note, 50, "MIDI note max should be preserved")
+            self.assertGreaterEqual(
+                max_note, median_note, "MIDI note max should be >= MIDI note median"
+            )
+            self.assertEqual(max_note, 127, "MIDI note max should be adjusted to default")
             self.assertEqual(median_note, 60, "MIDI note median should be preserved")
 
     def test_velocity_levels_validation(self):

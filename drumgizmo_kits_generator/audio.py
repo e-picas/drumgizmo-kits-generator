@@ -177,26 +177,40 @@ def copy_sample_file(
     return success
 
 
-def find_audio_files(source_dir: str, extensions: List[str]) -> List[str]:
+def find_audio_files(source_dir: str, extensions: str) -> List[str]:
     """
     Find audio files in the source directory with the specified extensions.
 
     Args:
         source_dir: Source directory to search in
-        extensions: List of file extensions to search for
+        extensions: Comma-separated list of file extensions to search for
 
     Returns:
         List of audio files found
     """
     audio_files = []
 
+    # Convert extensions string to list
+    if isinstance(extensions, str):
+        extensions = extensions.split(",")
+
     for ext in extensions:
+        # Remove whitespace
+        ext = ext.strip()
+
+        # Skip empty extensions
+        if not ext:
+            continue
+
         # Add a dot to the extension if it doesn't have one
         if not ext.startswith("."):
             ext = f".{ext}"
 
         # Find files with the extension
         pattern = os.path.join(source_dir, f"*{ext}")
-        audio_files.extend(glob.glob(pattern))
+        print(f"Searching for pattern: {pattern}", file=sys.stderr)
+        found_files = glob.glob(pattern)
+        print(f"Found {len(found_files)} files with extension {ext}", file=sys.stderr)
+        audio_files.extend(found_files)
 
     return audio_files

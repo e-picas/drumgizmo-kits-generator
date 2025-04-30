@@ -11,7 +11,11 @@ import xml.etree.ElementTree as ET
 import xml.parsers.expat
 from typing import Any, Dict, List, Optional
 
-from drumgizmo_kits_generator.config import get_channels, get_main_channels
+from drumgizmo_kits_generator.config import (
+    clean_channel_name,
+    get_channels_from_metadata,
+    get_main_channels_from_metadata,
+)
 from drumgizmo_kits_generator.constants import (
     APP_LINK,
     APP_NAME,
@@ -67,7 +71,11 @@ def write_pretty_xml(tree: ET.ElementTree, file_path: str) -> bool:
 
 
 def create_instrument_xml(
-    instrument: str, kit_dir: str, extension: str, velocity_levels: int = DEFAULT_VELOCITY_LEVELS
+    instrument: str,
+    kit_dir: str,
+    extension: str,
+    velocity_levels: int = DEFAULT_VELOCITY_LEVELS,
+    metadata: Dict[str, Any] = None,
 ) -> Optional[str]:
     """
     Creates the XML file for an instrument.
@@ -77,13 +85,22 @@ def create_instrument_xml(
         kit_dir: Target directory for the kit
         extension: Audio file extension (with the dot)
         velocity_levels: Number of velocity levels to generate
+        metadata: Kit metadata dictionary
 
     Returns:
         Path to the created XML file or None if creation failed
     """
+    # pylint: disable=too-many-locals
     xml_file = os.path.join(kit_dir, instrument, f"{instrument}.xml")
 
     print(f"Creating XML file: {xml_file}", file=sys.stderr)
+
+    # Initialize metadata if not provided
+    if metadata is None:
+        metadata = {}
+
+    # Extract channels outside the loop to reduce local variables
+    channels = get_channels_from_metadata(metadata)
 
     try:
         # Create the root element
@@ -105,7 +122,7 @@ def create_instrument_xml(
 
             # Add audiofiles for each channel
             # Alternate filechannel between channels to use both stereo channels
-            for index, channel in enumerate(get_channels()):
+            for index, channel in enumerate(channels):
                 # Alternate between filechannel 1 and 2 based on channel index
                 filechannel = "1" if index % 2 == 0 else "2"
 
@@ -124,28 +141,14 @@ def create_instrument_xml(
         if write_pretty_xml(tree, xml_file):
             print(f"XML file successfully created: {xml_file}", file=sys.stderr)
             return xml_file
+        print(f"Error: Failed to write XML file to {xml_file}", file=sys.stderr)
         return None
-    except ET.ParseError as e:
+    # pylint: disable=broad-exception-caught
+    except Exception as e:
+        error_type = type(e).__name__
         print(
-            f"Error creating instrument XML file for {instrument}: XML parsing error: {e}",
+            f"Error creating instrument XML file for {instrument}: {error_type}: {e}",
             file=sys.stderr,
-        )
-        return None
-    except (OSError, IOError) as e:
-        print(
-            f"Error creating instrument XML file for {instrument}: File system error: {e}",
-            file=sys.stderr,
-        )
-        return None
-    except ValueError as e:
-        print(
-            f"Error creating instrument XML file for {instrument}: Value error: {e}",
-            file=sys.stderr,
-        )
-        return None
-    except TypeError as e:
-        print(
-            f"Error creating instrument XML file for {instrument}: Type error: {e}", file=sys.stderr
         )
         return None
 
@@ -198,19 +201,27 @@ def add_metadata_elements(metadata_elem: ET.Element, metadata: Dict[str, Any]) -
     created.text = f"Generated on {current_time} with {APP_NAME} v{APP_VERSION} ({APP_LINK})"
 
 
-def add_channels_element(root: ET.Element) -> None:
+def add_channels_element(root: ET.Element, metadata: Dict[str, Any] = None) -> None:
     """
     Add channels element to the root XML element.
 
     Args:
         root: The root XML element to add channels to
+        metadata: Kit metadata dictionary
     """
-    # Add channels section
+    # Initialize metadata if not provided
+    if metadata is None:
+        metadata = {}
+
+    # Create channels element
     channels_elem = ET.SubElement(root, "channels")
 
-    # Add each channel
-    for channel in get_channels():
-        ET.SubElement(channels_elem, "channel", name=channel)
+    # Add all channels, not just main channels
+    channels = get_channels_from_metadata(metadata)
+    for channel in channels:
+        # Ensure channel name is a clean string without list formatting characters
+        channel_name = clean_channel_name(channel)
+        ET.SubElement(channels_elem, "channel", name=channel_name)
 
 
 def add_instruments_element(root: ET.Element, instruments: List[str]) -> None:
@@ -231,13 +242,20 @@ def add_instruments_element(root: ET.Element, instruments: List[str]) -> None:
         )
 
         # Add channelmaps for each channel
-        for channel in get_channels():
-            if channel in get_main_channels():
+        for channel in get_channels_from_metadata({}):
+            # Clean channel name from any list formatting characters
+            clean_channel = clean_channel_name(channel)
+
+            if channel in get_main_channels_from_metadata({}):
                 ET.SubElement(
-                    instrument_elem, "channelmap", **{"in": channel, "out": channel, "main": "true"}
+                    instrument_elem,
+                    "channelmap",
+                    **{"in": clean_channel, "out": clean_channel, "main": "true"},
                 )
             else:
-                ET.SubElement(instrument_elem, "channelmap", **{"in": channel, "out": channel})
+                ET.SubElement(
+                    instrument_elem, "channelmap", **{"in": clean_channel, "out": clean_channel}
+                )
 
 
 def create_drumkit_xml(
@@ -255,12 +273,11 @@ def create_drumkit_xml(
         Path to the created XML file or None if creation failed
     """
     xml_file = os.path.join(kit_dir, "drumkit.xml")
-    result = None
 
     print("Creating drumkit.xml file", file=sys.stderr)
 
     try:
-        # Create root element with attributes expected by tests
+        # Create the root element
         root = ET.Element(
             "drumkit",
             version=metadata.get("version", DEFAULT_VERSION),
@@ -268,14 +285,14 @@ def create_drumkit_xml(
             samplerate=metadata.get("samplerate", DEFAULT_SAMPLERATE),
         )
 
-        # Add metadata section
+        # Add metadata element
         metadata_elem = ET.SubElement(root, "metadata")
         add_metadata_elements(metadata_elem, metadata)
 
-        # Add channels section
-        add_channels_element(root)
+        # Add channels element
+        add_channels_element(root, metadata)
 
-        # Add instruments section
+        # Add instruments element
         add_instruments_element(root, instruments)
 
         # Create XML tree
@@ -284,19 +301,14 @@ def create_drumkit_xml(
         # Write the XML file with pretty formatting
         if write_pretty_xml(tree, xml_file):
             print(f"drumkit.xml file successfully created: {xml_file}", file=sys.stderr)
-            result = xml_file
-    except ET.ParseError as e:
-        print(f"Error creating drumkit XML file: XML parsing error: {e}", file=sys.stderr)
-    except (OSError, IOError) as e:
-        print(f"Error creating drumkit XML file: File system error: {e}", file=sys.stderr)
-    except KeyError as e:
-        print(f"Error creating drumkit XML file: Missing key in metadata: {e}", file=sys.stderr)
-    except ValueError as e:
-        print(f"Error creating drumkit XML file: Value error: {e}", file=sys.stderr)
-    except TypeError as e:
-        print(f"Error creating drumkit XML file: Type error: {e}", file=sys.stderr)
-
-    return result
+            return xml_file
+        print(f"Error: Failed to write drumkit.xml file to {xml_file}", file=sys.stderr)
+        return None
+    # pylint: disable=broad-exception-caught  # Nous voulons attraper toutes les exceptions ici pour fournir un message d'erreur utilisateur plus convivial.
+    except Exception as e:
+        error_type = type(e).__name__
+        print(f"Error creating drumkit XML file: {error_type}: {e}", file=sys.stderr)
+        return None
 
 
 def calculate_midi_start_note(
@@ -348,6 +360,10 @@ def create_midimap_xml(
     midi_note_min: int = DEFAULT_MIDI_NOTE_MIN,
     midi_note_max: int = DEFAULT_MIDI_NOTE_MAX,
     midi_note_median: int = DEFAULT_MIDI_NOTE_MEDIAN,
+    # Nous gardons metadata pour la compatibilité avec les appels existants
+    # mais nous ne l'utilisons pas dans cette fonction
+    # pylint: disable=unused-argument
+    metadata: Dict[str, Any] = None,
 ) -> Optional[str]:
     """
     Creates the midimap.xml file for the kit.
@@ -358,10 +374,12 @@ def create_midimap_xml(
         midi_note_min: Minimum MIDI note number allowed
         midi_note_max: Maximum MIDI note number allowed
         midi_note_median: Median MIDI note for distributing instruments around
+        metadata: Kit metadata dictionary (not used in this function)
 
     Returns:
         Path to the created XML file or None if creation failed
     """
+    # pylint: disable=too-many-locals
     xml_file = os.path.join(kit_dir, "midimap.xml")
 
     print("Creating midimap.xml file", file=sys.stderr)
@@ -410,16 +428,10 @@ def create_midimap_xml(
         if write_pretty_xml(tree, xml_file):
             print(f"midimap.xml file successfully created: {xml_file}", file=sys.stderr)
             return xml_file
+        print(f"Error: Failed to write midimap.xml file to {xml_file}", file=sys.stderr)
         return None
-    except ET.ParseError as e:
-        print(f"Error creating midimap XML file: XML parsing error: {e}", file=sys.stderr)
-        return None
-    except (OSError, IOError) as e:
-        print(f"Error creating midimap XML file: File system error: {e}", file=sys.stderr)
-        return None
-    except ValueError as e:
-        print(f"Error creating midimap XML file: Value error: {e}", file=sys.stderr)
-        return None
-    except TypeError as e:
-        print(f"Error creating midimap XML file: Type error: {e}", file=sys.stderr)
+    # pylint: disable=broad-exception-caught
+    except Exception as e:
+        error_type = type(e).__name__
+        print(f"Error creating midimap XML file: {error_type}: {e}", file=sys.stderr)
         return None

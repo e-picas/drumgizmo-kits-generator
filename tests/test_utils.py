@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # pylint: disable=duplicate-code
+# pylint: disable=import-outside-toplevel,wrong-import-position
 """
 Unit tests for the utils module of the DrumGizmo kit generator.
 
@@ -22,7 +23,6 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import the module to test
-# pylint: disable-next=wrong-import-position
 from drumgizmo_kits_generator.utils import (
     extract_instrument_name,
     get_audio_samplerate,

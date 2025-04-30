@@ -6,7 +6,6 @@ Contains global constants used across the application.
 """
 
 import os
-from typing import List
 
 import tomlkit
 
@@ -35,23 +34,7 @@ DEFAULT_NAME = "DrumGizmo Kit"
 DEFAULT_VERSION = "1.0"
 DEFAULT_LICENSE = "Private license"
 DEFAULT_SAMPLERATE = "44100"
-
-# Default audio channels
-DEFAULT_CHANNELS: List[str] = [
-    "AmbL",
-    "AmbR",
-    "Hihat",
-    "Kdrum_back",
-    "Kdrum_front",
-    "OHL",
-    "OHR",
-    "Ride",
-    "Snare_bottom",
-    "Snare_top",
-    "Tom1",
-    "Tom2",
-    "Tom3",
-]
-
-# Default main channels
-DEFAULT_MAIN_CHANNELS: List[str] = ["AmbL", "AmbR", "OHL", "OHR"]
+DEFAULT_CHANNELS = (
+    "AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
+)
+DEFAULT_MAIN_CHANNELS = "AmbL,AmbR,OHL,OHR"

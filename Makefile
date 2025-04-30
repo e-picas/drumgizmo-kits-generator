@@ -9,13 +9,23 @@ default: help
 install-ci:
 	pip install .[dev]
 
+test-ci:
+	python3 -m pytest
+
 coverage-ci:
 	coverage run -m unittest discover tests && coverage xml
+
+lint-ci:
+	pylint $$(git ls-files '*.py')
 
 ## Install the app's dependencies & git hooks
 install: install-ci
 	pre-commit install
 	pre-commit install --hook-type commit-msg
+
+## Format the code following the '.pre-commit-config.yaml'
+format:
+	pre-commit run --hook-stage manual --show-diff-on-failure --color=always --all-files
 
 ## Run the linter
 lint:
@@ -29,9 +39,9 @@ test:
 coverage:
 	coverage run -m unittest discover tests && coverage report -m
 
-## Format the code following the '.pre-commit-config.yaml'
-format:
-	pre-commit run --hook-stage manual --show-diff-on-failure --color=always --all-files
+## Generate a test kit to `tests/target_test/`
+generate:
+	python3 create_drumgizmo_kit.py -s tests/sources/ -t tests/target_test/ -c tests/sources/drumgizmo-kit.ini
 
 # This generates a 'help' string with the list of available tasks & variables
 # in your Makefile(s) with their description if it is prefixed by two dashes:

@@ -11,14 +11,13 @@ import shutil
 import sys
 from typing import Any, Dict, List, Optional, Tuple
 
+# Import local modules
 from drumgizmo_kits_generator.audio import (
     copy_sample_file,
     create_volume_variations,
     find_audio_files,
 )
-from drumgizmo_kits_generator.config import read_config_file, update_channels_config
-
-# Import local modules
+from drumgizmo_kits_generator.config import process_channels_config, read_config_file
 from drumgizmo_kits_generator.constants import (
     DEFAULT_EXTENSIONS,
     DEFAULT_LICENSE,
@@ -37,11 +36,7 @@ from drumgizmo_kits_generator.utils import (
     prepare_target_directory,
     print_summary,
 )
-from drumgizmo_kits_generator.validators import (
-    validate_midi_and_velocity_params,
-    validate_midi_parameters,
-    validate_velocity_levels,
-)
+from drumgizmo_kits_generator.validators import validate_midi_and_velocity_params
 from drumgizmo_kits_generator.xml_generator import (
     create_drumkit_xml,
     create_instrument_xml,
@@ -90,7 +85,10 @@ Configuration file options:
     )
 
     parser.add_argument(
-        "-s", "--source", required=True, help="REQUIRED - Source directory containing audio samples"
+        "-s",
+        "--samples",
+        required=True,
+        help="REQUIRED - Source directory containing audio samples",
     )
     parser.add_argument(
         "-t", "--target", required=True, help="REQUIRED - Target directory for the DrumGizmo kit"
@@ -169,9 +167,9 @@ Configuration file options:
     return parser.parse_args()
 
 
-def update_metadata_from_args(metadata: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
+def _process_basic_metadata(metadata: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
     """
-    Update metadata with values from command line arguments.
+    Process basic metadata fields from command line arguments.
 
     Args:
         metadata (Dict[str, Any]): Existing metadata dictionary
@@ -194,7 +192,22 @@ def update_metadata_from_args(metadata: Dict[str, Any], args: argparse.Namespace
         arg_value = getattr(args, arg_name, None)
         if arg_value:
             metadata[arg_name] = arg_value
+    return metadata
 
+
+def _process_description_and_notes(
+    metadata: Dict[str, Any], args: argparse.Namespace
+) -> Dict[str, Any]:
+    """
+    Process description and notes metadata from command line arguments.
+
+    Args:
+        metadata (Dict[str, Any]): Existing metadata dictionary
+        args (argparse.Namespace): Command line arguments
+
+    Returns:
+        Dict[str, Any]: Updated metadata dictionary
+    """
     # Special handling for description
     if args.description:
         metadata["description"] = args.description
@@ -218,43 +231,99 @@ def update_metadata_from_args(metadata: Dict[str, Any], args: argparse.Namespace
             "notes"
         ] = f"Generated with create_drumgizmo_kit.py at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"
 
-    # Process channels options
-    if args.channels:
-        metadata["channels"] = args.channels
-    if args.main_channels:
-        metadata["main_channels"] = args.main_channels
-
     return metadata
 
 
-def set_default_metadata_values(
+def _process_command_line_overrides(
     metadata: Dict[str, Any], args: argparse.Namespace
 ) -> Dict[str, Any]:
     """
-    Set default values for metadata if not provided.
+    Process command line overrides for MIDI parameters, velocity levels, and extensions.
 
     Args:
         metadata (Dict[str, Any]): Existing metadata dictionary
         args (argparse.Namespace): Command line arguments
 
     Returns:
-        Dict[str, Any]: Metadata with default values set
+        Dict[str, Any]: Updated metadata dictionary
     """
-    defaults = {
-        "name": DEFAULT_NAME,
-        "version": DEFAULT_VERSION,
-        "description": f"Kit automatically created with {args.velocity_levels} velocity levels",
-        "author": "",
-        "license": DEFAULT_LICENSE,
-        "website": "",
-        "samplerate": DEFAULT_SAMPLERATE,
-        "logo": "",
-        "extra_files": "",
-    }
+    # Process channels options
+    if args.channels:
+        # Store channels as a comma-separated string, not as a list representation
+        metadata["channels"] = args.channels
+    if args.main_channels:
+        # Store main_channels as a comma-separated string, not as a list representation
+        metadata["main_channels"] = args.main_channels
 
-    for key, default_value in defaults.items():
-        if key not in metadata:
-            metadata[key] = default_value
+    # Check if these arguments were explicitly provided on the command line
+    argv_str = " ".join(sys.argv)
+
+    # Process MIDI parameters - command line arguments should override config values
+    if "--midi-note-min" in argv_str:
+        metadata["midi_note_min"] = args.midi_note_min
+    if "--midi-note-max" in argv_str:
+        metadata["midi_note_max"] = args.midi_note_max
+    if "--midi-note-median" in argv_str:
+        metadata["midi_note_median"] = args.midi_note_median
+
+    # Process velocity levels - command line arguments should override config values
+    if "--velocity-levels" in argv_str:
+        metadata["velocity_levels"] = args.velocity_levels
+
+    # Process extensions - command line arguments should override config values
+    if "--extensions" in argv_str:
+        metadata["extensions"] = args.extensions
+
+    return metadata
+
+
+def update_metadata_from_args(metadata: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
+    """
+    Update metadata with values from command line arguments.
+
+    Args:
+        metadata (Dict[str, Any]): Existing metadata dictionary
+        args (argparse.Namespace): Command line arguments
+
+    Returns:
+        Dict[str, Any]: Updated metadata dictionary
+    """
+    # Process basic metadata fields
+    metadata = _process_basic_metadata(metadata, args)
+
+    # Process description and notes
+    metadata = _process_description_and_notes(metadata, args)
+
+    # Process command line overrides
+    metadata = _process_command_line_overrides(metadata, args)
+
+    return metadata
+
+
+def set_default_metadata_values(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Set default values for metadata if not provided.
+
+    Args:
+        metadata (Dict[str, Any]): Existing metadata dictionary
+
+    Returns:
+        Dict[str, Any]: Updated metadata dictionary
+    """
+    # Set default values for required metadata
+    if "name" not in metadata:
+        metadata["name"] = DEFAULT_NAME
+    if "version" not in metadata:
+        metadata["version"] = DEFAULT_VERSION
+    if "license" not in metadata:
+        metadata["license"] = DEFAULT_LICENSE
+    if "samplerate" not in metadata:
+        metadata["samplerate"] = DEFAULT_SAMPLERATE
+    if "extensions" not in metadata:
+        metadata["extensions"] = DEFAULT_EXTENSIONS
+
+    # Process channels configuration
+    process_channels_config(metadata)
 
     return metadata
 
@@ -262,6 +331,10 @@ def set_default_metadata_values(
 def prepare_metadata(args: argparse.Namespace) -> Dict[str, Any]:
     """
     Prepare kit metadata by combining command line arguments and configuration file.
+    Order of precedence:
+    1. Default values (lowest priority)
+    2. Configuration file values
+    3. Command line arguments (highest priority)
 
     Args:
         args (argparse.Namespace): Command line arguments
@@ -269,30 +342,31 @@ def prepare_metadata(args: argparse.Namespace) -> Dict[str, Any]:
     Returns:
         dict: Kit metadata
     """
+    # 1. Start with an empty metadata dictionary
     metadata = {}
 
-    # Read configuration file if specified
+    # 2. Set default values first (lowest priority)
+    metadata = set_default_metadata_values(metadata)
+
+    # 3. Read configuration file if specified (medium priority)
     if args.config:
         config_metadata = read_config_file(args.config)
         metadata.update(config_metadata)
-        print(f"Metadata loaded from config file: {config_metadata}", file=sys.stderr)
 
-    # Update metadata with command line arguments
+    # 4. Update metadata with command line arguments (highest priority)
     metadata = update_metadata_from_args(metadata, args)
 
-    # Set default values for metadata if not provided
-    metadata = set_default_metadata_values(metadata, args)
-
-    # Validate MIDI and velocity parameters
+    # 5. Validate MIDI and velocity parameters
     metadata = validate_midi_and_velocity_params(metadata, args)
 
-    # Update channels configuration
-    update_channels_config(metadata)
+    # 6. Ensure channels and main_channels are properly processed
+    process_channels_config(metadata)
 
     # Print metadata
     print("\nKit metadata:", file=sys.stderr)
     for key, value in metadata.items():
         print(f"  {key}: {value}", file=sys.stderr)
+    print("\n", file=sys.stderr)
 
     return metadata
 
@@ -414,6 +488,7 @@ def process_instruments(
     args: argparse.Namespace,
     velocity_levels: int,
     target_samplerate: Optional[str],
+    metadata: Dict[str, Any],
 ) -> Tuple[List[str], Dict[str, str]]:
     """
     Process each sample to create instruments.
@@ -423,9 +498,10 @@ def process_instruments(
         args: Command line arguments
         velocity_levels: Number of velocity levels to generate
         target_samplerate: Target sample rate for conversion, or None to keep original
+        metadata: Metadata dictionary
 
     Returns:
-        Tuple of (instruments list, instrument_to_sample mapping)
+        Tuple of (list of instrument names, dictionary mapping instrument to sample file)
     """
     instruments = []
     instrument_to_sample = {}  # Map to keep track of which sample was used for each instrument
@@ -462,6 +538,7 @@ def process_instruments(
             args.target,
             extension,
             velocity_levels,
+            metadata,
         )
 
     return instruments, instrument_to_sample
@@ -496,6 +573,7 @@ def create_xml_files(
         midi_note_min=midi_note_min,
         midi_note_max=midi_note_max,
         midi_note_median=midi_note_median,
+        metadata=metadata,
     )
 
 
@@ -505,24 +583,27 @@ def main() -> None:
     Parses arguments, prepares metadata, searches for samples, processes each sample,
     creates XML files, copies logo and extra files, and displays a summary.
     """
-    # Parse arguments
+    # Parse command line arguments
     args = parse_arguments()
 
     # Prepare metadata
     metadata = prepare_metadata(args)
 
+    # Get validated MIDI parameters
+    midi_note_min = int(metadata.get("midi_note_min", DEFAULT_MIDI_NOTE_MIN))
+    midi_note_max = int(metadata.get("midi_note_max", DEFAULT_MIDI_NOTE_MAX))
+    midi_note_median = int(metadata.get("midi_note_median", DEFAULT_MIDI_NOTE_MEDIAN))
+
+    # Get validated velocity levels
+    velocity_levels = int(metadata.get("velocity_levels", DEFAULT_VELOCITY_LEVELS))
+
     # Prepare target directory
-    if not prepare_target_directory(args.target):
-        sys.exit(1)
+    prepare_target_directory(args.target)
 
-    # Search for samples in the source directory
-    if "extensions" in metadata:
-        extensions = metadata["extensions"].split(",")
-    else:
-        extensions = args.extensions.split(",")
-    samples = find_audio_files(args.source, extensions)
+    # Find audio samples
+    samples = find_audio_files(args.samples, metadata.get("extensions", DEFAULT_EXTENSIONS))
 
-    print(f"Searching for samples in: {args.source}", file=sys.stderr)
+    print(f"Searching for samples in: {args.samples}", file=sys.stderr)
     print(f"Number of samples found: {len(samples)}", file=sys.stderr)
 
     if not samples:
@@ -533,18 +614,9 @@ def main() -> None:
     samples.sort(key=lambda x: os.path.basename(x).lower())
     print("Samples sorted alphabetically", file=sys.stderr)
 
-    # Process MIDI parameters
-    midi_note_min, midi_note_max, midi_note_median = validate_midi_parameters(args, metadata)
-
-    # Process velocity levels
-    velocity_levels = validate_velocity_levels(args, metadata)
-
-    # Get the target sample rate from metadata if available
-    target_samplerate = metadata.get("samplerate", None)
-
-    # Process each sample
+    # Process each sample to create instruments
     instruments, instrument_to_sample = process_instruments(
-        samples, args, velocity_levels, target_samplerate
+        samples, args, velocity_levels, metadata.get("samplerate"), metadata
     )
 
     # Create XML files
@@ -553,13 +625,13 @@ def main() -> None:
     # Copy logo if specified
     extra_files_copied = []
     if "logo" in metadata and metadata["logo"]:
-        logo_file = copy_logo_file(args.source, args.target, metadata["logo"])
+        logo_file = copy_logo_file(args.samples, args.target, metadata["logo"])
         if logo_file:
             extra_files_copied.append(logo_file)
 
     # Copy extra files if specified
     if "extra_files" in metadata and metadata["extra_files"]:
-        extra_files = copy_extra_files(args.source, args.target, metadata["extra_files"])
+        extra_files = copy_extra_files(args.samples, args.target, metadata["extra_files"])
         if extra_files:
             extra_files_copied.extend(extra_files)
 

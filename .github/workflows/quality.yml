@@ -22,7 +22,7 @@ jobs:
     - name: Install system & python deps
       run: |
         sudo apt update
-        sudo apt install sox
+        sudo apt install -y sox
         make install-ci
     - uses: pre-commit/action@v3.0.1
     - uses: pre-commit-ci/lite-action@v1.1.0
@@ -45,7 +45,7 @@ jobs:
       - name: Install system & python deps
         run: |
           sudo apt update
-          sudo apt install sox
+          sudo apt install -y sox
           make install-ci
           make coverage-ci
       - name: SonarQube Scan

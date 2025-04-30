@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pylint: disable=import-outside-toplevel,wrong-import-position
 """
 Unit tests for the validators module of the DrumGizmo kit generator.
 
@@ -16,7 +17,6 @@ from unittest.mock import MagicMock
 # Add the parent directory to the path to be able to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# pylint: disable=wrong-import-position
 # Import the modules to test
 from drumgizmo_kits_generator.constants import (
     DEFAULT_EXTENSIONS,
@@ -31,8 +31,6 @@ from drumgizmo_kits_generator.validators import (
     validate_midi_parameters,
     validate_velocity_levels,
 )
-
-# pylint: enable=wrong-import-position
 
 
 class TestValidators(unittest.TestCase):
