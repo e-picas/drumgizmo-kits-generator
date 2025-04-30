@@ -140,8 +140,10 @@ def create_drumkit_xml(instruments, kit_dir, metadata):
         notes = ET.SubElement(metadata_elem, "notes")
         notes.text = metadata["notes"]
 
-    author = ET.SubElement(metadata_elem, "author")
-    author.text = metadata.get("author", "")
+    # Only add author if it has a value
+    if metadata.get("author"):
+        author = ET.SubElement(metadata_elem, "author")
+        author.text = metadata["author"]
 
     license_elem = ET.SubElement(metadata_elem, "license")
     license_elem.text = metadata.get("license", DEFAULT_LICENSE)
@@ -149,11 +151,13 @@ def create_drumkit_xml(instruments, kit_dir, metadata):
     samplerate = ET.SubElement(metadata_elem, "samplerate")
     samplerate.text = metadata.get("samplerate", DEFAULT_SAMPLERATE)
 
-    if "website" in metadata:
+    # Only add website if it has a value
+    if metadata.get("website"):
         website = ET.SubElement(metadata_elem, "website")
         website.text = metadata["website"]
 
-    if "logo" in metadata:
+    # Only add logo if it has a value
+    if metadata.get("logo"):
         # pylint: disable-next=unused-variable
         logo = ET.SubElement(metadata_elem, "logo", src=metadata["logo"])
 
