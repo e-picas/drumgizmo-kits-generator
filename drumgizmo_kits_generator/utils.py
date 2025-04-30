@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: disable=broad-exception-caught
 """
 Utility module for DrumGizmo kit generator.
 Contains various helper functions.
@@ -11,46 +10,56 @@ import os
 import shutil
 import subprocess
 import sys
+from typing import Any, Dict, List, Optional
 
 
-def prepare_target_directory(target_dir):
+def prepare_target_directory(target_dir: str) -> bool:
     """
     Prepares the target directory by removing it if it already exists.
 
     Args:
-        target_dir (str): Path to the target directory
+        target_dir: Path to the target directory
 
     Returns:
-        bool: True if preparation was successful, False otherwise
+        True if preparation was successful, False otherwise
     """
     # Remove target directory if it already exists
     if os.path.exists(target_dir):
         print(f"Removing existing target directory: {target_dir}", file=sys.stderr)
         try:
             shutil.rmtree(target_dir)
-        except Exception as e:
-            print(f"Error removing target directory: {e}", file=sys.stderr)
+        except PermissionError as e:
+            print(f"Error removing target directory: Permission denied: {e}", file=sys.stderr)
+            return False
+        except shutil.Error as e:
+            print(f"Error removing target directory: Shutil error: {e}", file=sys.stderr)
+            return False
+        except (OSError, IOError) as e:
+            print(f"Error removing target directory: File system error: {e}", file=sys.stderr)
             return False
 
     # Create target directory
     try:
         os.makedirs(target_dir)
         return True
-    except Exception as e:
-        print(f"Error creating target directory: {e}", file=sys.stderr)
+    except PermissionError as e:
+        print(f"Error creating target directory: Permission denied: {e}", file=sys.stderr)
+        return False
+    except (OSError, IOError) as e:
+        print(f"Error creating target directory: File system error: {e}", file=sys.stderr)
         return False
 
 
-def prepare_instrument_directory(instrument, target_dir):
+def prepare_instrument_directory(instrument: str, target_dir: str) -> bool:
     """
     Prepares the directory for an instrument.
 
     Args:
-        instrument (str): Name of the instrument
-        target_dir (str): Path to the target directory
+        instrument: Name of the instrument
+        target_dir: Path to the target directory
 
     Returns:
-        bool: True if preparation was successful, False otherwise
+        True if preparation was successful, False otherwise
     """
     print(f"Creating directory for instrument: {instrument}", file=sys.stderr)
 
@@ -59,8 +68,11 @@ def prepare_instrument_directory(instrument, target_dir):
     if not os.path.exists(instrument_dir):
         try:
             os.makedirs(instrument_dir)
-        except Exception as e:
-            print(f"Error creating instrument directory: {e}", file=sys.stderr)
+        except PermissionError as e:
+            print(f"Error creating instrument directory: Permission denied: {e}", file=sys.stderr)
+            return False
+        except (OSError, IOError) as e:
+            print(f"Error creating instrument directory: File system error: {e}", file=sys.stderr)
             return False
 
     # Create samples directory
@@ -68,32 +80,35 @@ def prepare_instrument_directory(instrument, target_dir):
     if not os.path.exists(samples_dir):
         try:
             os.makedirs(samples_dir)
-        except Exception as e:
-            print(f"Error creating samples directory: {e}", file=sys.stderr)
+        except PermissionError as e:
+            print(f"Error creating samples directory: Permission denied: {e}", file=sys.stderr)
+            return False
+        except (OSError, IOError) as e:
+            print(f"Error creating samples directory: File system error: {e}", file=sys.stderr)
             return False
 
     return True
 
 
-def get_timestamp():
+def get_timestamp() -> str:
     """
     Get the current timestamp.
 
     Returns:
-        str: Current timestamp in the format YYYY-MM-DD HH:MM
+        Current timestamp in the format YYYY-MM-DD HH:MM
     """
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
-def extract_instrument_name(file_path):
+def extract_instrument_name(file_path: str) -> str:
     """
     Extract the instrument name from a file path.
 
     Args:
-        file_path (str): Path to the file
+        file_path: Path to the file
 
     Returns:
-        str: Instrument name
+        Instrument name
     """
     # Get the base name of the file (without path)
     base_name = os.path.basename(file_path)
@@ -104,15 +119,15 @@ def extract_instrument_name(file_path):
     return instrument
 
 
-def get_file_extension(file_path):
+def get_file_extension(file_path: str) -> str:
     """
     Get the file extension from a file path.
 
     Args:
-        file_path (str): Path to the file
+        file_path: Path to the file
 
     Returns:
-        str: File extension (with the dot)
+        File extension (with the dot)
     """
     # Get the extension
     _, extension = os.path.splitext(file_path)
@@ -120,16 +135,20 @@ def get_file_extension(file_path):
     return extension
 
 
-def get_audio_samplerate(audio_file):
+def get_audio_samplerate(audio_file: str) -> Optional[int]:
     """
     Get the sample rate of an audio file using SoX.
 
     Args:
-        audio_file (str): Path to the audio file
+        audio_file: Path to the audio file
 
     Returns:
-        int: Sample rate in Hz, or None if the file could not be read
+        Sample rate in Hz, or None if the file could not be read
     """
+    if not os.path.exists(audio_file):
+        print(f"Error: Audio file not found: {audio_file}", file=sys.stderr)
+        return None
+
     try:
         # Use SoX to get the sample rate
         result = subprocess.run(
@@ -146,19 +165,25 @@ def get_audio_samplerate(audio_file):
         print(f"Error getting sample rate: {e}", file=sys.stderr)
         print(f"Command error: {e.stderr}", file=sys.stderr)
         return None
-    except Exception as e:
-        print(f"Error getting sample rate: {e}", file=sys.stderr)
+    except FileNotFoundError as e:
+        print(f"Error getting sample rate: SoX command not found: {e}", file=sys.stderr)
+        return None
+    except ValueError as e:
+        print(f"Error getting sample rate: Invalid sample rate value: {e}", file=sys.stderr)
+        return None
+    except (OSError, IOError) as e:
+        print(f"Error getting sample rate: File system error: {e}", file=sys.stderr)
         return None
 
 
-def print_summary(metadata, instruments, target_dir):
+def print_summary(metadata: Dict[str, Any], instruments: List[str], target_dir: str) -> None:
     """
     Print a summary of the generated kit.
 
     Args:
-        metadata (dict): Kit metadata
-        instruments (list): List of instruments
-        target_dir (str): Path to the target directory
+        metadata: Kit metadata
+        instruments: List of instruments
+        target_dir: Path to the target directory
     """
     print(
         f"\nProcessing complete. DrumGizmo kit successfully created in: {target_dir}",

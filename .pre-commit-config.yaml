@@ -36,14 +36,14 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-        stages: [pre-commit, manual]
+        stages: [pre-commit]
       - id: tests
         name: run tests
         entry: make test
         language: system
         pass_filenames: false
         always_run: true
-        stages: [pre-commit, manual]
+        stages: [pre-commit]
 
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v3.18.0

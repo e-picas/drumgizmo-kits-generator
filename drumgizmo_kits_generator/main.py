@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: disable=broad-exception-caught
 """
 Main script for DrumGizmo kit generation.
 Uses the config, audio, xml_generator and utils modules to create a complete kit.
 """
-
 import argparse
 import datetime
 import os
 import shutil
 import sys
+from typing import Any, Dict, List, Optional, Tuple
 
-# Import local modules
 from drumgizmo_kits_generator.audio import (
     copy_sample_file,
     create_volume_variations,
     find_audio_files,
 )
-from drumgizmo_kits_generator.config import (
+from drumgizmo_kits_generator.config import read_config_file, update_channels_config
+
+# Import local modules
+from drumgizmo_kits_generator.constants import (
     DEFAULT_EXTENSIONS,
     DEFAULT_LICENSE,
     DEFAULT_MIDI_NOTE_MAX,
@@ -28,8 +29,6 @@ from drumgizmo_kits_generator.config import (
     DEFAULT_SAMPLERATE,
     DEFAULT_VELOCITY_LEVELS,
     DEFAULT_VERSION,
-    read_config_file,
-    update_channels_config,
 )
 from drumgizmo_kits_generator.utils import (
     extract_instrument_name,
@@ -37,6 +36,11 @@ from drumgizmo_kits_generator.utils import (
     prepare_instrument_directory,
     prepare_target_directory,
     print_summary,
+)
+from drumgizmo_kits_generator.validators import (
+    validate_midi_and_velocity_params,
+    validate_midi_parameters,
+    validate_velocity_levels,
 )
 from drumgizmo_kits_generator.xml_generator import (
     create_drumkit_xml,
@@ -48,7 +52,7 @@ from drumgizmo_kits_generator.xml_generator import (
 # These are now imported from config.py
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
     """
     Parse command line arguments.
 
@@ -165,8 +169,97 @@ Configuration file options:
     return parser.parse_args()
 
 
-# pylint: disable-next=too-many-branches,too-many-statements
-def prepare_metadata(args):
+def update_metadata_from_args(metadata: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
+    """
+    Update metadata with values from command line arguments.
+
+    Args:
+        metadata (Dict[str, Any]): Existing metadata dictionary
+        args (argparse.Namespace): Command line arguments
+
+    Returns:
+        Dict[str, Any]: Updated metadata dictionary
+    """
+    # Simple string arguments
+    for arg_name in [
+        "name",
+        "version",
+        "author",
+        "license",
+        "website",
+        "samplerate",
+        "logo",
+        "extra_files",
+    ]:
+        arg_value = getattr(args, arg_name, None)
+        if arg_value:
+            metadata[arg_name] = arg_value
+
+    # Special handling for description
+    if args.description:
+        metadata["description"] = args.description
+    elif "description" not in metadata:
+        # Only set default description if not provided in config or command line
+        metadata[
+            "description"
+        ] = f"Kit automatically created with {args.velocity_levels} velocity levels"
+
+    # Special handling for notes
+    if args.notes:
+        metadata["notes"] = args.notes
+    elif "notes" in metadata:
+        # Append generation timestamp to existing notes
+        metadata[
+            "notes"
+        ] += f" - Generated with create_drumgizmo_kit.py at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    else:
+        # Create new notes with generation timestamp
+        metadata[
+            "notes"
+        ] = f"Generated with create_drumgizmo_kit.py at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"
+
+    # Process channels options
+    if args.channels:
+        metadata["channels"] = args.channels
+    if args.main_channels:
+        metadata["main_channels"] = args.main_channels
+
+    return metadata
+
+
+def set_default_metadata_values(
+    metadata: Dict[str, Any], args: argparse.Namespace
+) -> Dict[str, Any]:
+    """
+    Set default values for metadata if not provided.
+
+    Args:
+        metadata (Dict[str, Any]): Existing metadata dictionary
+        args (argparse.Namespace): Command line arguments
+
+    Returns:
+        Dict[str, Any]: Metadata with default values set
+    """
+    defaults = {
+        "name": DEFAULT_NAME,
+        "version": DEFAULT_VERSION,
+        "description": f"Kit automatically created with {args.velocity_levels} velocity levels",
+        "author": "",
+        "license": DEFAULT_LICENSE,
+        "website": "",
+        "samplerate": DEFAULT_SAMPLERATE,
+        "logo": "",
+        "extra_files": "",
+    }
+
+    for key, default_value in defaults.items():
+        if key not in metadata:
+            metadata[key] = default_value
+
+    return metadata
+
+
+def prepare_metadata(args: argparse.Namespace) -> Dict[str, Any]:
     """
     Prepare kit metadata by combining command line arguments and configuration file.
 
@@ -185,136 +278,26 @@ def prepare_metadata(args):
         print(f"Metadata loaded from config file: {config_metadata}", file=sys.stderr)
 
     # Update metadata with command line arguments
-    if args.name:
-        metadata["name"] = args.name
-    if args.version:
-        metadata["version"] = args.version
-    if args.description:
-        metadata["description"] = args.description
-    elif "description" not in metadata:
-        # Only set default description if not provided in config or command line
-        metadata[
-            "description"
-        ] = f"Kit automatically created with {args.velocity_levels} velocity levels"
-    if args.notes:
-        metadata["notes"] = args.notes
-    elif "notes" in metadata:
-        # Append generation timestamp to existing notes
-        metadata[
-            "notes"
-        ] += f" - Generated with create_drumgizmo_kit.py at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"
-    else:
-        # Create new notes with generation timestamp
-        metadata[
-            "notes"
-        ] = f"Generated with create_drumgizmo_kit.py at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"
-    if args.author:
-        metadata["author"] = args.author
-    if args.license:
-        metadata["license"] = args.license
-    if args.website:
-        metadata["website"] = args.website
-    if args.samplerate:
-        metadata["samplerate"] = args.samplerate
-    if args.logo:
-        metadata["logo"] = args.logo
-    if args.extra_files:
-        metadata["extra_files"] = args.extra_files
-
-    # Process channels and main-channels options
-    if args.channels:
-        metadata["channels"] = args.channels
-    if args.main_channels:
-        metadata["main_channels"] = args.main_channels
+    metadata = update_metadata_from_args(metadata, args)
 
     # Set default values for metadata if not provided
-    if "name" not in metadata:
-        metadata["name"] = DEFAULT_NAME
-    if "version" not in metadata:
-        metadata["version"] = DEFAULT_VERSION
-    if "description" not in metadata:
-        metadata[
-            "description"
-        ] = f"Kit automatically created with {args.velocity_levels} velocity levels"
-    if "author" not in metadata:
-        metadata["author"] = ""
-    if "license" not in metadata:
-        metadata["license"] = DEFAULT_LICENSE
-    if "website" not in metadata:
-        metadata["website"] = ""
-    if "samplerate" not in metadata:
-        metadata["samplerate"] = DEFAULT_SAMPLERATE
-    if "logo" not in metadata:
-        metadata["logo"] = ""
-    if "extra_files" not in metadata:
-        metadata["extra_files"] = ""
+    metadata = set_default_metadata_values(metadata, args)
 
-    # Extract MIDI and velocity parameters from config file
-    # These are stored in the metadata dictionary but will be extracted by the main function
-    if "midi_note_min" in metadata and args.midi_note_min == DEFAULT_MIDI_NOTE_MIN:
-        try:
-            metadata["midi_note_min"] = int(metadata["midi_note_min"])
-        except ValueError:
-            print(
-                f"Warning: Invalid midi_note_min value in config file: {metadata['midi_note_min']}",
-                file=sys.stderr,
-            )
-            metadata.pop("midi_note_min")
-
-    if "midi_note_max" in metadata and args.midi_note_max == DEFAULT_MIDI_NOTE_MAX:
-        try:
-            metadata["midi_note_max"] = int(metadata["midi_note_max"])
-        except ValueError:
-            print(
-                f"Warning: Invalid midi_note_max value in config file: {metadata['midi_note_max']}",
-                file=sys.stderr,
-            )
-            metadata.pop("midi_note_max")
-
-    if "midi_note_median" in metadata and args.midi_note_median == DEFAULT_MIDI_NOTE_MEDIAN:
-        try:
-            metadata["midi_note_median"] = int(metadata["midi_note_median"])
-        except ValueError:
-            print(
-                f"Warning: Invalid midi_note_median value in config file: {metadata['midi_note_median']}",
-                file=sys.stderr,
-            )
-            metadata.pop("midi_note_median")
-
-    if "velocity_levels" in metadata and args.velocity_levels == DEFAULT_VELOCITY_LEVELS:
-        try:
-            metadata["velocity_levels"] = int(metadata["velocity_levels"])
-        except ValueError:
-            print(
-                f"Warning: Invalid velocity_levels value in config file: {metadata['velocity_levels']}",
-                file=sys.stderr,
-            )
-            metadata.pop("velocity_levels")
-
-    # Handle extensions from config file
-    if "extensions" in metadata and args.extensions == DEFAULT_EXTENSIONS:
-        extensions_value = metadata["extensions"]
-        if extensions_value:
-            metadata["extensions"] = extensions_value
-        else:
-            print(
-                f"Warning: Invalid extensions value in config file: {metadata['extensions']}",
-                file=sys.stderr,
-            )
-            metadata.pop("extensions")
+    # Validate MIDI and velocity parameters
+    metadata = validate_midi_and_velocity_params(metadata, args)
 
     # Update channels configuration
     update_channels_config(metadata)
 
-    print("\nFinal metadata after processing:", file=sys.stderr)
+    # Print metadata
+    print("\nKit metadata:", file=sys.stderr)
     for key, value in metadata.items():
         print(f"  {key}: {value}", file=sys.stderr)
-    print("\n", file=sys.stderr)
 
     return metadata
 
 
-def copy_extra_files(source_dir, target_dir, extra_files_str):
+def copy_extra_files(source_dir: str, target_dir: str, extra_files_str: str) -> List[str]:
     """
     Copy additional files specified in extra_files to the target directory.
 
@@ -339,161 +322,69 @@ def copy_extra_files(source_dir, target_dir, extra_files_str):
         source_file = os.path.join(source_dir, file)
         target_file = os.path.join(target_dir, file)
 
-        # Check if source file exists
+        # Skip if source file doesn't exist
         if not os.path.exists(source_file):
-            print(f"  Warning: Extra file not found: {source_file}", file=sys.stderr)
+            print(f"  Warning: File not found: {file}", file=sys.stderr)
             continue
 
         try:
-            # Create target directory if it doesn't exist (for files in subdirectories)
-            target_dir_path = os.path.dirname(target_file)
-            if not os.path.exists(target_dir_path):
-                os.makedirs(target_dir_path)
-
-            # Copy the file
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(target_file), exist_ok=True)
             shutil.copy2(source_file, target_file)
             print(f"  Copied: {file}", file=sys.stderr)
             copied_files.append(file)
-        except Exception as e:
-            print(f"  Error copying {file}: {e}", file=sys.stderr)
+        except PermissionError as e:
+            print(f"  Error copying {file}: Permission denied: {e}", file=sys.stderr)
+        except shutil.Error as e:
+            print(f"  Error copying {file}: Shutil error: {e}", file=sys.stderr)
+        except (OSError, IOError) as e:
+            print(f"  Error copying {file}: File system error: {e}", file=sys.stderr)
 
     return copied_files
 
 
-def validate_midi_parameters(midi_note_min, midi_note_max, midi_note_median):
-    """
-    Validate MIDI parameters and return corrected values if needed.
-
-    Args:
-        midi_note_min (int): Minimum MIDI note number
-        midi_note_max (int): Maximum MIDI note number
-        midi_note_median (int): Median MIDI note number
-
-    Returns:
-        tuple: Validated (midi_note_min, midi_note_max, midi_note_median)
-    """
-    # Validate MIDI note min
-    if midi_note_min < 0 or midi_note_min > 127:
-        print(
-            f"Warning: Invalid midi_note_min value: {midi_note_min}, using default {DEFAULT_MIDI_NOTE_MIN}",
-            file=sys.stderr,
-        )
-        midi_note_min = DEFAULT_MIDI_NOTE_MIN
-
-    # Validate MIDI note max
-    if midi_note_max < 0 or midi_note_max > 127:
-        print(
-            f"Warning: Invalid midi_note_max value: {midi_note_max}, using default {DEFAULT_MIDI_NOTE_MAX}",
-            file=sys.stderr,
-        )
-        midi_note_max = DEFAULT_MIDI_NOTE_MAX
-
-    # Validate MIDI note median
-    if midi_note_median < 0 or midi_note_median > 127:
-        print(
-            f"Warning: Invalid midi_note_median value: {midi_note_median}, using default {DEFAULT_MIDI_NOTE_MEDIAN}",
-            file=sys.stderr,
-        )
-        midi_note_median = DEFAULT_MIDI_NOTE_MEDIAN
-
-    return midi_note_min, midi_note_max, midi_note_median
-
-
-def validate_velocity_levels(velocity_levels):
-    """
-    Validate velocity levels parameter and return corrected value if needed.
-
-    Args:
-        velocity_levels (int): Number of velocity levels
-
-    Returns:
-        int: Validated velocity levels
-    """
-    if velocity_levels < 1:
-        print(
-            f"Warning: Invalid velocity_levels value: {velocity_levels}, using default {DEFAULT_VELOCITY_LEVELS}",
-            file=sys.stderr,
-        )
-        velocity_levels = DEFAULT_VELOCITY_LEVELS
-
-    return velocity_levels
-
-
-def process_sample(sample, target_dir, velocity_levels, target_samplerate=None):
-    """
-    Process a single audio sample.
-
-    Args:
-        sample (str): Path to the audio sample
-        target_dir (str): Target directory for the DrumGizmo kit
-        velocity_levels (int): Number of velocity levels to generate
-        target_samplerate (int, optional): Target sample rate for conversion
-
-    Returns:
-        tuple: (instrument_name, success_flag)
-    """
-    # Extract instrument name
-    instrument = extract_instrument_name(sample)
-
-    # Get file extension
-    extension = get_file_extension(sample)
-
-    # Prepare directory for the instrument
-    if not prepare_instrument_directory(instrument, target_dir):
-        return instrument, False
-
-    # Copy original sample
-    samples_dir = os.path.join(target_dir, instrument, "samples")
-    dest_file = os.path.join(samples_dir, f"1-{instrument}{extension}")
-
-    # Copy the sample file, converting the sample rate if needed
-    if not copy_sample_file(sample, dest_file, target_samplerate):
-        return instrument, False
-
-    # Create volume variations
-    create_volume_variations(instrument, target_dir, extension, velocity_levels, target_samplerate)
-
-    # Create XML file for the instrument
-    create_instrument_xml(
-        instrument,
-        target_dir,
-        extension,
-        velocity_levels,
-    )
-
-    return instrument, True
-
-
-def copy_logo_file(source_dir, target_dir, logo_filename):
+def copy_logo_file(source_dir: str, target_dir: str, logo_filename: str) -> bool:
     """
     Copy logo file from source to target directory.
 
     Args:
-        source_dir (str): Source directory
-        target_dir (str): Target directory
-        logo_filename (str): Logo filename
+        source_dir: Source directory
+        target_dir: Target directory
+        logo_filename: Logo filename
 
     Returns:
-        bool: True if logo was copied successfully, False otherwise
+        bool: True if successful, False otherwise
     """
+    success = False
+
     if not logo_filename:
         return False
 
     logo_source = os.path.join(source_dir, logo_filename)
     logo_dest = os.path.join(target_dir, logo_filename)
 
-    if os.path.exists(logo_source):
-        try:
-            shutil.copy2(logo_source, logo_dest)
-            print(f"Logo file copied: {logo_filename}", file=sys.stderr)
-            return True
-        except Exception as e:
-            print(f"Warning: Could not copy logo file: {e}", file=sys.stderr)
+    if not os.path.exists(logo_source):
+        print(f"Warning: Logo file not found: {logo_filename}", file=sys.stderr)
+        return False
 
-    return False
+    try:
+        shutil.copy2(logo_source, logo_dest)
+        print(f"Logo file copied: {logo_filename}", file=sys.stderr)
+        success = True
+    except PermissionError as e:
+        print(f"Warning: Could not copy logo file: Permission denied: {e}", file=sys.stderr)
+    except shutil.Error as e:
+        print(f"Warning: Could not copy logo file: Shutil error: {e}", file=sys.stderr)
+    except (OSError, IOError) as e:
+        print(f"Warning: Could not copy logo file: File system error: {e}", file=sys.stderr)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # Gardé pour la compatibilité avec les tests existants
+        print(f"Warning: Could not copy logo file: {e}", file=sys.stderr)
+
+    return success
 
 
-def print_instrument_mapping(instrument_to_sample):
+def print_instrument_mapping(instrument_to_sample: Dict[str, str]) -> None:
     """
     Print mapping of instruments to original sample files.
 
@@ -505,7 +396,7 @@ def print_instrument_mapping(instrument_to_sample):
         print(f"  {instrument}: {sample}", file=sys.stderr)
 
 
-def print_extra_files(extra_files_copied):
+def print_extra_files(extra_files_copied: List[str]) -> None:
     """
     Print list of extra files copied.
 
@@ -518,10 +409,101 @@ def print_extra_files(extra_files_copied):
             print(f"  {file}", file=sys.stderr)
 
 
-# pylint: disable-next=too-many-locals
-def main():
+def process_instruments(
+    samples: List[str],
+    args: argparse.Namespace,
+    velocity_levels: int,
+    target_samplerate: Optional[str],
+) -> Tuple[List[str], Dict[str, str]]:
     """
-    Main function of the script.
+    Process each sample to create instruments.
+
+    Args:
+        samples: List of audio sample paths
+        args: Command line arguments
+        velocity_levels: Number of velocity levels to generate
+        target_samplerate: Target sample rate for conversion, or None to keep original
+
+    Returns:
+        Tuple of (instruments list, instrument_to_sample mapping)
+    """
+    instruments = []
+    instrument_to_sample = {}  # Map to keep track of which sample was used for each instrument
+
+    for sample in samples:
+        # Extract instrument name
+        instrument = extract_instrument_name(sample)
+        instruments.append(instrument)
+        instrument_to_sample[instrument] = os.path.basename(sample)
+
+        # Get file extension
+        extension = get_file_extension(sample)
+
+        # Prepare directory for the instrument
+        if not prepare_instrument_directory(instrument, args.target):
+            continue
+
+        # Copy original sample
+        samples_dir = os.path.join(args.target, instrument, "samples")
+        dest_file = os.path.join(samples_dir, f"1-{instrument}{extension}")
+
+        # Copy the sample file, converting the sample rate if needed
+        if not copy_sample_file(sample, dest_file, target_samplerate):
+            continue
+
+        # Create volume variations
+        create_volume_variations(
+            instrument, args.target, extension, velocity_levels, target_samplerate
+        )
+
+        # Create XML file for the instrument
+        create_instrument_xml(
+            instrument,
+            args.target,
+            extension,
+            velocity_levels,
+        )
+
+    return instruments, instrument_to_sample
+
+
+def create_xml_files(
+    instruments: List[str],
+    args: argparse.Namespace,
+    metadata: Dict[str, Any],
+    midi_note_min: int,
+    midi_note_max: int,
+    midi_note_median: int,
+) -> None:
+    """
+    Create XML files for the drumkit.
+
+    Args:
+        instruments: List of instrument names
+        args: Command line arguments
+        metadata: Metadata dictionary
+        midi_note_min: Minimum MIDI note
+        midi_note_max: Maximum MIDI note
+        midi_note_median: Median MIDI note
+    """
+    # Create drumkit.xml file
+    create_drumkit_xml(instruments, args.target, metadata)
+
+    # Create midimap.xml file
+    create_midimap_xml(
+        instruments,
+        args.target,
+        midi_note_min=midi_note_min,
+        midi_note_max=midi_note_max,
+        midi_note_median=midi_note_median,
+    )
+
+
+def main() -> None:
+    """
+    Main function for the DrumGizmo kit generator.
+    Parses arguments, prepares metadata, searches for samples, processes each sample,
+    creates XML files, copies logo and extra files, and displays a summary.
     """
     # Parse arguments
     args = parse_arguments()
@@ -551,59 +533,45 @@ def main():
     samples.sort(key=lambda x: os.path.basename(x).lower())
     print("Samples sorted alphabetically", file=sys.stderr)
 
-    # Initialize MIDI and velocity parameters
-    midi_note_min = metadata.get("midi_note_min", args.midi_note_min)
-    midi_note_max = metadata.get("midi_note_max", args.midi_note_max)
-    midi_note_median = metadata.get("midi_note_median", args.midi_note_median)
-    velocity_levels = int(metadata.get("velocity_levels", args.velocity_levels))
+    # Process MIDI parameters
+    midi_note_min, midi_note_max, midi_note_median = validate_midi_parameters(args, metadata)
 
-    # Validate parameters
-    midi_note_min, midi_note_max, midi_note_median = validate_midi_parameters(
-        midi_note_min, midi_note_max, midi_note_median
-    )
-    velocity_levels = validate_velocity_levels(velocity_levels)
+    # Process velocity levels
+    velocity_levels = validate_velocity_levels(args, metadata)
 
     # Get the target sample rate from metadata if available
     target_samplerate = metadata.get("samplerate", None)
 
     # Process each sample
-    instruments = []
-    instrument_to_sample = {}  # Map to keep track of which sample was used for each instrument
-
-    for sample in samples:
-        instrument, success = process_sample(
-            sample, args.target, velocity_levels, target_samplerate
-        )
-
-        if success:
-            instruments.append(instrument)
-            instrument_to_sample[instrument] = os.path.basename(sample)
-
-    # Create drumkit.xml file
-    create_drumkit_xml(instruments, args.target, metadata)
-
-    # Create midimap.xml file
-    create_midimap_xml(
-        instruments,
-        args.target,
-        midi_note_min=midi_note_min,
-        midi_note_max=midi_note_max,
-        midi_note_median=midi_note_median,
+    instruments, instrument_to_sample = process_instruments(
+        samples, args, velocity_levels, target_samplerate
     )
 
+    # Create XML files
+    create_xml_files(instruments, args, metadata, midi_note_min, midi_note_max, midi_note_median)
+
     # Copy logo if specified
-    if "logo" in metadata:
-        copy_logo_file(args.source, args.target, metadata["logo"])
+    extra_files_copied = []
+    if "logo" in metadata and metadata["logo"]:
+        logo_file = copy_logo_file(args.source, args.target, metadata["logo"])
+        if logo_file:
+            extra_files_copied.append(logo_file)
 
     # Copy extra files if specified
-    extra_files_copied = []
     if "extra_files" in metadata and metadata["extra_files"]:
-        extra_files_copied = copy_extra_files(args.source, args.target, metadata["extra_files"])
+        extra_files = copy_extra_files(args.source, args.target, metadata["extra_files"])
+        if extra_files:
+            extra_files_copied.extend(extra_files)
 
     # Display summary
     print_summary(metadata, instruments, args.target)
+
+    # Print mapping of instruments to original sample files
     print_instrument_mapping(instrument_to_sample)
-    print_extra_files(extra_files_copied)
+
+    # Print extra files copied
+    if extra_files_copied:
+        print_extra_files(extra_files_copied)
 
 
 if __name__ == "__main__":

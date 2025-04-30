@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: disable=broad-exception-caught
 """
 Configuration module for DrumGizmo kit generator.
 Contains global variables and constants used across the application.
@@ -8,37 +7,9 @@ Contains global variables and constants used across the application.
 
 import os
 import sys
+from typing import Any, Dict, List, Tuple
 
-# Default values for command line arguments
-DEFAULT_EXTENSIONS = "wav,WAV,flac,FLAC,ogg,OGG"
-DEFAULT_VELOCITY_LEVELS = 10
-DEFAULT_MIDI_NOTE_MIN = 0
-DEFAULT_MIDI_NOTE_MAX = 127
-DEFAULT_MIDI_NOTE_MEDIAN = 60
-DEFAULT_NAME = "DrumGizmo Kit"
-DEFAULT_VERSION = "1.0"
-DEFAULT_LICENSE = "Private license"
-DEFAULT_SAMPLERATE = "44100"
-
-# Default list of audio channels used in XML files
-DEFAULT_CHANNELS = [
-    "AmbL",
-    "AmbR",
-    "Hihat",
-    "Kdrum_back",
-    "Kdrum_front",
-    "OHL",
-    "OHR",
-    "Ride",
-    "Snare_bottom",
-    "Snare_top",
-    "Tom1",
-    "Tom2",
-    "Tom3",
-]
-
-# Default list of main channels (with main="true" attribute)
-DEFAULT_MAIN_CHANNELS = ["AmbL", "AmbR", "OHL", "OHR"]
+from drumgizmo_kits_generator.constants import DEFAULT_CHANNELS, DEFAULT_MAIN_CHANNELS
 
 # Configuration storage
 _config = {
@@ -47,32 +18,32 @@ _config = {
 }
 
 
-def get_channels():
+def get_channels() -> List[str]:
     """
     Get the current list of audio channels.
 
     Returns:
-        list: List of audio channel names
+        List of audio channel names
     """
     return _config["channels"]
 
 
-def get_main_channels():
+def get_main_channels() -> List[str]:
     """
     Get the current list of main audio channels.
 
     Returns:
-        list: List of main audio channel names
+        List of main audio channel names
     """
     return _config["main_channels"]
 
 
-def update_channels_config(metadata):
+def update_channels_config(metadata: Dict[str, Any]) -> None:
     """
     Update the channels configuration from metadata.
 
     Args:
-        metadata (dict): Dictionary containing metadata with channels and main_channels
+        metadata: Dictionary containing metadata with channels and main_channels
     """
     if "channels" in metadata:
         try:
@@ -85,9 +56,14 @@ def update_channels_config(metadata):
                 print(
                     f"Using custom channels from metadata: {_config['channels']}", file=sys.stderr
                 )
-        except Exception:
+        except ValueError as e:
             print(
-                f"Warning: Invalid channels value in metadata: {metadata['channels']}",
+                f"Warning: Invalid channels value in metadata: {metadata['channels']} - Value error: {e}",
+                file=sys.stderr,
+            )
+        except TypeError as e:
+            print(
+                f"Warning: Invalid channels value in metadata: {metadata['channels']} - Type error: {e}",
                 file=sys.stderr,
             )
 
@@ -103,9 +79,14 @@ def update_channels_config(metadata):
                     f"Using custom main channels from metadata: {_config['main_channels']}",
                     file=sys.stderr,
                 )
-        except Exception:
+        except ValueError as e:
             print(
-                f"Warning: Invalid main_channels value in metadata: {metadata['main_channels']}",
+                f"Warning: Invalid main_channels value in metadata: {metadata['main_channels']} - Value error: {e}",
+                file=sys.stderr,
+            )
+        except TypeError as e:
+            print(
+                f"Warning: Invalid main_channels value in metadata: {metadata['main_channels']} - Type error: {e}",
                 file=sys.stderr,
             )
 
@@ -115,16 +96,54 @@ CHANNELS = DEFAULT_CHANNELS
 MAIN_CHANNELS = DEFAULT_MAIN_CHANNELS
 
 
-# pylint: disable-next=too-many-branches
-def read_config_file(config_file):
+def parse_config_line(line: str) -> Tuple[str, str]:
+    """
+    Parse a configuration line into key and value.
+
+    Args:
+        line: Configuration line to parse
+
+    Returns:
+        Tuple of (key, value) or (None, None) if line is invalid
+    """
+    line = line.strip()
+
+    # Skip empty lines and comments
+    if not line or line.startswith("#"):
+        return "", ""
+
+    # Parse key-value pairs with format key=value
+    if "=" in line:
+        key, value = line.split("=", 1)
+        key = key.strip().lower()
+        value = value.strip()
+
+        # Remove quotes if present
+        if value.startswith('"') and value.endswith('"'):
+            value = value[1:-1]
+
+        return key, value
+
+    # Try with format KEY_NAME="value"
+    parts = line.split('"', 2)
+    if len(parts) >= 3:
+        key = parts[0].rstrip("=").rstrip().lower()
+        value = parts[1]
+        return key, value
+
+    # Invalid line format
+    return "", ""
+
+
+def read_config_file(config_file: str) -> Dict[str, Any]:
     """
     Read configuration from a file and return a dictionary of metadata.
 
     Args:
-        config_file (str): Path to the configuration file.
+        config_file: Path to the configuration file.
 
     Returns:
-        dict: Dictionary of metadata read from the configuration file.
+        Dictionary of metadata read from the configuration file.
     """
     if not config_file or not os.path.isfile(config_file):
         print(f"Configuration file not found: {config_file}", file=sys.stderr)
@@ -133,80 +152,45 @@ def read_config_file(config_file):
     print(f"Reading configuration from: {config_file}", file=sys.stderr)
 
     # Initialize metadata dictionary
-    metadata = {}
+    metadata: Dict[str, Any] = {}
+
+    # Define key mapping for configuration file
+    key_mapping = {
+        "kit_name": "name",
+        "kit_description": "description",
+        "kit_version": "version",
+        "kit_author": "author",
+        "kit_license": "license",
+        "kit_notes": "notes",
+        "kit_website": "website",
+        "kit_logo": "logo",
+        "kit_samplerate": "samplerate",
+        "kit_extra_files": "extra_files",
+        "kit_midi_note_min": "midi_note_min",
+        "kit_midi_note_max": "midi_note_max",
+        "kit_midi_note_median": "midi_note_median",
+        "kit_velocity_levels": "velocity_levels",
+        "kit_extensions": "extensions",
+        "kit_channels": "channels",
+        "kit_main_channels": "main_channels",
+    }
 
     try:
         # Read the file content line by line
         with open(config_file, "r", encoding="utf-8") as f:
             for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue  # Skip empty lines and comments
+                key, value = parse_config_line(line)
 
-                # Parse key-value pairs
-                if "=" in line:
-                    key, value = line.split("=", 1)
-                else:
-                    # Try with format KEY_NAME="value"
-                    parts = line.split('"', 2)
-                    if len(parts) >= 3:
-                        key = parts[0].rstrip("=").rstrip()
-                        value = parts[1]
-                    else:
-                        continue  # Skip invalid lines
-
-                key = key.strip().lower()
-                value = value.strip()
-
-                # Remove quotes if present
-                if value.startswith('"') and value.endswith('"'):
-                    value = value[1:-1]
+                # Skip invalid lines
+                if not key:
+                    continue
 
                 # Map configuration keys to metadata keys
-                key_mapping = {
-                    "kit_name": "name",
-                    "kit_description": "description",
-                    "kit_version": "version",
-                    "kit_author": "author",
-                    "kit_license": "license",
-                    "kit_notes": "notes",
-                    "kit_website": "website",
-                    "kit_logo": "logo",
-                    "kit_samplerate": "samplerate",
-                    "kit_extra_files": "extra_files",
-                    "kit_midi_note_min": "midi_note_min",
-                    "kit_midi_note_max": "midi_note_max",
-                    "kit_midi_note_median": "midi_note_median",
-                    "kit_velocity_levels": "velocity_levels",
-                    "kit_extensions": "extensions",
-                    "kit_channels": "channels",
-                    "kit_main_channels": "main_channels",
-                }
-
                 if key in key_mapping:
                     metadata[key_mapping[key]] = value
 
-        # Update channels and main_channels in the _config dictionary
-        if "channels" in metadata:
-            # Split comma-separated list of channels and remove whitespace at beginning and end
-            channels_list = [ch.strip() for ch in metadata["channels"].split(",")]
-            # Filter out empty strings
-            channels_list = [ch for ch in channels_list if ch]
-            if channels_list:
-                _config["channels"] = channels_list
-                print(f"Using custom channels from config: {_config['channels']}", file=sys.stderr)
-
-        if "main_channels" in metadata:
-            # Split comma-separated list of main channels and remove whitespace at beginning and end
-            main_channels_list = [ch.strip() for ch in metadata["main_channels"].split(",")]
-            # Filter out empty strings
-            main_channels_list = [ch for ch in main_channels_list if ch]
-            if main_channels_list:
-                _config["main_channels"] = main_channels_list
-                print(
-                    f"Using custom main channels from config: {_config['main_channels']}",
-                    file=sys.stderr,
-                )
+        # Update channels configuration
+        update_channels_config(metadata)
 
         if metadata:
             print("Metadata read from configuration:", file=sys.stderr)
@@ -214,8 +198,12 @@ def read_config_file(config_file):
                 print(f"  {key}: {value}", file=sys.stderr)
         else:
             print("No valid metadata found in the configuration file", file=sys.stderr)
-    except Exception as e:
-        print(f"Error reading configuration file: {e}", file=sys.stderr)
+    except UnicodeDecodeError as e:
+        print(f"Error reading configuration file: Unicode decode error: {e}", file=sys.stderr)
+    except PermissionError as e:
+        print(f"Error reading configuration file: Permission denied: {e}", file=sys.stderr)
+    except OSError as e:
+        print(f"Error reading configuration file: File system error: {e}", file=sys.stderr)
 
     print(f"Metadata loaded from config file: {metadata}", file=sys.stderr)
     return metadata

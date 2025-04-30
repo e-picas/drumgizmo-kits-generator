@@ -7,7 +7,7 @@
 default: help
 
 install-ci:
-	pip install -r requirements-dev.txt
+	pip install .[dev]
 
 coverage-ci:
 	coverage run -m unittest discover tests && coverage xml
@@ -23,14 +23,14 @@ lint:
 
 ## Run the tests
 test:
-	python3 -m unittest discover tests
+	python3 -m pytest
 
 ## Get coverage info
 coverage:
 	coverage run -m unittest discover tests && coverage report -m
 
-## Run the 'pre-commit' hook locally
-pre-commit-run:
+## Format the code following the '.pre-commit-config.yaml'
+format:
 	pre-commit run --hook-stage manual --show-diff-on-failure --color=always --all-files
 
 # This generates a 'help' string with the list of available tasks & variables

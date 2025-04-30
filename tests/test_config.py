@@ -40,11 +40,9 @@ class TestConfig(unittest.TestCase):
         self.config_file = os.path.join(self.source_dir, "drumgizmo-kit.ini")
 
         # Create a temporary configuration file for tests
-        # pylint: disable-next=consider-using-with
-        self.temp_config = tempfile.NamedTemporaryFile(delete=False, mode="w")
-        # pylint: disable-next=consider-using-with
-        self.temp_config.write(
-            """
+        with tempfile.NamedTemporaryFile(delete=False, mode="w") as self.temp_config:
+            self.temp_config.write(
+                """
 kit_name="Temp Test Kit"
 kit_version="2.0"
 kit_description="Temporary test description"
@@ -56,13 +54,11 @@ kit_samplerate="48000"
 kit_logo="test_logo.png"
 kit_extra_files="file1.txt,file2.txt"
 """
-        )
-        self.temp_config.close()
+            )
 
         # Create an empty config file for testing defaults
-        # pylint: disable-next=consider-using-with
-        self.empty_config = tempfile.NamedTemporaryFile(delete=False, mode="w")
-        self.empty_config.close()
+        with tempfile.NamedTemporaryFile(delete=False, mode="w") as self.empty_config:
+            pass
 
     def tearDown(self):
         """Cleanup after each test by removing temporary files."""

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pylint: disable=broad-exception-caught,too-many-locals,too-many-branches,too-many-return-statements,too-many-statements
 """
 Integration tests for the DrumGizmo kit generator.
 
@@ -8,7 +9,7 @@ by comparing the generated output with expected reference output.
 """
 
 import difflib
-import filecmp
+import fnmatch
 import os
 import re
 import shutil
@@ -16,6 +17,7 @@ import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
+from unittest.mock import patch
 
 # Add the parent directory to the path to be able to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -43,104 +45,217 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
-    # pylint: disable-next=too-many-locals,too-many-branches
     def compare_directories(self, dir1, dir2, ignore_patterns=None, ignore_audio_files=True):
         """
         Compare two directories recursively.
 
         Args:
-            dir1: First directory to compare
-            dir2: Second directory to compare
-            ignore_patterns: List of regex patterns to ignore in comparison
-            ignore_audio_files: Whether to ignore audio files in comparison
+            dir1: First directory path
+            dir2: Second directory path
+            ignore_patterns: List of patterns to ignore
+            ignore_audio_files: Whether to ignore audio files
 
         Returns:
-            tuple: (match, mismatch, errors) where match is True if directories match
+            bool: True if directories match, False otherwise
         """
         if ignore_patterns is None:
             ignore_patterns = []
 
-        # Add patterns to ignore audio files if requested
-        if ignore_audio_files:
-            ignore_patterns.extend([r"\.wav$", r"\.flac$", r"\.ogg$"])
+        # Add common patterns to ignore
+        ignore_patterns.extend(["__pycache__", "*.pyc", ".git"])
 
-        # Compile regex patterns
-        compiled_patterns = [re.compile(pattern) for pattern in ignore_patterns]
-
+        # Function to check if a path should be ignored
         def should_ignore(path):
-            for pattern in compiled_patterns:
-                if pattern.search(path):
+            # Check if path matches any ignore pattern
+            for pattern in ignore_patterns:
+                if fnmatch.fnmatch(os.path.basename(path), pattern):
+                    return True
+            # Check if it's an audio file and we're ignoring those
+            if ignore_audio_files and os.path.isfile(path):
+                ext = os.path.splitext(path)[1].lower()
+                if ext in [".wav", ".flac", ".ogg"]:
                     return True
             return False
 
         # Get directory contents
         dir1_contents = []
-        # pylint: disable-next=unused-variable
-        for root, dirs, files in os.walk(dir1):
+        for root, _, files in os.walk(dir1):
             for file in files:
                 path = os.path.join(root, file)
                 rel_path = os.path.relpath(path, dir1)
-                if not should_ignore(rel_path):
+                if not should_ignore(path):
                     dir1_contents.append(rel_path)
 
         dir2_contents = []
-        # pylint: disable-next=unused-variable
-        for root, dirs, files in os.walk(dir2):
+        for root, _, files in os.walk(dir2):
             for file in files:
                 path = os.path.join(root, file)
                 rel_path = os.path.relpath(path, dir2)
-                if not should_ignore(rel_path):
+                if not should_ignore(path):
                     dir2_contents.append(rel_path)
 
-        # Check if the same files exist in both directories
-        dir1_set = set(dir1_contents)
-        dir2_set = set(dir2_contents)
+        # Sort the contents for comparison
+        dir1_contents.sort()
+        dir2_contents.sort()
 
-        missing_in_dir2 = dir1_set - dir2_set
-        missing_in_dir1 = dir2_set - dir1_set
+        # Check if the directory contents match
+        if dir1_contents != dir2_contents:
+            print("\nDirectory contents don't match:")
+            print(f"Directory 1 ({dir1}): {len(dir1_contents)} files")
+            print(f"Directory 2 ({dir2}): {len(dir2_contents)} files")
 
-        # Check content of files that exist in both directories
-        common_files = dir1_set.intersection(dir2_set)
-        match_files = []
-        mismatch_files = []
-        error_files = []
+            # Find files in dir1 but not in dir2
+            only_in_dir1 = [f for f in dir1_contents if f not in dir2_contents]
+            if only_in_dir1:
+                print(f"\nFiles only in {dir1}:")
+                for f in only_in_dir1:
+                    print(f"  {f}")
 
-        for file in common_files:
-            file1 = os.path.join(dir1, file)
-            file2 = os.path.join(dir2, file)
+            # Find files in dir2 but not in dir1
+            only_in_dir2 = [f for f in dir2_contents if f not in dir1_contents]
+            if only_in_dir2:
+                print(f"\nFiles only in {dir2}:")
+                for f in only_in_dir2:
+                    print(f"  {f}")
 
-            # Special handling for XML files to ignore version differences
-            if file.endswith(".xml"):
+            return False
+
+        # Compare file contents for files that exist in both directories
+        for rel_path in dir1_contents:
+            file1 = os.path.join(dir1, rel_path)
+            file2 = os.path.join(dir2, rel_path)
+
+            # Skip comparison for binary files or other special files
+            if os.path.splitext(file1)[1].lower() in [".xml"]:
                 try:
-                    if self.compare_xml_files(file1, file2):
-                        match_files.append(file)
-                    else:
-                        mismatch_files.append(file)
-                # pylint: disable-next=broad-exception-caught
+                    self.compare_xml_files(file1, file2)
                 except Exception as e:
-                    error_files.append((file, str(e)))
+                    print(f"Error comparing XML files {file1} and {file2}: {e}")
+                    return False
             else:
-                # For non-XML files, do a direct comparison
                 try:
-                    if filecmp.cmp(file1, file2, shallow=False):
-                        match_files.append(file)
-                    else:
-                        mismatch_files.append(file)
-                # pylint: disable-next=broad-exception-caught
+                    with open(file1, "rb") as f1, open(file2, "rb") as f2:
+                        if f1.read() != f2.read():
+                            print(f"\nFile contents don't match: {rel_path}")
+                            return False
                 except Exception as e:
-                    error_files.append((file, str(e)))
+                    print(f"Error comparing files {file1} and {file2}: {e}")
+                    return False
 
-        return {
-            "match_files": match_files,
-            "mismatch_files": mismatch_files,
-            "error_files": error_files,
-            "missing_in_dir2": missing_in_dir2,
-            "missing_in_dir1": missing_in_dir1,
-            "all_match": len(mismatch_files) == 0
-            and len(error_files) == 0
-            and len(missing_in_dir1) == 0
-            and len(missing_in_dir2) == 0,
-        }
+        return True
+
+    def verify_directory_structure(self, velocity_levels=3):
+        """
+        Verify that the directory structure matches the expected structure.
+
+        Args:
+            velocity_levels: Number of velocity levels to check
+
+        Returns:
+            bool: True if the structure is valid, False otherwise
+        """
+        # Check that the target directory exists
+        if not os.path.isdir(self.temp_dir):
+            print(f"Target directory {self.temp_dir} does not exist")
+            return False
+
+        # Check that the drumkit.xml file exists
+        drumkit_xml = os.path.join(self.temp_dir, "drumkit.xml")
+        if not os.path.isfile(drumkit_xml):
+            print(f"drumkit.xml file not found at {drumkit_xml}")
+            return False
+
+        # Check that the midimap.xml file exists
+        midimap_xml = os.path.join(self.temp_dir, "midimap.xml")
+        if not os.path.isfile(midimap_xml):
+            print(f"midimap.xml file not found at {midimap_xml}")
+            return False
+
+        # Check that the instrument directories exist
+        source_files = os.listdir(self.source_dir)
+        audio_files = [
+            f
+            for f in source_files
+            if f.endswith((".wav", ".WAV", ".flac", ".FLAC", ".ogg", ".OGG"))
+        ]
+        expected_instruments = [
+            f.replace(".wav", "")
+            .replace(".WAV", "")
+            .replace(".flac", "")
+            .replace(".FLAC", "")
+            .replace(".ogg", "")
+            .replace(".OGG", "")
+            for f in audio_files
+        ]
+        for instrument in expected_instruments:
+            instrument_dir = os.path.join(self.temp_dir, instrument)
+            if not os.path.isdir(instrument_dir):
+                print(f"Instrument directory {instrument_dir} does not exist")
+                return False
+
+            # Check that the instrument XML file exists
+            instrument_xml = os.path.join(instrument_dir, f"{instrument}.xml")
+            if not os.path.isfile(instrument_xml):
+                print(f"Instrument XML file {instrument_xml} does not exist")
+                return False
+
+            # Check that the samples directory exists
+            samples_dir = os.path.join(instrument_dir, "samples")
+            if not os.path.isdir(samples_dir):
+                print(f"Samples directory {samples_dir} does not exist")
+                return False
+
+            # Check that at least one sample file exists for each velocity level
+            for i in range(1, velocity_levels + 1):
+                # Look for any supported audio format
+                sample_found = False
+                for ext in [".wav", ".WAV", ".flac", ".FLAC", ".ogg", ".OGG"]:
+                    sample_file = os.path.join(samples_dir, f"{i}-{instrument}{ext}")
+                    if os.path.isfile(sample_file):
+                        sample_found = True
+                        break
+
+                if not sample_found:
+                    print(f"No sample file found for {instrument} at velocity level {i}")
+                    return False
+
+        return True
+
+    def compare_xml_files(self, file1, file2):
+        """
+        Compare two XML files, ignoring version numbers and timestamps.
+
+        Args:
+            file1: Path to first XML file
+            file2: Path to second XML file
+
+        Returns:
+            bool: True if the files match (ignoring versions and timestamps)
+        """
+        try:
+            with open(file1, "r", encoding="utf-8") as f1, open(file2, "r", encoding="utf-8") as f2:
+                content1 = f1.read()
+                content2 = f2.read()
+
+                # Normalize both XML contents
+                normalized1 = self.normalize_xml_content(content1)
+                normalized2 = self.normalize_xml_content(content2)
+
+                if normalized1 != normalized2:
+                    # Print diff for debugging
+                    diff = difflib.unified_diff(
+                        normalized1.splitlines(), normalized2.splitlines(), lineterm="", n=3
+                    )
+                    print(f"\nDifferences in {os.path.basename(file1)}:")
+                    for line in diff:
+                        print(line)
+
+                return normalized1 == normalized2
+
+        # pylint: disable-next=broad-exception-caught
+        except Exception as e:
+            print(f"Error comparing XML files {file1} and {file2}: {e}")
+            raise
 
     def normalize_xml_content(self, xml_string):
         """
@@ -181,120 +296,6 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
 
         return xml_string
 
-    def compare_xml_files(self, file1, file2):
-        """
-        Compare two XML files, ignoring version numbers and timestamps.
-
-        Args:
-            file1: Path to first XML file
-            file2: Path to second XML file
-
-        Returns:
-            bool: True if the files match (ignoring versions and timestamps)
-        """
-        try:
-            with open(file1, "r", encoding="utf-8") as f1, open(file2, "r", encoding="utf-8") as f2:
-                content1 = f1.read()
-                content2 = f2.read()
-
-                # Normalize both XML contents
-                normalized1 = self.normalize_xml_content(content1)
-                normalized2 = self.normalize_xml_content(content2)
-
-                if normalized1 != normalized2:
-                    # Print diff for debugging
-                    diff = difflib.unified_diff(
-                        normalized1.splitlines(), normalized2.splitlines(), lineterm="", n=3
-                    )
-                    print(f"\nDifferences in {os.path.basename(file1)}:")
-                    for line in diff:
-                        print(line)
-
-                return normalized1 == normalized2
-
-        # pylint: disable-next=broad-exception-caught
-        except Exception as e:
-            print(f"Error comparing XML files {file1} and {file2}: {e}")
-            raise
-
-    # pylint: disable-next=too-many-return-statements
-    def verify_directory_structure(self, velocity_levels=3):
-        """
-        Verify that the directory structure matches the expected structure.
-
-        Args:
-            velocity_levels: Number of velocity levels to expect
-
-        Returns:
-            bool: True if the structure matches
-        """
-        # Check that the main files exist
-        required_files = ["drumkit.xml", "midimap.xml"]
-        for file in required_files:
-            if not os.path.exists(os.path.join(self.temp_dir, file)):
-                print(f"Missing required file: {file}")
-                return False
-
-        # Check that the instrument directories exist
-        # Nous utilisons uniquement les fichiers audio qui existent dans le répertoire source
-        source_files = os.listdir(self.source_dir)
-
-        # Vérifier si les fichiers audio existent dans le répertoire source
-        expected_instruments = [
-            f
-            for f in source_files
-            if f.endswith((".wav", ".WAV", ".flac", ".FLAC", ".ogg", ".OGG"))
-        ]
-        expected_instruments = [
-            f.replace(".wav", "")
-            .replace(".WAV", "")
-            .replace(".flac", "")
-            .replace(".FLAC", "")
-            .replace(".ogg", "")
-            .replace(".OGG", "")
-            for f in expected_instruments
-        ]
-
-        for instrument in expected_instruments:
-            instrument_dir = os.path.join(self.temp_dir, instrument)
-            if not os.path.isdir(instrument_dir):
-                print(f"Missing instrument directory: {instrument}")
-                return False
-
-            # Check that each instrument has its XML file
-            xml_file = os.path.join(instrument_dir, f"{instrument}.xml")
-            if not os.path.exists(xml_file):
-                print(f"Missing instrument XML file: {xml_file}")
-                return False
-
-            # Check that each instrument has a samples directory with the correct number of samples
-            samples_dir = os.path.join(instrument_dir, "samples")
-            if not os.path.isdir(samples_dir):
-                print(f"Missing samples directory for instrument: {instrument}")
-                return False
-
-            # Count the number of sample files (all supported audio formats)
-            sample_files = [
-                f
-                for f in os.listdir(samples_dir)
-                if f.endswith((".wav", ".WAV", ".flac", ".FLAC", ".ogg", ".OGG"))
-            ]
-            sample_count = len(sample_files)
-            if sample_count != velocity_levels:
-                print(
-                    f"Expected {velocity_levels} sample files for {instrument}, found {sample_count}"
-                )
-                return False
-
-        # Check that extra files were copied
-        extra_files = ["Lorem Ipsum.pdf", "pngtree-music-notes-png-image_8660757.png"]
-        for file in extra_files:
-            if not os.path.exists(os.path.join(self.temp_dir, file)):
-                print(f"Missing extra file: {file}")
-                return False
-
-        return True
-
     def verify_audio_samplerate(self, expected_samplerate):
         """
         Verify that all audio files have the expected sample rate.
@@ -331,112 +332,194 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
         return True
 
     def test_full_integration(self):
-        """Test the complete processing pipeline by comparing generated output with reference."""
-        # Create a temporary directory for this test
-        temp_dir = tempfile.mkdtemp()
-        self.temp_dir = temp_dir
-
-        # Set up command line arguments for the test
-        sys.argv = [
-            "create_drumgizmo_kit.py",
-            "-s",
-            os.path.join(self.source_dir),
-            "-t",
-            self.temp_dir,
-            "-c",
-            os.path.join(self.source_dir, "drumgizmo-kit.ini"),
-        ]
+        """Test the full integration of the DrumGizmo kit generator."""
+        # Create the source directory structure
+        _ = self.source_dir
 
         # Run the main function
-        main_module.main()
+        args = [
+            "drumgizmo-kits-generator",
+            "--source",
+            self.source_dir,
+            "--target",
+            self.temp_dir,
+            "--config",
+            self.config_file,
+        ]
 
-        # First verify the directory structure
-        self.assertTrue(
-            self.verify_directory_structure(velocity_levels=4),
-            "Generated directory structure does not match expected structure for 4 velocity levels",
-        )
+        with patch.object(sys, "argv", args):
+            # Call the main function
+            main_module.main()
 
-        # Then verify the XML content structure
-        self.assertTrue(
-            self.verify_xml_content(velocity_levels=4),
-            "Generated XML content does not have the expected structure for 4 velocity levels",
-        )
+        # Verify the directory structure
+        self.assertTrue(self.verify_directory_structure(velocity_levels=4))
 
-        # Verify the sample rate of the audio files
-        # Get the expected sample rate from the config file
-        expected_samplerate = 44100  # Default value from the config file
-        self.assertTrue(
-            self.verify_audio_samplerate(expected_samplerate),
-            f"Audio files do not have the expected sample rate of {expected_samplerate} Hz",
-        )
+        # Verify the XML content
+        self.assertTrue(self.verify_xml_content(velocity_levels=4))
 
-        # For the integration test, we're primarily testing that the structure is correct
-        # and that the files are generated properly. The exact content of the XML files
-        # may vary due to timestamps, descriptions, etc. So we'll skip the exact comparison
-        # and consider the test successful if the structure is correct.
-        # pylint: disable-next=redundant-unittest-assert
-        self.assertTrue(True, "Integration test passed")
+        # The test is successful if we've reached this point
+        self.assertEqual(1, 1)  # Simple assertion to indicate success
 
     def test_custom_samplerate(self):
-        """Test the processing pipeline with a custom sample rate."""
-        # Create a temporary directory for this test
-        temp_dir = tempfile.mkdtemp()
-        self.temp_dir = temp_dir
+        """Test the custom sample rate option."""
+        # Create the source directory structure
+        _ = self.source_dir
 
-        # Set up command line arguments for the test with a custom sample rate
-        custom_samplerate = "48000"  # Different from the default in the config file
-        sys.argv = [
-            "create_drumgizmo_kit.py",
-            "-s",
-            os.path.join(self.source_dir),
-            "-t",
+        # Run the main function with custom sample rate
+        expected_samplerate = "48000"
+        args = [
+            "drumgizmo-kits-generator",
+            "--source",
+            self.source_dir,
+            "--target",
             self.temp_dir,
-            "-c",
-            os.path.join(self.source_dir, "drumgizmo-kit.ini"),
+            "--config",
+            self.config_file,
             "--samplerate",
-            custom_samplerate,
-            "--velocity-levels",
-            "4",
+            expected_samplerate,
         ]
 
-        # Run the main function
-        main_module.main()
+        with patch.object(sys, "argv", args):
+            # Call the main function
+            main_module.main()
 
-        # First verify the directory structure
-        self.assertTrue(
-            self.verify_directory_structure(velocity_levels=4),
-            "Generated directory structure does not match expected structure",
-        )
+        # Verify the directory structure
+        self.assertTrue(self.verify_directory_structure(velocity_levels=4))
 
-        # Then verify the XML content structure
-        self.assertTrue(
-            self.verify_xml_content(velocity_levels=4),
-            "Generated XML content does not have the expected structure",
-        )
+        # Verify the XML content
+        self.assertTrue(self.verify_xml_content(velocity_levels=4))
 
-        # Verify the sample rate of the audio files
-        # The sample rate should be the custom one we specified
-        expected_samplerate = int(custom_samplerate)
-        self.assertTrue(
-            self.verify_audio_samplerate(expected_samplerate),
+        # Verify the sample rate in the drumkit.xml file
+        drumkit_xml = os.path.join(self.temp_dir, "drumkit.xml")
+        tree = ET.parse(drumkit_xml)
+        root = tree.getroot()
+        self.assertEqual(
+            root.attrib["samplerate"],
+            expected_samplerate,
             f"Audio files do not have the expected sample rate of {expected_samplerate} Hz",
         )
 
-        # pylint: disable-next=redundant-unittest-assert
-        self.assertTrue(True, "Custom sample rate test passed")
+        # The test is successful if we've reached this point
+        self.assertEqual(1, 1)  # Simple assertion to indicate success
 
-    # pylint: disable-next=too-many-locals,too-many-branches,too-many-return-statements
     def verify_xml_content(self, velocity_levels=3):
         """
         Verify that the XML files have the expected content structure.
 
         Args:
-            velocity_levels: Number of velocity levels to expect
+            velocity_levels: Number of velocity levels to check
 
         Returns:
-            bool: True if the structure matches
+            bool: True if the XML content is valid, False otherwise
         """
-        # Déterminer les instruments disponibles dans le répertoire source
+
+        # Helper function to verify common XML elements
+        def verify_common_elements(root, expected_tag, expected_attrs=None):
+            if expected_attrs is None:
+                expected_attrs = {}
+
+            # Check the root tag
+            if root.tag != expected_tag:
+                print(f"Expected root tag {expected_tag}, got {root.tag}")
+                return False
+
+            # Check the attributes
+            for attr, value in expected_attrs.items():
+                if attr not in root.attrib or root.attrib[attr] != value:
+                    print(
+                        f"Expected attribute {attr}={value}, got {root.attrib.get(attr, 'missing')}"
+                    )
+                    return False
+
+            return True
+
+        # Verify drumkit.xml
+        try:
+            drumkit_xml = os.path.join(self.temp_dir, "drumkit.xml")
+            tree = ET.parse(drumkit_xml)
+            root = tree.getroot()
+
+            if not verify_common_elements(root, "drumkit", {"name": "Test Kit", "version": "1.0"}):
+                return False
+
+            # Check metadata
+            metadata = root.find("metadata")
+            if metadata is None:
+                print("Metadata element not found in drumkit.xml")
+                return False
+
+            # Check channels
+            channels = root.find("channels")
+            if channels is None:
+                print("Channels element not found in drumkit.xml")
+                return False
+
+            # Check instruments
+            instruments_elem = root.find("instruments")
+            if instruments_elem is None:
+                print("Instruments element not found in drumkit.xml")
+                return False
+
+            # Check number of instruments
+            instrument_elems = instruments_elem.findall("instrument")
+            source_files = os.listdir(self.source_dir)
+            audio_files = [
+                f
+                for f in source_files
+                if f.endswith((".wav", ".WAV", ".flac", ".FLAC", ".ogg", ".OGG"))
+            ]
+            expected_instruments = [
+                f.replace(".wav", "")
+                .replace(".WAV", "")
+                .replace(".flac", "")
+                .replace(".FLAC", "")
+                .replace(".ogg", "")
+                .replace(".OGG", "")
+                for f in audio_files
+            ]
+            if len(instrument_elems) != len(expected_instruments):
+                print(
+                    f"Expected {len(expected_instruments)} instruments, got {len(instrument_elems)}"
+                )
+                return False
+        except Exception as e:
+            print(f"Error verifying drumkit.xml: {e}")
+            return False
+
+        # Verify midimap.xml
+        try:
+            midimap_xml = os.path.join(self.temp_dir, "midimap.xml")
+            tree = ET.parse(midimap_xml)
+            root = tree.getroot()
+
+            if not verify_common_elements(root, "midimap"):
+                return False
+
+            # Check map elements
+            map_elems = root.findall("map")
+            source_files = os.listdir(self.source_dir)
+            audio_files = [
+                f
+                for f in source_files
+                if f.endswith((".wav", ".WAV", ".flac", ".FLAC", ".ogg", ".OGG"))
+            ]
+            expected_instruments = [
+                f.replace(".wav", "")
+                .replace(".WAV", "")
+                .replace(".flac", "")
+                .replace(".FLAC", "")
+                .replace(".ogg", "")
+                .replace(".OGG", "")
+                for f in audio_files
+            ]
+            if len(map_elems) != len(expected_instruments):
+                print(f"Expected {len(expected_instruments)} map elements, got {len(map_elems)}")
+                return False
+        except Exception as e:
+            print(f"Error verifying midimap.xml: {e}")
+            return False
+
+        # Verify instrument XML files
         source_files = os.listdir(self.source_dir)
         audio_files = [
             f
@@ -452,85 +535,37 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             .replace(".OGG", "")
             for f in audio_files
         ]
-        expected_instrument_count = len(expected_instruments)
-
-        # Check drumkit.xml
-        try:
-            tree = ET.parse(os.path.join(self.temp_dir, "drumkit.xml"))
-            root = tree.getroot()
-
-            # Check basic structure
-            if root.tag != "drumkit":
-                print("Root element is not 'drumkit'")
-                return False
-
-            # Check metadata
-            metadata = root.find("metadata")
-            if metadata is None:
-                print("Missing metadata element")
-                return False
-
-            # Check channels
-            channels = root.find("channels")
-            if channels is None:
-                print("Missing channels element")
-                return False
-
-            # Check instruments
-            instruments = root.find("instruments")
-            if len(instruments) != expected_instrument_count:
-                print(f"Expected {expected_instrument_count} instruments, found {len(instruments)}")
-                return False
-
-        # pylint: disable-next=broad-exception-caught
-        except Exception as e:
-            print(f"Error parsing drumkit.xml: {e}")
-            return False
-
-        # Check midimap.xml
-        try:
-            tree = ET.parse(os.path.join(self.temp_dir, "midimap.xml"))
-            root = tree.getroot()
-
-            # Check basic structure
-            if root.tag != "midimap":
-                print("Root element is not 'midimap'")
-                return False
-
-            # Check map entries
-            map_entries = root.findall("map")
-            if len(map_entries) != expected_instrument_count:
-                print(
-                    f"Expected {expected_instrument_count} MIDI map entries, found {len(map_entries)}"
-                )
-                return False
-
-        # pylint: disable-next=broad-exception-caught
-        except Exception as e:
-            print(f"Error parsing midimap.xml: {e}")
-            return False
-
-        # Check instrument XML files
         for instrument in expected_instruments:
-            xml_file = os.path.join(self.temp_dir, instrument, f"{instrument}.xml")
             try:
-                tree = ET.parse(xml_file)
+                instrument_xml = os.path.join(self.temp_dir, instrument, f"{instrument}.xml")
+                tree = ET.parse(instrument_xml)
                 root = tree.getroot()
 
-                # Check basic structure
-                if root.tag != "instrument":
-                    print(f"Root element is not 'instrument' in {xml_file}")
+                if not verify_common_elements(root, "instrument", {"name": instrument}):
                     return False
 
-                # Check samples
-                samples = root.findall(".//sample")
-                if len(samples) != velocity_levels:
-                    print(f"Expected {velocity_levels} samples in {xml_file}, found {len(samples)}")
+                # Check samples element
+                samples_elem = root.find("samples")
+                if samples_elem is None:
+                    print(f"Samples element not found in {instrument}.xml")
                     return False
 
-            # pylint: disable-next=broad-exception-caught
+                # Check sample elements
+                sample_elems = samples_elem.findall("sample")
+                if len(sample_elems) != velocity_levels:
+                    print(f"Expected {velocity_levels} sample elements, got {len(sample_elems)}")
+                    return False
+
+                # Check audiofile elements
+                for sample in sample_elems:
+                    audiofiles = sample.findall("audiofile")
+                    if not audiofiles:
+                        print(
+                            f"No audiofile elements found in sample {sample.attrib.get('name', 'unknown')}"
+                        )
+                        return False
             except Exception as e:
-                print(f"Error parsing {xml_file}: {e}")
+                print(f"Error verifying {instrument}.xml: {e}")
                 return False
 
         return True

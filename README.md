@@ -235,23 +235,23 @@ make install
 
 #### Code guidelines & standards
 
-To run the `pre-commit` hook locally:
-
-```bash
-make pre-commit-run
-```
-
-It will try to fix your code following some standards, run the linter and tests. It is automatically run by the hooks before each commit and validate that your commit message follows the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/). These steps are run in the CI for validation.
+The `pre-commit` hook will try to fix your code following some standards, run the linter and tests. It is automatically run by the hooks before each commit and validate that your commit message follows the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/). These steps are run in the CI for validation.
 
 #### Local single tasks
 
-To run unit tests locally:
+To format the code following the `.pre-commit-config.yaml`:
+
+```bash
+make format
+```
+
+To run the tests in `tests/` locally:
 
 ```bash
 make test
 ```
 
-To get the coverage levels:
+To get the tests coverage levels:
 
 ```bash
 make coverage

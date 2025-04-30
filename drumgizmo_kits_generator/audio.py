@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: disable=broad-exception-caught
 """
 Audio processing module for DrumGizmo kit generator.
 Contains functions to manipulate audio files and create volume variations.
@@ -11,20 +10,25 @@ import os
 import shutil
 import subprocess
 import sys
+from typing import List, Optional
 
 
 def create_volume_variations(
-    instrument, kit_dir, extension, velocity_levels=10, target_samplerate=None
-):
+    instrument: str,
+    kit_dir: str,
+    extension: str,
+    velocity_levels: int = 10,
+    target_samplerate: Optional[str] = None,
+) -> None:
     """
     Creates volume variations for a given sample.
 
     Args:
-        instrument (str): Name of the instrument
-        kit_dir (str): Target directory for the kit
-        extension (str): Audio file extension (with the dot)
-        velocity_levels (int): Number of velocity levels to generate (default: 10)
-        target_samplerate (str, optional): Target sample rate in Hz
+        instrument: Name of the instrument
+        kit_dir: Target directory for the kit
+        extension: Audio file extension (with the dot)
+        velocity_levels: Number of velocity levels to generate (default: 10)
+        target_samplerate: Target sample rate in Hz
     """
     instrument_dir = os.path.join(kit_dir, instrument)
     samples_dir = os.path.join(instrument_dir, "samples")
@@ -37,11 +41,12 @@ def create_volume_variations(
         return
 
     # Create velocity_levels-1 versions with decreasing volume
+    source_file = os.path.join(samples_dir, f"1-{instrument}{extension}")
+
     for i in range(2, velocity_levels + 1):
         # Calculate volume factor: from 0.9 down to 0.1 for 10 levels
         # For different number of levels, scale accordingly
         volume = 1.0 - ((i - 1) / velocity_levels)
-        source_file = os.path.join(samples_dir, f"1-{instrument}{extension}")
         dest_file = os.path.join(samples_dir, f"{i}-{instrument}{extension}")
 
         print(
@@ -52,40 +57,48 @@ def create_volume_variations(
         # Use SoX to create a version with reduced volume
         try:
             # If a target sample rate is provided, include it in the command
+            sox_cmd = ["sox", source_file]
+
             if target_samplerate:
-                subprocess.run(
-                    ["sox", source_file, "-r", target_samplerate, dest_file, "vol", str(volume)],
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
-            else:
-                subprocess.run(
-                    ["sox", source_file, dest_file, "vol", str(volume)],
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
+                sox_cmd.extend(["-r", target_samplerate])
+
+            sox_cmd.extend([dest_file, "vol", str(volume)])
+
+            subprocess.run(
+                sox_cmd,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
         except subprocess.CalledProcessError as e:
             print(f"Error creating volume variation: {e}", file=sys.stderr)
-            print(f"Command output: {e.stdout.decode()}", file=sys.stderr)
-            print(f"Command error: {e.stderr.decode()}", file=sys.stderr)
-        except Exception as e:
+            print(f"Command output: {e.stdout}", file=sys.stderr)
+            print(f"Command error: {e.stderr}", file=sys.stderr)
+        except FileNotFoundError as e:
+            print(f"Error creating volume variation: SoX command not found: {e}", file=sys.stderr)
+        except PermissionError as e:
+            print(f"Error creating volume variation: Permission denied: {e}", file=sys.stderr)
+        except (OSError, IOError) as e:
+            print(f"Error creating volume variation: File system error: {e}", file=sys.stderr)
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            # Gardé pour la compatibilité avec les tests existants
             print(f"Error creating volume variation: {e}", file=sys.stderr)
 
 
-def convert_sample_rate(source_file, dest_file, target_samplerate):
+def convert_sample_rate(source_file: str, dest_file: str, target_samplerate: str) -> bool:
     """
     Convert a sample file to the target sample rate.
 
     Args:
-        source_file (str): Path to the source file
-        dest_file (str): Path to the destination file
-        target_samplerate (str): Target sample rate in Hz
+        source_file: Path to the source file
+        dest_file: Path to the destination file
+        target_samplerate: Target sample rate in Hz
 
     Returns:
-        bool: True if the file was converted successfully, False otherwise
+        True if the file was converted successfully, False otherwise
     """
+    success = False
     try:
         # Create destination directory if it doesn't exist
         dest_dir = os.path.dirname(dest_file)
@@ -98,31 +111,41 @@ def convert_sample_rate(source_file, dest_file, target_samplerate):
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            text=True,
         )
-        return True
+        success = True
     except subprocess.CalledProcessError as e:
         print(f"Error converting sample rate: {e}", file=sys.stderr)
-        print(f"Command output: {e.stdout.decode()}", file=sys.stderr)
-        print(f"Command error: {e.stderr.decode()}", file=sys.stderr)
-        return False
-    except Exception as e:
+        print(f"Command output: {e.stdout}", file=sys.stderr)
+        print(f"Command error: {e.stderr}", file=sys.stderr)
+    except FileNotFoundError as e:
+        print(f"Error converting sample rate: SoX command not found: {e}", file=sys.stderr)
+    except PermissionError as e:
+        print(f"Error converting sample rate: Permission denied: {e}", file=sys.stderr)
+    except (OSError, IOError) as e:
+        print(f"Error converting sample rate: File system error: {e}", file=sys.stderr)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # Gardé pour la compatibilité avec les tests existants
         print(f"Error converting sample rate: {e}", file=sys.stderr)
-        return False
+    return success
 
 
-def copy_sample_file(source_file, dest_file, target_samplerate=None):
+def copy_sample_file(
+    source_file: str, dest_file: str, target_samplerate: Optional[str] = None
+) -> bool:
     """
     Copy a sample file to the destination, optionally converting the sample rate.
 
     Args:
-        source_file (str): Path to the source file
-        dest_file (str): Path to the destination file
-        target_samplerate (str, optional): Target sample rate in Hz. If provided,
-                                          the file will be converted to this sample rate.
+        source_file: Path to the source file
+        dest_file: Path to the destination file
+        target_samplerate: Target sample rate in Hz. If provided,
+                          the file will be converted to this sample rate.
 
     Returns:
-        bool: True if the file was copied successfully, False otherwise
+        True if the file was copied successfully, False otherwise
     """
+    success = False
     try:
         # Create destination directory if it doesn't exist
         dest_dir = os.path.dirname(dest_file)
@@ -135,26 +158,35 @@ def copy_sample_file(source_file, dest_file, target_samplerate=None):
                 f"Converting {os.path.basename(source_file)} to {target_samplerate} Hz",
                 file=sys.stderr,
             )
-            return convert_sample_rate(source_file, dest_file, target_samplerate)
-
-        # Otherwise, just copy the file
-        shutil.copy2(source_file, dest_file)
-        return True
-    except Exception as e:
+            success = convert_sample_rate(source_file, dest_file, target_samplerate)
+        else:
+            # Otherwise, just copy the file
+            shutil.copy2(source_file, dest_file)
+            success = True
+    except FileNotFoundError as e:
+        print(f"Error copying sample file: File not found: {e}", file=sys.stderr)
+    except PermissionError as e:
+        print(f"Error copying sample file: Permission denied: {e}", file=sys.stderr)
+    except shutil.Error as e:
+        print(f"Error copying sample file: Shutil error: {e}", file=sys.stderr)
+    except (OSError, IOError) as e:
+        print(f"Error copying sample file: File system error: {e}", file=sys.stderr)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # Gardé pour la compatibilité avec les tests existants
         print(f"Error copying sample file: {e}", file=sys.stderr)
-        return False
+    return success
 
 
-def find_audio_files(source_dir, extensions):
+def find_audio_files(source_dir: str, extensions: List[str]) -> List[str]:
     """
     Find audio files in the source directory with the specified extensions.
 
     Args:
-        source_dir (str): Source directory to search in
-        extensions (list): List of file extensions to search for
+        source_dir: Source directory to search in
+        extensions: List of file extensions to search for
 
     Returns:
-        list: List of audio files found
+        List of audio files found
     """
     audio_files = []
 

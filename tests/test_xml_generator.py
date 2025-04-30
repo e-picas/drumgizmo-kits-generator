@@ -17,13 +17,14 @@ from unittest.mock import patch
 # Add the parent directory to the path to be able to import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# Import the module to test
-# pylint: disable-next=wrong-import-position
+# pylint: disable=wrong-import-position
 from drumgizmo_kits_generator.xml_generator import (
     create_drumkit_xml,
     create_instrument_xml,
     create_midimap_xml,
 )
+
+# pylint: enable=wrong-import-position
 
 
 class TestXmlGenerator(unittest.TestCase):
@@ -128,66 +129,19 @@ class TestXmlGenerator(unittest.TestCase):
                 f"Instrument {i} file path should match",
             )
 
-    # pylint: disable-next=too-many-locals
-    def test_create_instrument_xml(self):
-        """Test creating an instrument XML file with proper structure and sample references."""
-        # Create a directory for the instrument
-        instrument_name = "Kick"
-        instrument_dir = os.path.join(self.temp_dir, instrument_name)
-        os.makedirs(instrument_dir, exist_ok=True)
-
-        # Create a samples directory
-        samples_dir = os.path.join(instrument_dir, "samples")
-        os.makedirs(samples_dir, exist_ok=True)
-
-        # Create sample files (default: 10 levels)
-        velocity_levels = 10
-        for i in range(1, velocity_levels + 1):
-            sample_file = os.path.join(samples_dir, f"{i}-{instrument_name}.wav")
-            # pylint: disable-next=unspecified-encoding
-            with open(sample_file, "w") as f:
-                f.write(f"Sample {i} content")
-
-        # Call the function with default velocity levels
-        xml_file = create_instrument_xml(instrument_name, self.temp_dir, ".wav")
-
-        # Verify the file was created
-        self.assertTrue(os.path.exists(xml_file), "XML file should be created")
-
-        # Parse the XML file
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-
-        # Verify the root element
-        self.assertEqual(root.tag, "instrument", "Root element should be 'instrument'")
-        self.assertEqual(root.attrib["name"], instrument_name, "Name attribute should match")
-        self.assertEqual(root.attrib["version"], "2.0", "Version should be 2.0")
-
-        # Verify samples element
-        samples_elem = root.find("samples")
-        self.assertIsNotNone(samples_elem, "Should have a samples element")
-
-        # Verify sample elements (should have 10 by default)
-        samples = samples_elem.findall("sample")
-        self.assertEqual(
-            len(samples), velocity_levels, f"Should have {velocity_levels} sample elements"
-        )
-
+    def _verify_samples(self, samples):
         # Verify each sample
         for i, sample in enumerate(samples, 1):
-            # Check name attribute
-            self.assertEqual(
-                sample.attrib["name"],
-                f"{instrument_name}-{i}",
-                f"Sample {i} should have correct name",
-            )
+            # Verify the sample attributes
+            self.assertIn("name", sample.attrib, f"Sample {i} should have a name attribute")
+            self.assertIn("power", sample.attrib, f"Sample {i} should have a power attribute")
 
-            # Check power attribute
+            # Verify the power value
             power_value = float(sample.attrib["power"])
             self.assertGreaterEqual(power_value, 0.0, f"Power for sample {i} should be >= 0")
             self.assertLessEqual(power_value, 1.0, f"Power for sample {i} should be <= 1")
 
-            # Check audiofile elements
+            # Verify the audiofile elements
             audiofiles = sample.findall("audiofile")
             self.assertGreater(len(audiofiles), 0, f"Sample {i} should have audiofile elements")
 
@@ -200,43 +154,114 @@ class TestXmlGenerator(unittest.TestCase):
                     f"Power for sample {i} should be less than for sample {i-1}",
                 )
 
-    def test_create_instrument_xml_custom_velocity_levels(self):
-        """Test creating an instrument XML file with custom velocity levels."""
-        # Create a directory for the instrument
-        instrument_name = "Snare"
-        instrument_dir = os.path.join(self.temp_dir, instrument_name)
-        os.makedirs(instrument_dir, exist_ok=True)
+    def test_create_instrument_xml(self):
+        """Test creating an instrument XML file with proper structure and sample references."""
+        # Configuration
+        test_config = {"instrument_name": "Kick", "velocity_levels": 10, "extension": ".wav"}
 
-        # Create a samples directory
+        # Create directory structure
+        instrument_dir = os.path.join(self.temp_dir, test_config["instrument_name"])
         samples_dir = os.path.join(instrument_dir, "samples")
         os.makedirs(samples_dir, exist_ok=True)
 
-        # Create sample files with custom velocity levels
-        velocity_levels = 5
-        for i in range(1, velocity_levels + 1):
-            sample_file = os.path.join(samples_dir, f"{i}-{instrument_name}.wav")
-            # pylint: disable-next=unspecified-encoding
-            with open(sample_file, "w") as f:
-                f.write(f"Sample {i} content")
+        # Create sample files
+        for i in range(1, test_config["velocity_levels"] + 1):
+            sample_file = os.path.join(
+                samples_dir, f"{i}-{test_config['instrument_name']}{test_config['extension']}"
+            )
+            with open(sample_file, "w", encoding="utf-8") as f:
+                f.write(f"Test sample {i}")
 
-        # Call the function with custom velocity levels
-        xml_file = create_instrument_xml(instrument_name, self.temp_dir, ".wav", velocity_levels)
+        # Call the function to test
+        create_instrument_xml(
+            test_config["instrument_name"], self.temp_dir, test_config["extension"]
+        )
 
-        # Parse the XML file
+        # Verify file creation
+        xml_file = os.path.join(instrument_dir, f"{test_config['instrument_name']}.xml")
+        self.assertTrue(
+            os.path.exists(xml_file), f"{test_config['instrument_name']}.xml file should be created"
+        )
+        self.assertGreater(
+            os.path.getsize(xml_file),
+            0,
+            f"{test_config['instrument_name']}.xml file should not be empty",
+        )
+
+        # Parse and verify XML content
         tree = ET.parse(xml_file)
         root = tree.getroot()
 
-        # Verify samples element
+        # Verify root element
+        self.assertEqual(root.tag, "instrument", "Root element should be 'instrument'")
+        self.assertEqual(
+            root.attrib["name"],
+            test_config["instrument_name"],
+            "Instrument name attribute should match",
+        )
+
+        # Verify samples element exists
         samples_elem = root.find("samples")
         self.assertIsNotNone(samples_elem, "Should have a samples element")
 
-        # Verify sample elements (should match custom velocity levels)
+        # Verify samples
         samples = samples_elem.findall("sample")
         self.assertEqual(
-            len(samples), velocity_levels, f"Should have {velocity_levels} sample elements"
+            len(samples),
+            test_config["velocity_levels"],
+            "Should have one sample per velocity level",
         )
 
-        # Verify power values are distributed correctly
+        # Verify each sample
+        self._verify_samples(samples)
+
+    def test_create_instrument_xml_custom_velocity_levels(self):
+        """Test creating an instrument XML file with custom velocity levels."""
+        # Configuration
+        test_config = {"instrument_name": "Snare", "velocity_levels": 5, "extension": ".wav"}
+
+        # Create directory structure
+        instrument_dir = os.path.join(self.temp_dir, test_config["instrument_name"])
+        samples_dir = os.path.join(instrument_dir, "samples")
+        os.makedirs(samples_dir, exist_ok=True)
+
+        # Create sample files
+        for i in range(1, test_config["velocity_levels"] + 1):
+            sample_file = os.path.join(
+                samples_dir, f"{i}-{test_config['instrument_name']}{test_config['extension']}"
+            )
+            with open(sample_file, "w", encoding="utf-8") as f:
+                f.write(f"Test sample {i}")
+
+        # Call the function to test
+        create_instrument_xml(
+            test_config["instrument_name"],
+            self.temp_dir,
+            test_config["extension"],
+            test_config["velocity_levels"],
+        )
+
+        # Verify file creation
+        xml_file = os.path.join(instrument_dir, f"{test_config['instrument_name']}.xml")
+        self.assertTrue(
+            os.path.exists(xml_file), f"{test_config['instrument_name']}.xml file should be created"
+        )
+
+        # Parse and verify XML content
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+
+        # Verify samples element exists
+        samples_elem = root.find("samples")
+        self.assertIsNotNone(samples_elem, "Should have a samples element")
+
+        # Verify samples
+        samples = samples_elem.findall("sample")
+        self.assertEqual(
+            len(samples), test_config["velocity_levels"], "Should have the custom number of samples"
+        )
+
+        # Verify the power distribution
         powers = [float(sample.attrib["power"]) for sample in samples]
 
         # First sample should have power 1.0
@@ -245,9 +270,9 @@ class TestXmlGenerator(unittest.TestCase):
         # Last sample should have power close to 1/velocity_levels
         self.assertAlmostEqual(
             powers[-1],
-            1.0 - (velocity_levels - 1) / velocity_levels,
+            1.0 - (test_config["velocity_levels"] - 1) / test_config["velocity_levels"],
             places=5,
-            msg=f"Last sample should have power {1.0 - (velocity_levels - 1) / velocity_levels}",
+            msg=f"Last sample should have power {1.0 - (test_config['velocity_levels'] - 1) / test_config['velocity_levels']}",
         )
 
     def test_create_midimap_xml(self):

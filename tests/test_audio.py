@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: disable=unspecified-encoding,consider-using-with
+# pylint: disable=unspecified-encoding
 """
 Unit tests for the audio module of the DrumGizmo kit generator.
 
@@ -47,7 +47,6 @@ class TestAudio(unittest.TestCase):
         ]
 
         for file_path in self.test_files:
-            # pylint: disable-next=unspecified-encoding
             with open(file_path, "w") as f:
                 f.write("Test content")
 
@@ -193,18 +192,17 @@ class TestAudio(unittest.TestCase):
 
         # Redirect stderr to avoid cluttering test output
         original_stderr = sys.stderr
-        sys.stderr = open(os.devnull, "w")
+        with open(os.devnull, "w", encoding="utf-8") as devnull:
+            sys.stderr = devnull
+            try:
+                # Call the function
+                create_volume_variations(instrument_name, self.temp_dir, ".wav", 3)
 
-        try:
-            # Call the function
-            create_volume_variations(instrument_name, self.temp_dir, ".wav", 3)
-
-            # Verify that subprocess.run was called
-            self.assertEqual(mock_subprocess_run.call_count, 2)
-        finally:
-            # Restore stderr
-            sys.stderr.close()
-            sys.stderr = original_stderr
+                # Verify that subprocess.run was called
+                self.assertEqual(mock_subprocess_run.call_count, 2)
+            finally:
+                # Restore stderr
+                sys.stderr = original_stderr
 
     @patch("drumgizmo_kits_generator.audio.subprocess.run")
     def test_create_volume_variations_generic_exception(self, mock_subprocess_run):
@@ -225,18 +223,14 @@ class TestAudio(unittest.TestCase):
 
         # Redirect stderr to avoid cluttering test output
         original_stderr = sys.stderr
-        sys.stderr = open(os.devnull, "w")
-
-        try:
-            # Call the function
-            create_volume_variations(instrument_name, self.temp_dir, ".wav", 3)
-
-            # Verify that subprocess.run was called
-            self.assertEqual(mock_subprocess_run.call_count, 2)
-        finally:
-            # Restore stderr
-            sys.stderr.close()
-            sys.stderr = original_stderr
+        with open(os.devnull, "w", encoding="utf-8") as devnull:
+            sys.stderr = devnull
+            try:
+                # Call the function
+                create_volume_variations(instrument_name, self.temp_dir, ".wav", 3)
+            finally:
+                # Restore stderr
+                sys.stderr = original_stderr
 
     @patch("subprocess.run")
     def test_create_volume_variations_error(self, mock_run):
