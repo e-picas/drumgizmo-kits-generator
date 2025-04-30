@@ -9,21 +9,32 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=e-picas_drumgizmo-kits-generator&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=e-picas_drumgizmo-kits-generator)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=e-picas_drumgizmo-kits-generator&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=e-picas_drumgizmo-kits-generator)
 
-[![DrumGizmo](https://img.shields.io/badge/DrumGizmo-%3E%3D0.9.20-orange?style=plastic)](https://drumgizmo.org/)
+[![DrumGizmo](https://img.shields.io/badge/DrumGizmo-%3E%3D0.9.20-orange)](https://drumgizmo.org/)
 
 ## Features
 
-- 🚀 **Generate DrumGizmo kits from a set of audio samples**
-- 🎙️ **Support for multiple audio formats (WAV, FLAC, OGG)**
-- ✨ **Automatic creation of volume variations to manage velocity (10 levels by default)**
+- 🚀 **Generate [DrumGizmo kits from a set of audio samples](#generated-kit-structure)**
+- 🎙️ **Support for [multiple audio formats](#prerequisites) (WAV, FLAC, OGG)**
+- ⚡ **Automatic creation of volume variations to manage velocity levels (10 by default)**
 - 🧮 **Alphabetical sorting of instruments and assignment of consecutive MIDI notes**
-- 🏷️ **Read metadata and configuration from a configuration file**
-- 📜 **Copy additional files to the final kit**
-- ⬛ **Complete command-line interface**
+- ⚙️ **Read metadata and configuration from a [configuration file](#configuration-file)**
+- 📥 **Copy additional files to the final kit**
+- ⬛ **Complete [command-line interface](#command-line)**
 
-## Generated Kit Structure
+## Generated kit structure
 
-Following the [DrumGizmo file format documentation](https://drumgizmo.org/wiki/doku.php?id=documentation:file_formats), the generated kit will have the following structure:
+The kit will follow the [DrumGizmo file format documentation](https://drumgizmo.org/wiki/doku.php?id=documentation:file_formats).
+
+For example, based on the following sources of audio samples (they must be in the root directory - no recursion):
+
+```
+sources/
+├── Instrument1.wav
+├── Instrument2.wav
+└── ...
+```
+
+The generated kit will have the following structure:
 
 ```
 kit/
@@ -44,12 +55,67 @@ kit/
 └── ...
 ```
 
+### Kit metadata
+
+Based on yout options or configuration, the kit metadata will be something like the following:
+
+```xml
+  <metadata>
+    <title>Test Kit</title>
+    <description>This is a description</description>
+    <notes>DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at 2025-04-28 23:54</notes>
+    <author>My name</author>
+    <license>Private license</license>
+    <samplerate>44100</samplerate>
+    <website>https://me.com/</website>
+    <logo src="my-logo.png"/>
+    <created>Generated on 2025-04-28 23:54:45 with drumgizmo-kits-generator v1.3.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
+  </metadata>
+```
+
+### Audio samples treatments
+
+Each original audio sample is duplicated X times to finally get the [`velocity-levels`](#options) number of volumes variations, assigned to corresponding "velocity" variations by setting the `power` entry of each sample on a cartesian formula based on 1 (1 / velocity-levels).
+
+### Samplerate
+
+The [`samplerate`](#options) of the generated kit (which defaults to `44100`) will be used for all samples and variations to assure the kit uniformity.
+
+### About samples channels
+
+The app will alternately use each original sample "channels" and assign them to the global "channels" of the kit (which defaults to the channels used by distributed [DSR kit](https://drumgizmo.org/wiki/doku.php?id=kits:drskit)):
+
+```
+"AmbL" (main)
+"AmbR" (main)
+"Hihat"
+"Kdrum_back"
+"Kdrum_front"
+"Hihat"
+"OHL" (main)
+"OHR" (main)
+"Ride"
+"Snare_bottom"
+"Snare_top"
+"Tom1"
+"Tom2"
+"Tom3"
+```
+
+### MIDI keys repartition
+
+The samples will all be attached to consecutive MIDI notes around the [`midi-note-median`](#options) with some limits set by the `midi-note-min` and `midi-note-max` options. An error will be triggered if your project have more samples than the allowed MIDI notes.
+
+### Note about audio files formats
+
+We use [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing, which may not handle every audio file formats natively. You may need to install some third-party drivers in your system for particular needs (i.e. "mp3" format).
+
 ## Installation & usage
 
 ### Prerequisites
 
 - [Python 3.8](https://www.python.org/downloads/) or higher
-- [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing
+- [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing - Tested with version 14.4.2
 - some other Python dependencies for development only (see the [`requirements-dev.txt`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/requirements-dev.txt) file)
 
 ### Installation
@@ -61,7 +127,14 @@ Download and extract [the latest release](https://github.com/e-picas/drumgizmo-k
 #### Command Line
 
 ```bash
+# basic usage:
+python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target
+
+# usage of a configuration file:
 python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target -c /path/to/config.ini
+
+# usage with some command line options:
+python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target --name "Kit name" ...
 
 # to read the doc:
 python create_drumgizmo_kit.py -h
@@ -108,7 +181,7 @@ kit_samplerate = "44100"
 kit_logo = "logo.png"
 kit_extra_files = "README.txt,LICENSE.txt,photo.jpg"
 
-# Generation option
+# Generation options
 kit_velocity_levels=4
 kit_midi_note_min=40
 kit_midi_note_max=100
@@ -142,9 +215,17 @@ To install the dependencies and git hooks, run:
 make install
 ```
 
-The hooks will run the linter and tests before each commit and validate that your commit message follows the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/). They are run in the CI for validation.
+#### Code guidelines & standards
 
-#### Local tasks
+To run the `pre-commit` hook locally:
+
+```bash
+make pre-commit-run
+```
+
+It will try to fix your code following some standards, run the linter and tests. It is automatically run by the hooks before each commit and validate that your commit message follows the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/). These steps are run in the CI for validation.
+
+#### Local single tasks
 
 To run unit tests locally:
 
