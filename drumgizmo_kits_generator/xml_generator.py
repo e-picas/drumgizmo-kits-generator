@@ -139,7 +139,6 @@ def create_instrument_xml(
 
         # Write the XML file with pretty formatting
         if write_pretty_xml(tree, xml_file):
-            print(f"XML file successfully created: {xml_file}", file=sys.stderr)
             return xml_file
         print(f"Error: Failed to write XML file to {xml_file}", file=sys.stderr)
         return None

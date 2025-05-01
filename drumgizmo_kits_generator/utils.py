@@ -5,6 +5,7 @@ Utility module for DrumGizmo kit generator.
 Contains various helper functions.
 """
 
+import argparse
 import datetime
 import os
 import shutil
@@ -174,6 +175,18 @@ def get_audio_samplerate(audio_file: str) -> Optional[int]:
     except (OSError, IOError) as e:
         print(f"Error getting sample rate: File system error: {e}", file=sys.stderr)
         return None
+
+
+def print_verbose(message: str, args: argparse.Namespace) -> None:
+    """
+    Print a verbose message if verbose mode is enabled.
+
+    Args:
+        message: Message to print
+        args: Command line arguments with a 'verbose' attribute
+    """
+    if args.verbose:
+        print(f"DEBUG: {message}", file=sys.stderr)
 
 
 def print_summary(metadata: Dict[str, Any], instruments: List[str], target_dir: str) -> None:

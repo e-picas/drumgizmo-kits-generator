@@ -35,6 +35,7 @@ from drumgizmo_kits_generator.utils import (
     prepare_instrument_directory,
     prepare_target_directory,
     print_summary,
+    print_verbose,
 )
 from drumgizmo_kits_generator.validators import validate_midi_and_velocity_params
 from drumgizmo_kits_generator.xml_generator import (
@@ -94,6 +95,13 @@ Configuration file options:
         "-t", "--target", required=True, help="REQUIRED - Target directory for the DrumGizmo kit"
     )
     parser.add_argument("-c", "--config", help="Configuration file path (INI format)")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Increase process verbosity")
+    parser.add_argument(
+        "-x",
+        "--dry-run",
+        action="store_true",
+        help="Enable the DEBUG or 'dry run' mode: metadata and samples list are printed instead of generating the kit",
+    )
     parser.add_argument(
         "--extensions",
         default=DEFAULT_EXTENSIONS,
@@ -384,7 +392,7 @@ def copy_extra_files(source_dir: str, target_dir: str, extra_files_str: str) -> 
     extra_files = [f.strip() for f in extra_files_str.split(",")]
     copied_files = []
 
-    print(f"\nCopying extra files to {target_dir}:", file=sys.stderr)
+    print(f"Copying extra files to {target_dir}:", file=sys.stderr)
 
     for file in extra_files:
         source_file = os.path.join(source_dir, file)
@@ -506,11 +514,14 @@ def process_instruments(
         instruments.append(instrument)
         instrument_to_sample[instrument] = os.path.basename(sample)
 
+        print_verbose(f"Processing instrument: {instrument} from sample: {sample}", args)
+
         # Get file extension
         extension = get_file_extension(sample)
 
         # Prepare directory for the instrument
         if not prepare_instrument_directory(instrument, args.target):
+            print_verbose(f"Failed to prepare directory for instrument: {instrument}", args)
             continue
 
         # Copy original sample
@@ -518,15 +529,17 @@ def process_instruments(
         dest_file = os.path.join(samples_dir, f"1-{instrument}{extension}")
 
         # Copy the sample file, converting the sample rate if needed
-        if not copy_sample_file(sample, dest_file, target_samplerate):
+        if not copy_sample_file(sample, dest_file, target_samplerate, args):
+            print_verbose(f"Failed to copy sample file: {sample}", args)
             continue
 
         # Create volume variations
         create_volume_variations(
-            instrument, args.target, extension, velocity_levels, target_samplerate
+            instrument, args.target, extension, velocity_levels, target_samplerate, args
         )
 
         # Create XML file for the instrument
+        print_verbose(f"Creating XML file for instrument: {instrument}", args)
         create_instrument_xml(
             instrument,
             args.target,
@@ -581,7 +594,6 @@ def print_metadata(metadata: Dict[str, Any]) -> None:
     print("\n=== Kit metadata ===", file=sys.stderr)
     for key, value in metadata.items():
         print(f"  {key}: {value}", file=sys.stderr)
-    print("\n", file=sys.stderr)
 
 
 def print_samples_info(samples: List[str], source_dir: str) -> None:
@@ -608,7 +620,6 @@ def print_samples_info(samples: List[str], source_dir: str) -> None:
     print("\nSamples list:", file=sys.stderr)
     for sample in samples:
         print(f"  {os.path.basename(sample)}", file=sys.stderr)
-    print("\n", file=sys.stderr)
 
 
 def copy_additional_files(args: argparse.Namespace, metadata: Dict[str, Any]) -> List[str]:
@@ -626,19 +637,17 @@ def copy_additional_files(args: argparse.Namespace, metadata: Dict[str, Any]) ->
 
     # Copy logo if specified
     if "logo" in metadata and metadata["logo"]:
-        print("=== Copying logo file ===", file=sys.stderr)
+        print("\n=== Copying logo file ===", file=sys.stderr)
         logo_copied = copy_logo_file(args.samples, args.target, metadata["logo"])
         if logo_copied:
             extra_files_copied.append(metadata["logo"])
-        print("\n", file=sys.stderr)
 
     # Copy extra files if specified
     if "extra_files" in metadata and metadata["extra_files"]:
-        print("=== Copying extra files ===", file=sys.stderr)
+        print("\n=== Copying extra files ===", file=sys.stderr)
         extra_files = copy_extra_files(args.samples, args.target, metadata["extra_files"])
         if extra_files:
             extra_files_copied.extend(extra_files)
-        print("\n", file=sys.stderr)
 
     return extra_files_copied
 
@@ -651,6 +660,10 @@ def main() -> None:
     """
     # Parse command line arguments
     args = parse_arguments()
+
+    # Print verbose mode status
+    if args.verbose:
+        print("Verbose mode enabled", file=sys.stderr)
 
     # Validate source directory
     if not os.path.isdir(args.samples):
@@ -688,33 +701,37 @@ def main() -> None:
     velocity_levels = metadata["velocity_levels"]
 
     # Find audio samples
-    samples = find_audio_files(args.samples, metadata.get("extensions", DEFAULT_EXTENSIONS))
+    print_verbose("Searching for audio samples...", args)
+    samples = find_audio_files(args.samples, metadata.get("extensions", DEFAULT_EXTENSIONS), args)
 
     # Print samples information
     print_samples_info(samples, args.samples)
 
+    # Exit if dry-run mode is enabled
+    if args.dry_run:
+        print("Dry run mode enabled. Exiting without generating the kit.", file=sys.stderr)
+        sys.exit(0)
+
     # Prepare target directory (clean it after scanning source files)
-    print("=== Preparing target directory ===", file=sys.stderr)
+    print("\n=== Preparing target directory ===", file=sys.stderr)
     prepare_target_directory(args.target)
-    print("\n", file=sys.stderr)
 
     # Process each sample to create instruments
-    print("=== Processing samples ===", file=sys.stderr)
+    print("\n=== Processing samples ===", file=sys.stderr)
+    print_verbose("Starting sample processing...", args)
     instruments, instrument_to_sample = process_instruments(
         samples, args, velocity_levels, metadata.get("samplerate"), metadata
     )
 
     # Create XML files
-    print("\n")
-    print("=== Creating XML files ===", file=sys.stderr)
+    print("\n=== Creating XML files ===", file=sys.stderr)
     create_xml_files(instruments, args, metadata, midi_note_min, midi_note_max, midi_note_median)
-    print("\n", file=sys.stderr)
 
     # Copy logo and extra files
     extra_files_copied = copy_additional_files(args, metadata)
 
     # Display summary
-    print("=== Summary ===", file=sys.stderr)
+    print("\n=== Summary ===", file=sys.stderr)
     print_summary(metadata, instruments, args.target)
 
     # Print mapping of instruments to original sample files
@@ -723,6 +740,9 @@ def main() -> None:
     # Print extra files copied
     if extra_files_copied:
         print_extra_files(extra_files_copied)
+
+    # Print success message
+    print("\nKit generation completed successfully!", file=sys.stderr)
 
 
 if __name__ == "__main__":

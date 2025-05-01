@@ -218,6 +218,125 @@ class TestDrumGizmoKitIntegration(unittest.TestCase):
             "Generated directories do not match reference directories",
         )
 
+    def test_command_output_matches_reference(self):
+        """
+        Test that the command output matches the reference output file.
+
+        This test executes the command:
+        python create_drumgizmo_kit.py -s tests/sources/ -t tests/target_test/ -c tests/sources/drumgizmo-kit.ini
+        and compares its output with the content of tests/mocks/generate-target-test-output.txt
+        """
+        # Get paths
+        script_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "create_drumgizmo_kit.py")
+        )
+        target_dir = os.path.join(os.path.dirname(__file__), "target_test")
+        source_dir = os.path.join(os.path.dirname(__file__), "sources")
+        config_file = os.path.join(source_dir, "drumgizmo-kit.ini")
+        reference_output_file = os.path.join(
+            os.path.dirname(__file__), "mocks", "generate-target-test-output.txt"
+        )
+
+        # Create target directory if it doesn't exist
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+        else:
+            # Clean the target directory
+            for item in os.listdir(target_dir):
+                item_path = os.path.join(target_dir, item)
+                if os.path.isfile(item_path):
+                    os.unlink(item_path)
+                elif os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+
+        # Run the command
+        command = [
+            "python3",
+            script_path,
+            "-s",
+            source_dir,
+            "-t",
+            target_dir,
+            "-c",
+            config_file,
+        ]
+
+        try:
+            result = subprocess.run(
+                command,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+            # Combine stdout and stderr as the reference file contains both
+            command_output = result.stderr
+            if result.stdout:
+                command_output += result.stdout
+
+            # Read the reference output
+            with open(reference_output_file, "r", encoding="utf-8") as f:
+                reference_output = f.read()
+
+            # Normalize paths in command output
+            # Replace absolute paths with relative paths
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+            # Normalize paths in command output
+            command_output = command_output.replace(base_dir + "/", "")
+
+            # Normaliser les fins de chemins (ajouter des slashes finaux pour correspondre au fichier de référence)
+            command_output = re.sub(r"tests/sources(?![\w/])", r"tests/sources/", command_output)
+            command_output = re.sub(
+                r"tests/target_test(?![\w/])", r"tests/target_test/", command_output
+            )
+            command_output = re.sub(
+                r"Copying extra files to tests/target_test:",
+                r"Copying extra files to tests/target_test/:",
+                command_output,
+            )
+            command_output = re.sub(
+                r"DrumGizmo kit successfully created in: tests/target_test(?![\w/])",
+                r"DrumGizmo kit successfully created in: tests/target_test/",
+                command_output,
+            )
+
+            # Replace date/time patterns in both outputs
+            date_pattern = (
+                r"Generated with create_drumgizmo_kit\.py at \d{4}-\d{2}-\d{2} \d{2}:\d{2}"
+            )
+            command_output = re.sub(
+                date_pattern, "Generated with create_drumgizmo_kit.py at DATE_TIME", command_output
+            )
+            reference_output = re.sub(
+                date_pattern,
+                "Generated with create_drumgizmo_kit.py at DATE_TIME",
+                reference_output,
+            )
+
+            # Compare the outputs
+            if command_output != reference_output:
+                # Create a diff for better visualization
+                diff = difflib.unified_diff(
+                    reference_output.splitlines(),
+                    command_output.splitlines(),
+                    fromfile="reference_output",
+                    tofile="command_output",
+                    lineterm="",
+                )
+
+                # Print the diff
+                diff_text = "\n".join(diff)
+                self.fail(f"Command output does not match reference output:\n{diff_text}")
+
+        except subprocess.CalledProcessError as e:
+            self.fail(f"Command execution failed with code {e.returncode}:\n{e.stderr}")
+        finally:
+            # Clean up the target directory
+            if os.path.exists(target_dir):
+                shutil.rmtree(target_dir)
+
 
 if __name__ == "__main__":
     unittest.main()

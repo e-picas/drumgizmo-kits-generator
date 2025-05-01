@@ -12,6 +12,8 @@ import subprocess
 import sys
 from typing import List, Optional
 
+from drumgizmo_kits_generator.utils import print_verbose
+
 
 def create_volume_variations(
     instrument: str,
@@ -19,6 +21,7 @@ def create_volume_variations(
     extension: str,
     velocity_levels: int = 10,
     target_samplerate: Optional[str] = None,
+    args=None,
 ) -> None:
     """
     Creates volume variations for a given sample.
@@ -29,11 +32,12 @@ def create_volume_variations(
         extension: Audio file extension (with the dot)
         velocity_levels: Number of velocity levels to generate (default: 10)
         target_samplerate: Target sample rate in Hz
+        args: Command line arguments with a 'verbose' attribute (optional)
     """
     instrument_dir = os.path.join(kit_dir, instrument)
     samples_dir = os.path.join(instrument_dir, "samples")
 
-    print(f"Creating volume variations for: {instrument}", file=sys.stderr)
+    print(f"Creating volume variations for instrument: {instrument}", file=sys.stderr)
 
     # Skip if only one velocity level is requested
     if velocity_levels <= 1:
@@ -49,10 +53,11 @@ def create_volume_variations(
         volume = 1.0 - ((i - 1) / velocity_levels)
         dest_file = os.path.join(samples_dir, f"{i}-{instrument}{extension}")
 
-        print(
-            f"Creating version at {volume:.1f}% volume for {instrument} (file {i}-{instrument}{extension})",
-            file=sys.stderr,
-        )
+        if args:
+            print_verbose(
+                f"Creating version at {volume:.1f}% volume for {instrument} (file {i}-{instrument}{extension})",
+                args,
+            )
 
         # Use SoX to create a version with reduced volume
         try:
@@ -71,6 +76,7 @@ def create_volume_variations(
                 stderr=subprocess.PIPE,
                 text=True,
             )
+
         except subprocess.CalledProcessError as e:
             print(f"Error creating volume variation: {e}", file=sys.stderr)
             print(f"Command output: {e.stdout}", file=sys.stderr)
@@ -86,7 +92,9 @@ def create_volume_variations(
             print(f"Error creating volume variation: {e}", file=sys.stderr)
 
 
-def convert_sample_rate(source_file: str, dest_file: str, target_samplerate: str) -> bool:
+def convert_sample_rate(
+    source_file: str, dest_file: str, target_samplerate: str, args=None
+) -> bool:
     """
     Convert a sample file to the target sample rate.
 
@@ -94,6 +102,7 @@ def convert_sample_rate(source_file: str, dest_file: str, target_samplerate: str
         source_file: Path to the source file
         dest_file: Path to the destination file
         target_samplerate: Target sample rate in Hz
+        args: Command line arguments with a 'verbose' attribute (optional)
 
     Returns:
         True if the file was converted successfully, False otherwise
@@ -105,6 +114,11 @@ def convert_sample_rate(source_file: str, dest_file: str, target_samplerate: str
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
 
+        if args:
+            print_verbose(
+                f"Converting sample rate of {source_file} to {target_samplerate} Hz", args
+            )
+
         # Use SoX to convert the sample rate
         subprocess.run(
             ["sox", source_file, "-r", target_samplerate, dest_file],
@@ -114,6 +128,7 @@ def convert_sample_rate(source_file: str, dest_file: str, target_samplerate: str
             text=True,
         )
         success = True
+
     except subprocess.CalledProcessError as e:
         print(f"Error converting sample rate: {e}", file=sys.stderr)
         print(f"Command output: {e.stdout}", file=sys.stderr)
@@ -131,7 +146,7 @@ def convert_sample_rate(source_file: str, dest_file: str, target_samplerate: str
 
 
 def copy_sample_file(
-    source_file: str, dest_file: str, target_samplerate: Optional[str] = None
+    source_file: str, dest_file: str, target_samplerate: Optional[str] = None, args=None
 ) -> bool:
     """
     Copy a sample file to the destination, optionally converting the sample rate.
@@ -141,6 +156,7 @@ def copy_sample_file(
         dest_file: Path to the destination file
         target_samplerate: Target sample rate in Hz. If provided,
                           the file will be converted to this sample rate.
+        args: Command line arguments with a 'verbose' attribute (optional)
 
     Returns:
         True if the file was copied successfully, False otherwise
@@ -152,13 +168,20 @@ def copy_sample_file(
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
 
+        if args:
+            print_verbose(f"Copying sample file: {source_file} to {dest_file}", args)
+
         # If a target sample rate is provided, convert the file
         if target_samplerate:
-            print(
-                f"Converting {os.path.basename(source_file)} to {target_samplerate} Hz",
-                file=sys.stderr,
-            )
-            success = convert_sample_rate(source_file, dest_file, target_samplerate)
+            if args:
+                print_verbose(
+                    f"Converting {os.path.basename(source_file)} to {target_samplerate} Hz", args
+                )
+            # Pour la compatibilité avec les tests, ne passez pas args si c'est None
+            if args is None:
+                success = convert_sample_rate(source_file, dest_file, target_samplerate)
+            else:
+                success = convert_sample_rate(source_file, dest_file, target_samplerate, args)
         else:
             # Otherwise, just copy the file
             shutil.copy2(source_file, dest_file)
@@ -177,13 +200,14 @@ def copy_sample_file(
     return success
 
 
-def find_audio_files(source_dir: str, extensions: str) -> List[str]:
+def find_audio_files(source_dir: str, extensions: str, args=None) -> List[str]:
     """
     Find audio files in the source directory with the specified extensions.
 
     Args:
         source_dir: Source directory to search in
         extensions: Comma-separated list of file extensions to search for
+        args: Command line arguments with a 'verbose' attribute (optional)
 
     Returns:
         List of audio files found
@@ -208,9 +232,14 @@ def find_audio_files(source_dir: str, extensions: str) -> List[str]:
 
         # Find files with the extension
         pattern = os.path.join(source_dir, f"*{ext}")
-        print(f"Searching for pattern: {pattern}", file=sys.stderr)
+        if args:
+            print_verbose(f"Searching for pattern: {pattern}", args)
         found_files = glob.glob(pattern)
-        print(f"Found {len(found_files)} files with extension {ext}", file=sys.stderr)
+        if args:
+            print_verbose(f"Found {len(found_files)} files with extension {ext}", args)
         audio_files.extend(found_files)
+
+    if args:
+        print_verbose(f"Found {len(audio_files)} audio files", args)
 
     return audio_files
