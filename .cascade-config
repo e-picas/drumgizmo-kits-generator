@@ -6,7 +6,9 @@ The DrumGizmo Kit Generator is a Python tool that generates kits for DrumGizmo f
 ## Important Notes
 - All code, comments, documentation, and commit messages should be written in English
 
-## Rules for command line options and configuration entries
+## Rules for command line options only
+These options are for the command line run only, not for the configuration file.
+
 source              The audio samples source directory
                     Type string (path)
                     Required command line option
@@ -20,6 +22,16 @@ target              The generated kit target directory
 config              A configuration file to load
                     Type string (path)
                     Must be an existing file path in the system
+
+Special options:
+
+-h/--help           Read the help string
+-v/--verbose        Increase process verbosity
+-x/--dry-run        Enable the DEBUG or "dry run" mode: metadata and samples list are printed instead of generating the kit
+
+## Rules for command line options and configuration entries
+Each of these options can be defined in the configuration file or as a command line option.
+
 name                Kit name
                     Type string
                     Can not be empty

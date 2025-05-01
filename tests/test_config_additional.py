@@ -164,10 +164,6 @@ class TestConfigAdditional(unittest.TestCase):
             result, expected_result, "Should return default channels when the value is empty"
         )
 
-        # Check that the output contains the expected message
-        output = self.mock_stderr.getvalue()
-        self.assertIn("Empty channels list", output)
-
     def test_process_channel_list_with_valid_value(self):
         """Test _process_channel_list with a valid value."""
         # Test with a valid value
@@ -180,10 +176,6 @@ class TestConfigAdditional(unittest.TestCase):
 
         # Check that the result contains the expected channels
         self.assertEqual(result, ["L", "R", "C"], "Should return the specified channels")
-
-        # Check that the output contains the expected message
-        output = self.mock_stderr.getvalue()
-        self.assertIn("Using custom channels from metadata", output)
 
 
 if __name__ == "__main__":

@@ -156,9 +156,6 @@ def _process_channel_list(
             # Filter out empty strings
             channels_list = [ch for ch in channels_list if ch]
             if channels_list:
-                print(
-                    f"Using custom {channel_type} from metadata: {channels_list}", file=sys.stderr
-                )
                 return channels_list
 
         # Handle the case where channels_value is a string
@@ -170,11 +167,9 @@ def _process_channel_list(
         channels_list = [ch for ch in channels_list if ch]
 
         if channels_list:
-            print(f"Using custom {channel_type} from metadata: {channels_list}", file=sys.stderr)
             return channels_list
 
         # Use default channels if the list is empty
-        print(f"Empty {channel_type} list, using default: {default_channels}", file=sys.stderr)
         # Split the default channels string into a list
         default_channels_list = [ch.strip() for ch in default_channels.split(",")]
         return [ch for ch in default_channels_list if ch]

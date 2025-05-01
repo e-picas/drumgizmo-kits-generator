@@ -362,12 +362,6 @@ def prepare_metadata(args: argparse.Namespace) -> Dict[str, Any]:
     # 6. Ensure channels and main_channels are properly processed
     process_channels_config(metadata)
 
-    # Print metadata
-    print("\nKit metadata:", file=sys.stderr)
-    for key, value in metadata.items():
-        print(f"  {key}: {value}", file=sys.stderr)
-    print("\n", file=sys.stderr)
-
     return metadata
 
 
@@ -577,33 +571,29 @@ def create_xml_files(
     )
 
 
-def main() -> None:
+def print_metadata(metadata: Dict[str, Any]) -> None:
     """
-    Main function for the DrumGizmo kit generator.
-    Parses arguments, prepares metadata, searches for samples, processes each sample,
-    creates XML files, copies logo and extra files, and displays a summary.
+    Print metadata information.
+
+    Args:
+        metadata: Dictionary containing metadata
     """
-    # Parse command line arguments
-    args = parse_arguments()
+    print("\n=== Kit metadata ===", file=sys.stderr)
+    for key, value in metadata.items():
+        print(f"  {key}: {value}", file=sys.stderr)
+    print("\n", file=sys.stderr)
 
-    # Prepare metadata
-    metadata = prepare_metadata(args)
 
-    # Get validated MIDI parameters
-    midi_note_min = int(metadata.get("midi_note_min", DEFAULT_MIDI_NOTE_MIN))
-    midi_note_max = int(metadata.get("midi_note_max", DEFAULT_MIDI_NOTE_MAX))
-    midi_note_median = int(metadata.get("midi_note_median", DEFAULT_MIDI_NOTE_MEDIAN))
+def print_samples_info(samples: List[str], source_dir: str) -> None:
+    """
+    Print information about the source samples.
 
-    # Get validated velocity levels
-    velocity_levels = int(metadata.get("velocity_levels", DEFAULT_VELOCITY_LEVELS))
-
-    # Prepare target directory
-    prepare_target_directory(args.target)
-
-    # Find audio samples
-    samples = find_audio_files(args.samples, metadata.get("extensions", DEFAULT_EXTENSIONS))
-
-    print(f"Searching for samples in: {args.samples}", file=sys.stderr)
+    Args:
+        samples: List of audio sample paths
+        source_dir: Source directory
+    """
+    print("\n=== Source samples ===", file=sys.stderr)
+    print(f"Searching for samples in: {source_dir}", file=sys.stderr)
     print(f"Number of samples found: {len(samples)}", file=sys.stderr)
 
     if not samples:
@@ -614,28 +604,117 @@ def main() -> None:
     samples.sort(key=lambda x: os.path.basename(x).lower())
     print("Samples sorted alphabetically", file=sys.stderr)
 
+    # Print source samples list
+    print("\nSamples list:", file=sys.stderr)
+    for sample in samples:
+        print(f"  {os.path.basename(sample)}", file=sys.stderr)
+    print("\n", file=sys.stderr)
+
+
+def copy_additional_files(args: argparse.Namespace, metadata: Dict[str, Any]) -> List[str]:
+    """
+    Copy logo and extra files.
+
+    Args:
+        args: Command line arguments
+        metadata: Metadata dictionary
+
+    Returns:
+        List of copied files
+    """
+    extra_files_copied = []
+
+    # Copy logo if specified
+    if "logo" in metadata and metadata["logo"]:
+        print("=== Copying logo file ===", file=sys.stderr)
+        logo_copied = copy_logo_file(args.samples, args.target, metadata["logo"])
+        if logo_copied:
+            extra_files_copied.append(metadata["logo"])
+        print("\n", file=sys.stderr)
+
+    # Copy extra files if specified
+    if "extra_files" in metadata and metadata["extra_files"]:
+        print("=== Copying extra files ===", file=sys.stderr)
+        extra_files = copy_extra_files(args.samples, args.target, metadata["extra_files"])
+        if extra_files:
+            extra_files_copied.extend(extra_files)
+        print("\n", file=sys.stderr)
+
+    return extra_files_copied
+
+
+def main() -> None:
+    """
+    Main function for the DrumGizmo kit generator.
+    Parses arguments, prepares metadata, searches for samples, processes each sample,
+    creates XML files, copies logo and extra files, and displays a summary.
+    """
+    # Parse command line arguments
+    args = parse_arguments()
+
+    # Validate source directory
+    if not os.path.isdir(args.samples):
+        print(f"Error: Source directory does not exist: {args.samples}", file=sys.stderr)
+        sys.exit(1)
+
+    # Validate target directory
+    target_parent = os.path.dirname(args.target)
+    if not os.path.exists(args.target) and not os.path.exists(target_parent):
+        print(f"Error: Target parent directory does not exist: {target_parent}", file=sys.stderr)
+        sys.exit(1)
+
+    # Print source and target directories
+    print(f"Source directory: {args.samples}", file=sys.stderr)
+    print(f"Target directory: {args.target}", file=sys.stderr)
+
+    # Prepare metadata
+    metadata = prepare_metadata(args)
+
+    # Get validated MIDI parameters and update metadata
+    metadata["midi_note_min"] = int(metadata.get("midi_note_min", DEFAULT_MIDI_NOTE_MIN))
+    metadata["midi_note_max"] = int(metadata.get("midi_note_max", DEFAULT_MIDI_NOTE_MAX))
+    metadata["midi_note_median"] = int(metadata.get("midi_note_median", DEFAULT_MIDI_NOTE_MEDIAN))
+
+    # Get validated velocity levels and update metadata
+    metadata["velocity_levels"] = int(metadata.get("velocity_levels", DEFAULT_VELOCITY_LEVELS))
+
+    # Print metadata
+    print_metadata(metadata)
+
+    # Use metadata values directly
+    midi_note_min = metadata["midi_note_min"]
+    midi_note_max = metadata["midi_note_max"]
+    midi_note_median = metadata["midi_note_median"]
+    velocity_levels = metadata["velocity_levels"]
+
+    # Find audio samples
+    samples = find_audio_files(args.samples, metadata.get("extensions", DEFAULT_EXTENSIONS))
+
+    # Print samples information
+    print_samples_info(samples, args.samples)
+
+    # Prepare target directory (clean it after scanning source files)
+    print("=== Preparing target directory ===", file=sys.stderr)
+    prepare_target_directory(args.target)
+    print("\n", file=sys.stderr)
+
     # Process each sample to create instruments
+    print("=== Processing samples ===", file=sys.stderr)
     instruments, instrument_to_sample = process_instruments(
         samples, args, velocity_levels, metadata.get("samplerate"), metadata
     )
 
     # Create XML files
+    print("\n")
+    print("=== Creating XML files ===", file=sys.stderr)
     create_xml_files(instruments, args, metadata, midi_note_min, midi_note_max, midi_note_median)
+    print("\n", file=sys.stderr)
 
-    # Copy logo if specified
-    extra_files_copied = []
-    if "logo" in metadata and metadata["logo"]:
-        logo_file = copy_logo_file(args.samples, args.target, metadata["logo"])
-        if logo_file:
-            extra_files_copied.append(logo_file)
-
-    # Copy extra files if specified
-    if "extra_files" in metadata and metadata["extra_files"]:
-        extra_files = copy_extra_files(args.samples, args.target, metadata["extra_files"])
-        if extra_files:
-            extra_files_copied.extend(extra_files)
+    # Copy logo and extra files
+    extra_files_copied = copy_additional_files(args, metadata)
 
     # Display summary
+    print("=== Summary ===", file=sys.stderr)
     print_summary(metadata, instruments, args.target)
 
     # Print mapping of instruments to original sample files
