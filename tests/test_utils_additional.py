@@ -250,11 +250,11 @@ class TestUtilsAdditional(unittest.TestCase):
         self.assertIn("Version: 1.0", output)
         self.assertIn("Description: Test description", output)
         self.assertIn("Notes: Test notes", output)
-        self.assertIn('Author: "Test Author"', output)
+        self.assertIn("Author: Test Author", output)
         self.assertIn("License: CC-BY-SA", output)
         self.assertIn("Sample rate: 44100 Hz", output)
-        self.assertIn('Website: "https://example.com"', output)
-        self.assertIn('Logo: "logo.png"', output)
+        self.assertIn("Website: https://example.com", output)
+        self.assertIn("Logo: logo.png", output)
 
     def test_print_summary_missing_values(self):
         """Test print_summary with missing values."""
@@ -272,11 +272,11 @@ class TestUtilsAdditional(unittest.TestCase):
         self.assertIn("Version: Unknown", output)
         self.assertIn("Description: Unknown", output)
         self.assertIn("Notes: None", output)
-        self.assertIn('Author: "Unknown"', output)
+        self.assertIn("Author: Unknown", output)
         self.assertIn("License: Unknown", output)
         self.assertIn("Sample rate: Unknown Hz", output)
-        self.assertIn('Website: "None"', output)
-        self.assertIn('Logo: "None"', output)
+        self.assertIn("Website: None", output)
+        self.assertIn("Logo: None", output)
 
 
 if __name__ == "__main__":

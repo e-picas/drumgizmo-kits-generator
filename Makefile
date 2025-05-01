@@ -41,7 +41,7 @@ coverage:
 
 ## Generate a test kit to `tests/target_test/`
 generate:
-	python3 create_drumgizmo_kit.py -s tests/sources/ -t tests/target_test/ -c tests/sources/drumgizmo-kit.ini
+	python create_drumgizmo_kit.py -s tests/sources/ -t tests/target_test/ -c tests/sources/drumgizmo-kit.ini
 
 # This generates a 'help' string with the list of available tasks & variables
 # in your Makefile(s) with their description if it is prefixed by two dashes:

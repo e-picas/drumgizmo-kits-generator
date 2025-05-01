@@ -87,7 +87,7 @@ Configuration file options:
 
     parser.add_argument(
         "-s",
-        "--samples",
+        "--source",
         required=True,
         help="REQUIRED - Source directory containing audio samples",
     )
@@ -104,14 +104,12 @@ Configuration file options:
     )
     parser.add_argument(
         "--extensions",
-        default=DEFAULT_EXTENSIONS,
         help=f"Comma-separated list of audio file extensions to process (default: {DEFAULT_EXTENSIONS})",
     )
 
     parser.add_argument(
         "--velocity-levels",
         type=int,
-        default=DEFAULT_VELOCITY_LEVELS,
         help=f"Number of velocity levels to generate (default: {DEFAULT_VELOCITY_LEVELS})",
     )
 
@@ -119,27 +117,26 @@ Configuration file options:
     parser.add_argument(
         "--midi-note-min",
         type=int,
-        default=DEFAULT_MIDI_NOTE_MIN,
         help=f"Minimum MIDI note number allowed (default: {DEFAULT_MIDI_NOTE_MIN})",
     )
     parser.add_argument(
         "--midi-note-max",
         type=int,
-        default=DEFAULT_MIDI_NOTE_MAX,
         help=f"Maximum MIDI note number allowed (default: {DEFAULT_MIDI_NOTE_MAX})",
     )
     parser.add_argument(
         "--midi-note-median",
         type=int,
-        default=DEFAULT_MIDI_NOTE_MEDIAN,
         help=f"Median MIDI note for distributing instruments around (default: {DEFAULT_MIDI_NOTE_MEDIAN})",
     )
 
     # Arguments for metadata (can be overridden by the configuration file)
-    parser.add_argument("--name", help="Kit name")
+    parser.add_argument(
+        "--name",
+        help=f"Kit name (default: {DEFAULT_NAME})",
+    )
     parser.add_argument(
         "--version",
-        default=DEFAULT_VERSION,
         help=f"Kit version (default: {DEFAULT_VERSION})",
     )
     parser.add_argument("--description", help="Kit description")
@@ -147,13 +144,11 @@ Configuration file options:
     parser.add_argument("--author", help="Kit author")
     parser.add_argument(
         "--license",
-        default=DEFAULT_LICENSE,
         help=f"Kit license (default: {DEFAULT_LICENSE})",
     )
     parser.add_argument("--website", help="Kit website")
     parser.add_argument(
         "--samplerate",
-        default=DEFAULT_SAMPLERATE,
         help=f"Sample rate in Hz (default: {DEFAULT_SAMPLERATE})",
     )
     parser.add_argument("--logo", help="Logo file to include in the kit")
@@ -195,11 +190,36 @@ def _process_basic_metadata(metadata: Dict[str, Any], args: argparse.Namespace) 
         "website",
         "samplerate",
         "logo",
-        "extra_files",
     ]:
+        # Vérifier si l'argument a été explicitement fourni en ligne de commande
+        # en vérifiant s'il est différent de la valeur par défaut ou s'il n'a pas de valeur par défaut
         arg_value = getattr(args, arg_name, None)
-        if arg_value:
-            metadata[arg_name] = arg_value
+
+        # Déterminer si l'argument a été explicitement fourni par l'utilisateur
+        # Pour les arguments qui ont une valeur par défaut, nous devons vérifier si l'utilisateur a fourni une valeur
+        if arg_value is not None:
+            # Vérifier si l'argument a une valeur par défaut
+            default_value = None
+            for action in args.__dict__.get("_actions", []):
+                if action.dest == arg_name and hasattr(action, "default"):
+                    default_value = action.default
+                    break
+
+            # Si l'argument n'a pas de valeur par défaut ou si la valeur est différente de la valeur par défaut,
+            # alors l'utilisateur a explicitement fourni cette valeur
+            if default_value is None or arg_value != default_value:
+                metadata[arg_name] = arg_value
+
+    # Traiter extra_files comme une liste
+    if args.extra_files is not None:
+        # Convertir en liste si c'est une chaîne de caractères
+        if isinstance(args.extra_files, str):
+            metadata["extra_files"] = [
+                file.strip() for file in args.extra_files.split(",") if file.strip()
+            ]
+        else:
+            metadata["extra_files"] = args.extra_files
+
     return metadata
 
 
@@ -280,7 +300,13 @@ def _process_command_line_overrides(
 
     # Process extensions - command line arguments should override config values
     if "--extensions" in argv_str:
-        metadata["extensions"] = args.extensions
+        # Convertir en liste si c'est une chaîne de caractères
+        if isinstance(args.extensions, str):
+            metadata["extensions"] = [
+                ext.strip() for ext in args.extensions.split(",") if ext.strip()
+            ]
+        else:
+            metadata["extensions"] = args.extensions
 
     return metadata
 
@@ -328,7 +354,20 @@ def set_default_metadata_values(metadata: Dict[str, Any]) -> Dict[str, Any]:
     if "samplerate" not in metadata:
         metadata["samplerate"] = DEFAULT_SAMPLERATE
     if "extensions" not in metadata:
-        metadata["extensions"] = DEFAULT_EXTENSIONS
+        # Convertir la chaîne DEFAULT_EXTENSIONS en liste
+        metadata["extensions"] = [
+            ext.strip() for ext in DEFAULT_EXTENSIONS.split(",") if ext.strip()
+        ]
+
+    # Set default values for optional metadata
+    if "velocity_levels" not in metadata:
+        metadata["velocity_levels"] = DEFAULT_VELOCITY_LEVELS
+    if "midi_note_min" not in metadata:
+        metadata["midi_note_min"] = DEFAULT_MIDI_NOTE_MIN
+    if "midi_note_max" not in metadata:
+        metadata["midi_note_max"] = DEFAULT_MIDI_NOTE_MAX
+    if "midi_note_median" not in metadata:
+        metadata["midi_note_median"] = DEFAULT_MIDI_NOTE_MEDIAN
 
     # Process channels configuration
     process_channels_config(metadata)
@@ -385,36 +424,36 @@ def copy_extra_files(source_dir: str, target_dir: str, extra_files_str: str) -> 
     Returns:
         list: List of successfully copied files
     """
-    if not extra_files_str:
-        return []
-
-    # Split the comma-separated list
-    extra_files = [f.strip() for f in extra_files_str.split(",")]
     copied_files = []
 
-    print(f"Copying extra files to {target_dir}:", file=sys.stderr)
+    # Handle both string and list inputs
+    if isinstance(extra_files_str, list):
+        extra_files = extra_files_str
+    else:
+        # Split by comma and trim whitespace
+        extra_files = [file.strip() for file in extra_files_str.split(",") if file.strip()]
 
     for file in extra_files:
         source_file = os.path.join(source_dir, file)
         target_file = os.path.join(target_dir, file)
 
-        # Skip if source file doesn't exist
+        # Check if source file exists
         if not os.path.exists(source_file):
-            print(f"  Warning: File not found: {file}", file=sys.stderr)
+            print(f"Warning: Extra file not found: {source_file}", file=sys.stderr)
             continue
 
+        # Create target directory if it doesn't exist
+        target_dir_path = os.path.dirname(target_file)
+        if not os.path.exists(target_dir_path):
+            os.makedirs(target_dir_path)
+
+        # Copy file
         try:
-            # Create directory if it doesn't exist
-            os.makedirs(os.path.dirname(target_file), exist_ok=True)
             shutil.copy2(source_file, target_file)
-            print(f"  Copied: {file}", file=sys.stderr)
+            print(f"Copied extra file: {file}", file=sys.stderr)
             copied_files.append(file)
-        except PermissionError as e:
-            print(f"  Error copying {file}: Permission denied: {e}", file=sys.stderr)
-        except shutil.Error as e:
-            print(f"  Error copying {file}: Shutil error: {e}", file=sys.stderr)
-        except (OSError, IOError) as e:
-            print(f"  Error copying {file}: File system error: {e}", file=sys.stderr)
+        except (IOError, OSError) as e:
+            print(f"Error copying extra file {file}: {e}", file=sys.stderr)
 
     return copied_files
 
@@ -638,14 +677,14 @@ def copy_additional_files(args: argparse.Namespace, metadata: Dict[str, Any]) ->
     # Copy logo if specified
     if "logo" in metadata and metadata["logo"]:
         print("\n=== Copying logo file ===", file=sys.stderr)
-        logo_copied = copy_logo_file(args.samples, args.target, metadata["logo"])
+        logo_copied = copy_logo_file(args.source, args.target, metadata["logo"])
         if logo_copied:
             extra_files_copied.append(metadata["logo"])
 
     # Copy extra files if specified
     if "extra_files" in metadata and metadata["extra_files"]:
         print("\n=== Copying extra files ===", file=sys.stderr)
-        extra_files = copy_extra_files(args.samples, args.target, metadata["extra_files"])
+        extra_files = copy_extra_files(args.source, args.target, metadata["extra_files"])
         if extra_files:
             extra_files_copied.extend(extra_files)
 
@@ -666,18 +705,18 @@ def main() -> None:
         print("Verbose mode enabled", file=sys.stderr)
 
     # Validate source directory
-    if not os.path.isdir(args.samples):
-        print(f"Error: Source directory does not exist: {args.samples}", file=sys.stderr)
+    if not os.path.isdir(args.source):
+        print(f"Error: Source directory does not exist: {args.source}", file=sys.stderr)
         sys.exit(1)
 
     # Validate target directory
-    target_parent = os.path.dirname(args.target)
-    if not os.path.exists(args.target) and not os.path.exists(target_parent):
+    target_parent = os.path.dirname(os.path.abspath(args.target))
+    if not os.path.exists(target_parent):
         print(f"Error: Target parent directory does not exist: {target_parent}", file=sys.stderr)
         sys.exit(1)
 
     # Print source and target directories
-    print(f"Source directory: {args.samples}", file=sys.stderr)
+    print(f"Source directory: {args.source}", file=sys.stderr)
     print(f"Target directory: {args.target}", file=sys.stderr)
 
     # Prepare metadata
@@ -702,10 +741,14 @@ def main() -> None:
 
     # Find audio samples
     print_verbose("Searching for audio samples...", args)
-    samples = find_audio_files(args.samples, metadata.get("extensions", DEFAULT_EXTENSIONS), args)
+    # Convertir extensions en chaîne de caractères si c'est une liste
+    extensions = metadata.get("extensions", DEFAULT_EXTENSIONS)
+    if isinstance(extensions, list):
+        extensions = ",".join(extensions)
+    samples = find_audio_files(args.source, extensions, args)
 
     # Print samples information
-    print_samples_info(samples, args.samples)
+    print_samples_info(samples, args.source)
 
     # Exit if dry-run mode is enabled
     if args.dry_run:

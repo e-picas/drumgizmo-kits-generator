@@ -521,7 +521,7 @@ class TestMetadataOrder(unittest.TestCase):
             # Verify that command line arguments override config values
             self.assertEqual(
                 metadata["extensions"],
-                "flac,FLAC",
+                ["flac", "FLAC"],
                 "Command line extensions should override config value",
             )
 

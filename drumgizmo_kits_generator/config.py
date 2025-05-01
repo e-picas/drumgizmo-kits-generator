@@ -91,6 +91,9 @@ def read_config_file(config_file: str) -> Dict[str, Any]:
         "kit_main_channels": "main_channels",
     }
 
+    # Define keys that should be treated as lists
+    list_keys = ["kit_extensions", "kit_extra_files"]
+
     try:
         # Read the file content line by line
         with open(config_file, "r", encoding="utf-8") as f:
@@ -103,7 +106,16 @@ def read_config_file(config_file: str) -> Dict[str, Any]:
 
                 # Map configuration keys to metadata keys
                 if key in key_mapping:
-                    metadata[key_mapping[key]] = value
+                    metadata_key = key_mapping[key]
+
+                    # Traiter les clés qui doivent être des listes
+                    if key in list_keys and value:
+                        # Convertir en liste en séparant par des virgules et en supprimant les espaces
+                        metadata[metadata_key] = [
+                            item.strip() for item in value.split(",") if item.strip()
+                        ]
+                    else:
+                        metadata[metadata_key] = value
 
         # Process channels and main_channels
         process_channels_config(metadata)

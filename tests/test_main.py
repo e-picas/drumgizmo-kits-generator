@@ -155,7 +155,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
         self.assertEqual(metadata["samplerate"], "96000", "Sample rate should be from command line")
         self.assertEqual(
             metadata["extra_files"],
-            "command_line_file.txt",
+            ["command_line_file.txt"],
             "Extra files should be from command line",
         )
 
@@ -502,7 +502,7 @@ class TestDrumGizmoKitGenerator(unittest.TestCase):
 
                 # Verify that copy_extra_files was called
                 mock_copy_extra_files.assert_called_with(
-                    self.source_dir, self.target_dir, "file1.txt,file2.txt"
+                    self.source_dir, self.target_dir, ["file1.txt", "file2.txt"]
                 )
             finally:
                 # Restore stderr

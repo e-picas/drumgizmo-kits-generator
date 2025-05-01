@@ -9,124 +9,162 @@ The DrumGizmo Kit Generator is a Python tool that generates kits for DrumGizmo f
 ## Rules for command line options only
 These options are for the command line run only, not for the configuration file.
 
-source              The audio samples source directory
-                    Type string (path)
-                    Required command line option
-                    Must be an existing directory path in the system
-                    A warning must be printed if the directory contains more than (midi_note_max - midi_note_min) audio files
-target              The generated kit target directory
-                    Type string (path)
-                    Required command line option
-                    The parent directory must be an existing path in the system
-                    The directory contents are deleted before generating the new ones
-config              A configuration file to load
-                    Type string (path)
-                    Must be an existing file path in the system
+source
+: The audio samples source directory
+: Type string (path)
+: Required command line option
+: If the directory does not exist, an error is raised
+: A warning must be printed if the directory contains more than (midi_note_max - midi_note_min) audio files
+
+target
+: The generated kit target directory
+: Type string (path)
+: Required command line option
+: If the parent directory does not exist, an error is raised
+: The directory contents are deleted before generating the new ones
+
+config
+: A configuration file to load
+: Type string (path)
+: If the file does not exist, an error is raised
 
 Special options:
 
--h/--help           Read the help string
--v/--verbose        Increase process verbosity
--x/--dry-run        Enable the DEBUG or "dry run" mode: metadata and samples list are printed instead of generating the kit
+*   -h/--help           Read the help string
+*   -v/--verbose        Increase process verbosity
+*   -x/--dry-run        Enable the DEBUG or "dry run" mode: metadata and samples list are printed instead of generating the kit
 
 ## Rules for command line options and configuration entries
 Each of these options can be defined in the configuration file or as a command line option.
 
-name                Kit name
-                    Type string
-                    Can not be empty
-                    If an empty value is set, an error is raised
-                    Default "DrumGizmo Kit"
-version             Kit version
-                    Type string
-                    Default "1.0"
-description         Kit description
-                    Type string
-                    Default null
-notes               Additional notes about the kit
-                    Type string
-                    Default null
-author              Kit author
-                    Type string
-                    Default null
-license             Kit license
-                    Type string
-                    Default "Private license"
-website             Kit website
-                    Type string (URL)
-                    Default null
-logo                Kit logo filename
-                    Type string
-                    Must be the local path of an existing file in the sources
-                    If the file does not exist, an error is raised
-                    Default null
-samplerate          Sample rate in Hz
-                    Type number
-                    Can not be empty
-                    If an empty value is set, the default value is used
-                    Must be > 0
-                    Default 44100
-extra_files         Additional files to copy
-                    Type list of strings
-                    Each list item must be left and right trimed
-                    Comma-separated list of local paths of existing files in the sources
-                    If one or more of the files does not exist, an error is raised
-                    Default null
-velocity_levels     Number of velocity levels to generate
-                    Type number
-                    Can not be empty
-                    If an empty value is set, the default value is used
-                    Must be > 0
-                    Default 10
-midi_note_min       Minimum MIDI note number allowed
-                    Type number
-                    Can not be empty
-                    If an empty value is set, the default value is used
-                    Must be > 0
-                    Must be < 127
-                    Must be < midi_note_max
-                    Must be <= midi_note_median
-                    Default 0
-midi_note_max       Maximum MIDI note number allowed
-                    Type number
-                    Can not be empty
-                    If an empty value is set, the default value is used
-                    Must be > 0
-                    Must be < 127
-                    Must be < midi_note_min
-                    Must be >= midi_note_median
-                    Default 127
-midi_note_median    Median MIDI note for distributing instruments
-                    Type number
-                    Can not be empty
-                    If an empty value is set, the default value is used
-                    Must be > 0
-                    Must be < 127
-                    Must be >= midi_note_min
-                    Must be <= midi_note_max
-                    Default 60
-extensions          Audio file extensions to process
-                    Type list of strings
-                    Can not be empty
-                    If an empty value is set, an error is raised
-                    Comma-separated list of file extensions
-                    Each list item must be left and right trimed
-                    Default "wav,WAV,flac,FLAC,ogg,OGG"
-channels            Comma-separated list of audio channels to use
-                    Type list of strings
-                    Can not be empty
-                    If an empty value is set, an error is raised
-                    Each list item must be left and right trimed
-                    Each list item can have a space inside
-                    The order of the list items must be kept as-is
-                    Default "AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
-main_channels       Comma-separated list of main audio channels
-                    Type list of strings
-                    Can be empty
-                    Each list item must be left and right trimed
-                    Each list item can have a space inside
-                    Each list item must exist in the channels list
-                    Default "AmbL,AmbR,OHL,OHR"
+name
+: Kit name
+: Type string
+: Can not be empty
+: If an empty value is set, an error is raised
+: Default "DrumGizmo Kit"
+
+version
+: Kit version
+: Type string
+: Default "1.0"
+
+description
+: Kit description
+: Type string
+: Default null
+
+notes
+: Additional notes about the kit
+: Type string
+: Default null
+
+author
+: Kit author
+: Type string
+: Default null
+
+license
+: Kit license
+: Type string
+: Default "Private license"
+
+website
+: Kit website
+: Type string (URL)
+: Default null
+
+logo
+: Kit logo filename
+: Type string
+: Must be the local path of an existing file in the sources
+: If the file does not exist, an error is raised
+: Default null
+
+samplerate
+: Sample rate in Hz
+: Type number
+: Can not be empty
+: If an empty value is set, the default value is used
+: Must be > 0
+: Default 44100
+
+extra_files
+: Additional files to copy
+: Type list of strings
+: Each list item must be left and right trimed
+: Comma-separated list of local paths of existing files in the sources
+: If one or more of the files does not exist, an error is raised
+: Default null
+
+velocity_levels
+: Number of velocity levels to generate
+: Type number
+: Can not be empty
+: If an empty value is set, the default value is used
+: Must be > 0
+: Default 10
+
+midi_note_min
+: Minimum MIDI note number allowed
+: Type number
+: Can not be empty
+: If an empty value is set, the default value is used
+: Must be >= 0
+: Must be <= 127
+: Must be < midi_note_max
+: Must be <= midi_note_median
+: Default 0
+
+midi_note_max
+: Maximum MIDI note number allowed
+: Type number
+: Can not be empty
+: If an empty value is set, the default value is used
+: Must be >= 0
+: Must be <= 127
+: Must be > midi_note_min
+: Must be >= midi_note_median
+: Default 127
+
+midi_note_median
+: Median MIDI note for distributing instruments
+: Type number
+: Can not be empty
+: If an empty value is set, the default value is used
+: Must be >= 0
+: Must be <= 127
+: Must be >= midi_note_min
+: Must be <= midi_note_max
+: Default 60
+
+extensions
+: Audio file extensions to process
+: Type list of strings
+: Can not be empty
+: If an empty value is set, an error is raised
+: Comma-separated list of file extensions
+: Each list item must be left and right trimed
+: Default "wav,WAV,flac,FLAC,ogg,OGG"
+
+channels
+: Comma-separated list of audio channels to use
+: Type list of strings
+: Can not be empty
+: If an empty value is set, an error is raised
+: Each list item must be left and right trimed
+: Each list item can have a space inside
+: The order of the list items must be kept as-is
+: Default "AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
+
+main_channels
+: Comma-separated list of main audio channels
+: Type list of strings
+: Can be empty
+: Each list item must be left and right trimed
+: Each list item can have a space inside
+: Each list item must exist in the channels list
+: Default "AmbL,AmbR,OHL,OHR"
 
 ## Application process steps
 1. Load configuration: defaults then configuration file then command line options

@@ -5,21 +5,21 @@ Reading configuration from: tests/sources/drumgizmo-kit.ini
 === Kit metadata ===
   name: Test Kit
   version: 1.0
-  license: Private license
-  samplerate: 44100
-  extensions: wav,WAV,flac,FLAC,ogg,OGG
-  channels: ['AmbL', 'AmbR', 'Hihat', 'Kdrum_back', 'Kdrum_front', 'OHL', 'OHR', 'Ride', 'Snare_bottom', 'Snare_top', 'Tom1', 'Tom2', 'Tom3']
-  main_channels: ['AmbL', 'AmbR', 'OHL', 'OHR']
-  description: This is a description
-  notes: DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at 2025-05-01 13:49
-  author: Piero
-  website: https://picas.fr/
-  logo: pngtree-music-notes-png-image_8660757.png
-  extra_files: Lorem Ipsum.pdf
+  license: CC-BY-SA
+  samplerate: 48000
+  extensions: ['wav', 'WAV', 'flac', 'FLAC', 'ogg', 'OGG']
   velocity_levels: 4
   midi_note_min: 0
   midi_note_max: 127
   midi_note_median: 60
+  channels: ['AmbL', 'AmbR', 'Hihat', 'Kdrum_back', 'Kdrum_front', 'OHL', 'OHR', 'Ride', 'Snare_bottom', 'Snare_top', 'Tom1', 'Tom2', 'Tom3']
+  main_channels: ['AmbL', 'AmbR', 'OHL', 'OHR']
+  description: This is a description
+  notes: DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at DATE_TIME
+  author: Piero
+  website: https://picas.fr/
+  logo: pngtree-music-notes-png-image_8660757.png
+  extra_files: ['Lorem Ipsum.pdf']
 
 === Source samples ===
 Searching for samples in: tests/sources/
@@ -60,8 +60,7 @@ midimap.xml file successfully created: tests/target_test/midimap.xml
 Logo file copied: pngtree-music-notes-png-image_8660757.png
 
 === Copying extra files ===
-Copying extra files to tests/target_test/:
-  Copied: Lorem Ipsum.pdf
+Copied extra file: Lorem Ipsum.pdf
 
 === Summary ===
 
@@ -75,12 +74,12 @@ Kit metadata summary:
 Name: Test Kit
 Version: 1.0
 Description: This is a description
-Notes: DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at 2025-05-01 13:49
-Author: "Piero"
-License: Private license
-Sample rate: 44100 Hz
-Website: "https://picas.fr/"
-Logo: "pngtree-music-notes-png-image_8660757.png"
+Notes: DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at DATE_TIME
+Author: Piero
+License: CC-BY-SA
+Sample rate: 48000 Hz
+Website: https://picas.fr/
+Logo: pngtree-music-notes-png-image_8660757.png
 
 Instrument to sample mapping:
   E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare.wav
