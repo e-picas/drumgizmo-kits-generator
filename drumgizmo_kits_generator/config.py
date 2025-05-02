@@ -97,15 +97,13 @@ def load_config_file(config_file_path: str) -> Dict[str, Any]:
 
         # Process file extensions
         config_data["extensions"] = _strip_quotes(
-            section.get("extensions", ",".join(constants.DEFAULT_EXTENSIONS))
+            section.get("extensions", constants.DEFAULT_EXTENSIONS)
         )
 
         # Process channels
-        config_data["channels"] = _strip_quotes(
-            section.get("channels", ",".join(constants.DEFAULT_CHANNELS))
-        )
+        config_data["channels"] = _strip_quotes(section.get("channels", constants.DEFAULT_CHANNELS))
         config_data["main_channels"] = _strip_quotes(
-            section.get("main_channels", ",".join(constants.DEFAULT_MAIN_CHANNELS))
+            section.get("main_channels", constants.DEFAULT_MAIN_CHANNELS)
         )
     else:
         logger.warning(f"Section '{section_name}' not found in {config_file_path}")

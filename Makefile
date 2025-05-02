@@ -1,6 +1,6 @@
 #
 # To create a Python virtual environment, run:
-#		python3 -m venv .venv;
+#		python -m venv .venv;
 #		source .venv/bin/activate;
 #
 SHELL := /bin/bash
