@@ -69,7 +69,7 @@ Based on yout options or configuration, the kit metadata will be something like 
   <metadata>
     <title>Test Kit</title>
     <description>This is a description</description>
-    <notes>DrumGizmo kit generated for testing purpose - Generated with create_drumgizmo_kit.py at 2025-04-28 23:54</notes>
+    <notes>DrumGizmo kit generated for testing purpose</notes>
     <author>My name</author>
     <license>Private license</license>
     <samplerate>44100</samplerate>
@@ -81,7 +81,7 @@ Based on yout options or configuration, the kit metadata will be something like 
 
 ### Audio samples treatments
 
-Each original audio sample is duplicated X times to finally get the [`velocity-levels`](#options) number of volumes variations, assigned to corresponding "velocity" variations by setting the `power` entry of each sample on a cartesian formula based on 1 (1 / velocity-levels).
+Each original audio sample is duplicated X times to finally get the [`velocity-levels`](#options) number of volumes variations, assigned to corresponding "velocity" variations by setting the `power` entry of each sample on a cartesian formula based on 1 (`(1 / velocity_levels) * sample_index`).
 
 ### Samplerate
 
@@ -96,8 +96,8 @@ Use the [`channels`](#options) and [`main-channels`](#options) options to set th
 For instance, to use the channels defined in distributed [DSR kit](https://drumgizmo.org/wiki/doku.php?id=kits:drskit), you would use:
 
 ```
-channels="AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
-main_channels="AmbL,AmbR,OHL,OHR"
+channels = "AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
+main_channels = "AmbL,AmbR,OHL,OHR"
 ```
 
 ### MIDI keys repartition
@@ -171,15 +171,15 @@ The following "special" options are in use to manage process output and actions:
 | `--midi-note-median` | Median MIDI note for distributing instruments around - [`midimap.xml`](#midi-keys-repartition) generation | `60` (*C4* key) |
 | `--midi-note-min` | Minimum MIDI note allowed - [`midimap.xml`](#midi-keys-repartition) generation | `1` (>=1) |
 | `--name` | The name of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | `DrumGizmo Kit` |
-| `--notes` | Additional notes about the kit - An automatic string with the version of the python app and the generation date is suffixed - [`drumkit.xml`](#kit-metadata) metadata | - |
+| `--notes` | Additional notes about the kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 | `--samplerate` | [Sample rate](#samplerate) of the kit's samples (in *Hz*) - All generated samples will be changed to this rate including original - [`drumkit.xml`](#kit-metadata) metadata | `44100` |
-| `--velocity-levels` | Total number of [velocity levels](#audio-samples-treatments) to generate in the target (the original sample + `velocity-levels`-1 automatically generated) | `10` |
+| `--velocity-levels` | Total number of [velocity levels](#audio-samples-treatments) to generate in the target (the original sample + `velocity_levels - 1` automatically generated) | `10` |
 | `--version` | The version of the generated kit - You may use it to manage your kit's versions over the time - [`drumkit.xml`](#kit-metadata) metadata | `1.0` |
 | `--website` | The website of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 
 #### Configuration file
 
-You can specify kit metadata and generation options in a configuration file and pass it as `--config` parameter. If a file named `drumgizmo-kit.ini` is found in the sources directory, it will be loaded automatically.
+You can specify kit metadata and generation options in a configuration file and pass it as a `--config` parameter. If a file named `drumgizmo-kit.ini` is found in the sources directory, it will be loaded automatically.
 
 All command-line options have equivalent configuration file settings which must be defined in a `[drumgizmo_kit_generator]` header block. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
 
