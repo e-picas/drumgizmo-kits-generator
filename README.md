@@ -133,6 +133,9 @@ Download and extract [the latest release](https://github.com/e-picas/drumgizmo-k
 #### Command Line
 
 ```cli
+# you may first install dependencies:
+pip install .
+
 # basic usage:
 python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target
 
@@ -151,6 +154,25 @@ The following "special" options are in use to manage process output and actions:
 -  `-h` / `--help`: read the application documentation
 -  `-v` / `--verbose`: increase process verbosity with some debugging informations
 -  `-x` / `--dry-run`: output the run data (options & audio samples found) but do not actually process the run - this can be used for validation.
+
+You may want to use the app in a [Docker](https://www.docker.com/) container for facility. To do so, you can run:
+
+```cli
+# assuming the app sources are in the `~/downloads/drumgizmo-kits-generator/` dir
+# assuming your sources are in the `~/music/dg-sources/` dir
+# assuming you want to generate the kit in the `~/music/dg-target/` dir
+docker run -ti --rm \
+  -v "$HOME/downloads/drumgizmo-kits-generator/:/usr/src/app" -w /usr/src/app \
+  -v "$HOME/music/dg-sources/:/usr/src/app/sources" \
+  -v "$HOME/music/dg-target/:/usr/src/app/target" \
+  python:latest bash
+
+# you may first install dependencies:
+pip install .
+
+# then process the generator:
+python create_drumgizmo_kit.py -s ./sources -t ./target
+```
 
 #### Options
 
