@@ -7,8 +7,8 @@
 # pylint: disable=too-few-public-methods
 """
 Integration test for the DrumGizmo kit generator.
-This test performs a complete generation from models/sources/ to a temporary directory
-and compares the results with models/target/.
+This test performs a complete generation from examples/sources/ to a temporary directory
+and compares the results with examples/target/.
 """
 
 import filecmp
@@ -147,14 +147,14 @@ class TestIntegration:
 
     def test_full_generation(self, temp_output_dir):
         """
-        Test a full generation from models/sources/ to a temporary directory
-        and compare the results with models/target/.
+        Test a full generation from examples/sources/ to a temporary directory
+        and compare the results with examples/target/.
         """
         # Get the absolute paths
         project_root = Path(__file__).parent.parent
-        source_dir = os.path.join(project_root, "models", "sources")
+        source_dir = os.path.join(project_root, "examples", "sources")
         config_file = os.path.join(source_dir, "drumgizmo-kit.ini")
-        reference_dir = os.path.join(project_root, "models", "target")
+        reference_dir = os.path.join(project_root, "examples", "target")
 
         # Run the generator directly with the appropriate arguments
         with mock.patch(

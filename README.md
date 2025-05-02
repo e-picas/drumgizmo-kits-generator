@@ -55,7 +55,7 @@ kit/
 └── ...
 ```
 
-A full generated kit is available in the [`models/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/models/target) directory, based on the [`models/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/models/sources) sources.
+A full generated kit is available in the [`examples/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/target) directory, based on the [`examples/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/sources) sources.
 
 ### Original audio samples
 
@@ -132,7 +132,7 @@ We use [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio p
 
 - [Python 3.9](https://www.python.org/downloads/) or higher
 - [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing - Tested with version 14.4.2
-- some other Python dependencies for development only
+- some other Python dependencies for development only (see [Development](#development))
 
 ### Installation
 
@@ -258,10 +258,10 @@ The `pre-commit` hook will try to fix your code following some standards, run th
 
 #### Local single tasks
 
-*   We use [`make`](https://www.gnu.org/software/make/) to run local tasks.
-*   We use [`black`](https://black.readthedocs.io/en/stable/) and [`isort`](https://pycqa.github.io/isort/) for codebase formatting.
-*   We use [`pylint`](https://pylint.readthedocs.io/en/latest/) to lint the codebase.
-*   We use [`pytest`](https://docs.pytest.org/en/latest/) to run the tests.
+*   We use [`make`](https://www.gnu.org/software/make/) to run local tasks
+*   We use [`black`](https://black.readthedocs.io/en/stable/) and [`isort`](https://pycqa.github.io/isort/) for codebase formatting
+*   We use [`pylint`](https://pylint.readthedocs.io/en/latest/) to lint the codebase
+*   We use [`pytest`](https://docs.pytest.org/en/latest/) to run the tests
 
 Last available `make` tasks:
 
@@ -275,7 +275,7 @@ To use this file, run: make <target>
   clean           Cleanup Python's temporary files, cache and build
   coverage        Get the coverage analysis with `pytest`
   format          Format the code following the `.pre-commit-config.yaml` using `black` and `isort`
-  generate        Generate a test kit to `tests/target_test/` from `models/sources/` and compare it with `models/target/`
+  generate        Generate a test kit to `tests/target_test/` from `examples/sources/` and compare it with `examples/target/`
   install         Install the app's dependencies & git hooks
   lint            Run the linter with `pylint`
   test            Run the tests in `tests/` with `pytest`

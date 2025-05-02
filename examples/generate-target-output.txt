@@ -1,6 +1,6 @@
-Source directory: models/sources/
-Target directory: models/target/
-Reading configuration from: models/sources/drumgizmo-kit.ini
+Source directory: examples/sources/
+Target directory: examples/target/
+Reading configuration from: examples/sources/drumgizmo-kit.ini
 
 === Kit metadata ===
   name: Test Kit
@@ -22,7 +22,7 @@ Reading configuration from: models/sources/drumgizmo-kit.ini
   extra_files: ['Lorem Ipsum.pdf']
 
 === Source samples ===
-Searching for samples in: models/sources/
+Searching for samples in: examples/sources/
 Number of samples found: 3
 Samples sorted alphabetically
 
@@ -32,29 +32,29 @@ Samples list:
   gs-16b-1c-44100hz.flac
 
 === Preparing target directory ===
-Removing existing target directory: models/target/
+Removing existing target directory: examples/target/
 
 === Processing samples ===
 Creating directory for instrument: E-Mu-Proteus-FX-Wacky-Snare
 Creating volume variations for instrument: E-Mu-Proteus-FX-Wacky-Snare
-Creating XML file: models/target/E-Mu-Proteus-FX-Wacky-Snare/E-Mu-Proteus-FX-Wacky-Snare.xml
+Creating XML file: examples/target/E-Mu-Proteus-FX-Wacky-Snare/E-Mu-Proteus-FX-Wacky-Snare.xml
 Creating directory for instrument: Example
 Creating volume variations for instrument: Example
-Creating XML file: models/target/Example/Example.xml
+Creating XML file: examples/target/Example/Example.xml
 Creating directory for instrument: gs-16b-1c-44100hz
 Creating volume variations for instrument: gs-16b-1c-44100hz
-Creating XML file: models/target/gs-16b-1c-44100hz/gs-16b-1c-44100hz.xml
+Creating XML file: examples/target/gs-16b-1c-44100hz/gs-16b-1c-44100hz.xml
 
 === Creating XML files ===
 Creating drumkit.xml file
-drumkit.xml file successfully created: models/target/drumkit.xml
+drumkit.xml file successfully created: examples/target/drumkit.xml
 Creating midimap.xml file
 
 MIDI mapping (alphabetical order):
   MIDI Note 59: E-Mu-Proteus-FX-Wacky-Snare
   MIDI Note 60: Example
   MIDI Note 61: gs-16b-1c-44100hz
-midimap.xml file successfully created: models/target/midimap.xml
+midimap.xml file successfully created: examples/target/midimap.xml
 
 === Copying logo file ===
 Logo file copied: pngtree-music-notes-png-image_8660757.png
@@ -64,11 +64,11 @@ Copied extra file: Lorem Ipsum.pdf
 
 === Summary ===
 
-Processing complete. DrumGizmo kit successfully created in: models/target/
+Processing complete. DrumGizmo kit successfully created in: examples/target/
 Number of instruments created: 3
 Main files:
-- models/target/drumkit.xml
-- models/target/midimap.xml
+- examples/target/drumkit.xml
+- examples/target/midimap.xml
 
 Kit metadata summary:
 Name: Test Kit

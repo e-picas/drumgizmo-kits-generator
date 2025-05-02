@@ -6,4 +6,4 @@ tests       export-ignore
 requirements-dev.txt   export-ignore
 sonar-project.properties   export-ignore
 .cascade-config   export-ignore
-models/   export-ignore
+examples/   export-ignore
