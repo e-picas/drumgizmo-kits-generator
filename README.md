@@ -55,6 +55,8 @@ kit/
 └── ...
 ```
 
+A full generated kit is available in the [`models/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/models/target) directory, based on the [`models/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/models/sources) sources.
+
 ### Original audio samples
 
 Audio samples must be in the root directory of the `source` (no recursion is processed). They are treated alphabetically, so you can order them to feet your needs as they will be [distributed to pre-defined MIDI notes](#midi-keys-repartition).
@@ -166,7 +168,7 @@ The following "special" options are in use to manage process output and actions:
 |----------------------|---------------------|-------------|
 | `-s` / `--source` | The path of your sources directory containing the audio samples - Samples must be in the root directory (no recursion) | *REQUIRED* |
 | `-t` / `--target` | The path of the target directory where the kit will be generated - It will be created if it does not exist - Its contents are **deleted** before each run (you should probably use a temporary directory first) | *REQUIRED* |
-| `-c` / `--config` | Path of a [configuration file](#configuration-file) to use | - |
+| `-c` / `--config` | Path of a [configuration file](#configuration-file) to use | `drumgizmo-kit.ini` |
 | `--author` | The author(s) of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 | `--channels` | Comma-separated list of [audio channels](#about-samples-channels) to use in the kit | *see ["channels"](#about-samples-channels)* |
 | `--description` | The description of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
@@ -187,7 +189,8 @@ The following "special" options are in use to manage process output and actions:
 
 #### Configuration file
 
-You can specify kit metadata and generation options in a configuration file (e.g., `drumgizmo-kit.ini`).
+You can specify kit metadata and generation options in a configuration file and pass it as `--config` parameter. If a file named `drumgizmo-kit.ini` is found in the sources directory, it will be loaded automatically.
+
 All command-line options have equivalent configuration file settings which must be defined in a `[drumgizmo_kit_generator]` header block. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
 
 ```ini
