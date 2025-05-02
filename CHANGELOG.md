@@ -1,6 +1,58 @@
 # CHANGELOG
 
 
+## v1.5.0 (2025-05-02)
+
+### Bug Fixes
+
+- Do not include empty metadata in drumkit.xml
+  ([#19](https://github.com/e-picas/drumgizmo-kits-generator/pull/19),
+  [`ed6cc7d`](https://github.com/e-picas/drumgizmo-kits-generator/commit/ed6cc7d0a46b7b6c59a3cda64c0e0519dd68cd96))
+
+### Build System
+
+- Makefile review with an help string
+  ([#20](https://github.com/e-picas/drumgizmo-kits-generator/pull/20),
+  [`9168093`](https://github.com/e-picas/drumgizmo-kits-generator/commit/91680932e71849381401cd4b2cab2eb35596e374))
+
+### Documentation
+
+- Auto-generated config file for Claude 3.7 Sonnet [skip ci]
+  ([`e1bea78`](https://github.com/e-picas/drumgizmo-kits-generator/commit/e1bea78dd726e5554ba79fe7e68709bf327f9443))
+
+- Ini variables lowercase (for readability)
+  ([`0d3a621`](https://github.com/e-picas/drumgizmo-kits-generator/commit/0d3a621269e7a466b782589d63fdaafb20e07244))
+
+- New GitHub templates for issues & PRs [skip ci]
+  ([`52b34ed`](https://github.com/e-picas/drumgizmo-kits-generator/commit/52b34ed1b01074a177e9ab77e81e98c4e0dbd34f))
+
+- Update README.md [skip ci]
+  ([`675a240`](https://github.com/e-picas/drumgizmo-kits-generator/commit/675a24042c29ae7e75ab2649239f3a893cdbc58b))
+
+- Update README.md [skip ci]
+  ([`d42617b`](https://github.com/e-picas/drumgizmo-kits-generator/commit/d42617b62dbc2b233535360ab09c89a1de72e9ce))
+
+- Update README.md [skip ci]
+  ([`5933ef6`](https://github.com/e-picas/drumgizmo-kits-generator/commit/5933ef6ae756e15279ffa3e8d64770308e61351c))
+
+- Update README.md [skip ci]
+  ([`4bd8aa5`](https://github.com/e-picas/drumgizmo-kits-generator/commit/4bd8aa52e9ceed28573332f795cf67218ab6bb55))
+
+- Upgrade minimal Python version to 3.9
+  ([`f436bf1`](https://github.com/e-picas/drumgizmo-kits-generator/commit/f436bf1d15176514284f2bcc4b90dcd344358a5e))
+
+### Features
+
+- Variablize 'channels' and 'main_channels'
+  ([#21](https://github.com/e-picas/drumgizmo-kits-generator/pull/21),
+  [`0603d7a`](https://github.com/e-picas/drumgizmo-kits-generator/commit/0603d7afd58d5a1f68d7bff860475102d3b0265e))
+
+### Performance Improvements
+
+- Main.py optimization
+  ([`ad2cd94`](https://github.com/e-picas/drumgizmo-kits-generator/commit/ad2cd94f0fc201068432f6e50c9152cd6776434b))
+
+
 ## v1.4.0 (2025-04-28)
 
 ### Bug Fixes
