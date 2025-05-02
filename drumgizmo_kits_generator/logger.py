@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Logger module for DrumGizmo kit generator.
+Contains functions to manage the logging: `info`, `debug` (to output only in verbose mode), `warning`.
+"""
+
+import sys
+
+# ANSI color codes
+RED = "\033[91m"
+GREEN = "\033[92m"
+RESET = "\033[0m"
+
+
+class Logger:
+    """Logger class for DrumGizmo kit generator."""
+
+    def __init__(self):
+        """Initialize the logger with verbose mode disabled."""
+        self.verbose_mode = False
+
+    def set_verbose(self, verbose: bool) -> None:
+        """
+        Set the verbose mode for logging.
+
+        Args:
+            verbose: Boolean indicating whether verbose mode is enabled
+        """
+        self.verbose_mode = verbose
+
+    def info(self, msg: str, end: str = "\n") -> None:
+        """
+        Print an information message to stdout.
+
+        Args:
+            msg: The message to print
+            end: The string appended after the message (default: newline)
+        """
+        print(msg, end=end, file=sys.stdout)
+        sys.stdout.flush()
+
+    def debug(self, msg: str, end: str = "\n") -> None:
+        """
+        Print a debug message to stdout only if verbose mode is enabled.
+
+        Args:
+            msg: The message to print
+            end: The string appended after the message (default: newline)
+        """
+        if self.verbose_mode:
+            print(f"DEBUG: {msg}", end=end, file=sys.stdout)
+            sys.stdout.flush()
+
+    def warning(self, msg: str, end: str = "\n") -> None:
+        """
+        Print a warning message to stderr in red color.
+
+        Args:
+            msg: The message to print
+            end: The string appended after the message (default: newline)
+        """
+        print(f"{RED}WARNING: {msg}{RESET}", end=end, file=sys.stderr)
+        sys.stderr.flush()
+
+    def error(self, msg: str) -> None:
+        """
+        Print an error message to stderr in red color and exit the program with status code 127.
+
+        Args:
+            msg: The error message to print
+        """
+        print(f"{RED}ERROR: {msg}{RESET}", file=sys.stderr)
+        sys.stderr.flush()
+        sys.exit(127)
+
+    def section(self, title: str) -> None:
+        """
+        Print a section title with separator lines for better visual organization.
+
+        Args:
+            title: The title of the section
+        """
+        self.info(f"\n=== {title} ===")
+
+    def message(self, msg: str, end: str = "\n") -> None:
+        """
+        Print a message to stdout in green color.
+
+        Args:
+            msg: The message to print
+            end: The string appended after the message (default: newline)
+        """
+        print(f"{GREEN}{msg}{RESET}", end=end, file=sys.stdout)
+        sys.stdout.flush()
+
+
+# Create a singleton instance of the Logger
+_logger = Logger()
+
+# Export the logger methods as module-level functions
+set_verbose = _logger.set_verbose
+info = _logger.info
+debug = _logger.debug
+warning = _logger.warning
+error = _logger.error
+section = _logger.section
+message = _logger.message

@@ -1,221 +1,193 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: disable=broad-exception-caught
 """
 Configuration module for DrumGizmo kit generator.
-Contains global variables and constants used across the application.
+Contains functions for reading and processing configuration files and command line options.
 """
 
+import configparser
 import os
 import sys
+from typing import Any, Dict, Optional
 
-# Default values for command line arguments
-DEFAULT_EXTENSIONS = "wav,WAV,flac,FLAC,ogg,OGG"
-DEFAULT_VELOCITY_LEVELS = 10
-DEFAULT_MIDI_NOTE_MIN = 0
-DEFAULT_MIDI_NOTE_MAX = 127
-DEFAULT_MIDI_NOTE_MEDIAN = 60
-DEFAULT_NAME = "DrumGizmo Kit"
-DEFAULT_VERSION = "1.0"
-DEFAULT_LICENSE = "Private license"
-DEFAULT_SAMPLERATE = "44100"
-
-# Default list of audio channels used in XML files
-DEFAULT_CHANNELS = [
-    "AmbL",
-    "AmbR",
-    "Hihat",
-    "Kdrum_back",
-    "Kdrum_front",
-    "OHL",
-    "OHR",
-    "Ride",
-    "Snare_bottom",
-    "Snare_top",
-    "Tom1",
-    "Tom2",
-    "Tom3",
-]
-
-# Default list of main channels (with main="true" attribute)
-DEFAULT_MAIN_CHANNELS = ["AmbL", "AmbR", "OHL", "OHR"]
-
-# Configuration storage
-_config = {
-    "channels": DEFAULT_CHANNELS.copy(),
-    "main_channels": DEFAULT_MAIN_CHANNELS.copy(),
-}
+from drumgizmo_kits_generator import constants, logger
 
 
-def get_channels():
+def _strip_quotes(value: str) -> str:
     """
-    Get the current list of audio channels.
-
-    Returns:
-        list: List of audio channel names
-    """
-    return _config["channels"]
-
-
-def get_main_channels():
-    """
-    Get the current list of main audio channels.
-
-    Returns:
-        list: List of main audio channel names
-    """
-    return _config["main_channels"]
-
-
-def update_channels_config(metadata):
-    """
-    Update the channels configuration from metadata.
+    Strip quotes from a string value.
 
     Args:
-        metadata (dict): Dictionary containing metadata with channels and main_channels
-    """
-    if "channels" in metadata:
-        try:
-            # Split comma-separated list of channels and remove whitespace at beginning and end
-            channels_list = [ch.strip() for ch in str(metadata["channels"]).split(",")]
-            # Filter out empty strings
-            channels_list = [ch for ch in channels_list if ch]
-            if channels_list:
-                _config["channels"] = channels_list
-                print(
-                    f"Using custom channels from metadata: {_config['channels']}", file=sys.stderr
-                )
-        except Exception:
-            print(
-                f"Warning: Invalid channels value in metadata: {metadata['channels']}",
-                file=sys.stderr,
-            )
-
-    if "main_channels" in metadata:
-        try:
-            # Split comma-separated list of main channels and remove whitespace at beginning and end
-            main_channels_list = [ch.strip() for ch in str(metadata["main_channels"]).split(",")]
-            # Filter out empty strings
-            main_channels_list = [ch for ch in main_channels_list if ch]
-            if main_channels_list:
-                _config["main_channels"] = main_channels_list
-                print(
-                    f"Using custom main channels from metadata: {_config['main_channels']}",
-                    file=sys.stderr,
-                )
-        except Exception:
-            print(
-                f"Warning: Invalid main_channels value in metadata: {metadata['main_channels']}",
-                file=sys.stderr,
-            )
-
-
-# For backward compatibility
-CHANNELS = DEFAULT_CHANNELS
-MAIN_CHANNELS = DEFAULT_MAIN_CHANNELS
-
-
-# pylint: disable-next=too-many-branches
-def read_config_file(config_file):
-    """
-    Read configuration from a file and return a dictionary of metadata.
-
-    Args:
-        config_file (str): Path to the configuration file.
+        value: The string value to strip quotes from
 
     Returns:
-        dict: Dictionary of metadata read from the configuration file.
+        str: The value without quotes
     """
-    if not config_file or not os.path.isfile(config_file):
-        print(f"Configuration file not found: {config_file}", file=sys.stderr)
-        return {}
+    if (
+        isinstance(value, str)
+        and (value.startswith('"') and value.endswith('"'))
+        or (value.startswith("'") and value.endswith("'"))
+    ):
+        return value[1:-1]
+    return value
 
-    print(f"Reading configuration from: {config_file}", file=sys.stderr)
 
-    # Initialize metadata dictionary
-    metadata = {}
+def load_config_file(config_file_path: str) -> Dict[str, Any]:
+    """
+    Load configuration from an INI file.
 
+    Args:
+        config_file_path: Path to the configuration file
+
+    Returns:
+        Dict[str, Any]: Configuration data from the file
+
+    Raises:
+        SystemExit: If the file does not exist or cannot be parsed
+    """
+    if not os.path.isfile(config_file_path):
+        logger.error(f"Configuration file not found: {config_file_path}")
+        sys.exit(1)
+
+    config_parser = configparser.ConfigParser()
     try:
-        # Read the file content line by line
-        with open(config_file, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue  # Skip empty lines and comments
+        config_parser.read(config_file_path)
+    except configparser.Error as e:
+        logger.error(f"Error parsing configuration file: {e}")
+        sys.exit(1)
 
-                # Parse key-value pairs
-                if "=" in line:
-                    key, value = line.split("=", 1)
-                else:
-                    # Try with format KEY_NAME="value"
-                    parts = line.split('"', 2)
-                    if len(parts) >= 3:
-                        key = parts[0].rstrip("=").rstrip()
-                        value = parts[1]
-                    else:
-                        continue  # Skip invalid lines
+    # Extract configuration data
+    config_data = {}
+    section_name = "drumgizmo_kit_generator"
 
-                key = key.strip().lower()
-                value = value.strip()
+    if section_name in config_parser:
+        section = config_parser[section_name]
 
-                # Remove quotes if present
-                if value.startswith('"') and value.endswith('"'):
-                    value = value[1:-1]
+        # Process general kit information
+        config_data["name"] = _strip_quotes(section.get("name", constants.DEFAULT_NAME))
+        config_data["version"] = _strip_quotes(section.get("version", constants.DEFAULT_VERSION))
+        config_data["description"] = _strip_quotes(section.get("description", ""))
+        config_data["notes"] = _strip_quotes(section.get("notes", ""))
+        config_data["author"] = _strip_quotes(section.get("author", ""))
+        config_data["license"] = _strip_quotes(section.get("license", constants.DEFAULT_LICENSE))
+        config_data["website"] = _strip_quotes(section.get("website", ""))
 
-                # Map configuration keys to metadata keys
-                key_mapping = {
-                    "kit_name": "name",
-                    "kit_description": "description",
-                    "kit_version": "version",
-                    "kit_author": "author",
-                    "kit_license": "license",
-                    "kit_notes": "notes",
-                    "kit_website": "website",
-                    "kit_logo": "logo",
-                    "kit_samplerate": "samplerate",
-                    "kit_extra_files": "extra_files",
-                    "kit_midi_note_min": "midi_note_min",
-                    "kit_midi_note_max": "midi_note_max",
-                    "kit_midi_note_median": "midi_note_median",
-                    "kit_velocity_levels": "velocity_levels",
-                    "kit_extensions": "extensions",
-                    "kit_channels": "channels",
-                    "kit_main_channels": "main_channels",
-                }
+        # Process additional files
+        config_data["logo"] = _strip_quotes(section.get("logo", ""))
+        config_data["extra_files"] = _strip_quotes(section.get("extra_files", ""))
 
-                if key in key_mapping:
-                    metadata[key_mapping[key]] = value
+        # Process audio parameters
+        config_data["samplerate"] = _strip_quotes(
+            section.get("samplerate", str(constants.DEFAULT_SAMPLERATE))
+        )
+        config_data["velocity_levels"] = section.get(
+            "velocity_levels", str(constants.DEFAULT_VELOCITY_LEVELS)
+        )
 
-        # Update channels and main_channels in the _config dictionary
-        if "channels" in metadata:
-            # Split comma-separated list of channels and remove whitespace at beginning and end
-            channels_list = [ch.strip() for ch in metadata["channels"].split(",")]
-            # Filter out empty strings
-            channels_list = [ch for ch in channels_list if ch]
-            if channels_list:
-                _config["channels"] = channels_list
-                print(f"Using custom channels from config: {_config['channels']}", file=sys.stderr)
+        # Process MIDI configuration
+        config_data["midi_note_min"] = section.get(
+            "midi_note_min", str(constants.DEFAULT_MIDI_NOTE_MIN)
+        )
+        config_data["midi_note_max"] = section.get(
+            "midi_note_max", str(constants.DEFAULT_MIDI_NOTE_MAX)
+        )
+        config_data["midi_note_median"] = section.get(
+            "midi_note_median", str(constants.DEFAULT_MIDI_NOTE_MEDIAN)
+        )
 
-        if "main_channels" in metadata:
-            # Split comma-separated list of main channels and remove whitespace at beginning and end
-            main_channels_list = [ch.strip() for ch in metadata["main_channels"].split(",")]
-            # Filter out empty strings
-            main_channels_list = [ch for ch in main_channels_list if ch]
-            if main_channels_list:
-                _config["main_channels"] = main_channels_list
-                print(
-                    f"Using custom main channels from config: {_config['main_channels']}",
-                    file=sys.stderr,
-                )
+        # Process file extensions
+        config_data["extensions"] = _strip_quotes(
+            section.get("extensions", ",".join(constants.DEFAULT_EXTENSIONS))
+        )
 
-        if metadata:
-            print("Metadata read from configuration:", file=sys.stderr)
-            for key, value in metadata.items():
-                print(f"  {key}: {value}", file=sys.stderr)
-        else:
-            print("No valid metadata found in the configuration file", file=sys.stderr)
-    except Exception as e:
-        print(f"Error reading configuration file: {e}", file=sys.stderr)
+        # Process channels
+        config_data["channels"] = _strip_quotes(
+            section.get("channels", ",".join(constants.DEFAULT_CHANNELS))
+        )
+        config_data["main_channels"] = _strip_quotes(
+            section.get("main_channels", ",".join(constants.DEFAULT_MAIN_CHANNELS))
+        )
+    else:
+        logger.warning(f"Section '{section_name}' not found in {config_file_path}")
 
-    print(f"Metadata loaded from config file: {metadata}", file=sys.stderr)
-    return metadata
+    return config_data
+
+
+def _process_channel_list(
+    channel_list: Optional[str], default_channels: str, channel_type: str
+) -> str:
+    """
+    Process a channel list from configuration.
+
+    Args:
+        channel_list: Comma-separated list of channels or None
+        default_channels: Default channels to use if channel_list is empty
+        channel_type: Type of channels (for debug messages)
+
+    Returns:
+        str: Processed channel list
+    """
+    if channel_list:
+        # Using custom channels
+        logger.debug(f"Using custom {channel_type} from metadata: {channel_list}")
+        return channel_list
+    # Using default channels
+    logger.debug(f"Empty {channel_type} list, using default: {default_channels}")
+    return default_channels
+
+
+def process_channels(config_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Process channels and main channels from configuration.
+
+    Args:
+        config_data: Configuration data
+
+    Returns:
+        Dict[str, Any]: Updated configuration data
+    """
+    # Process channels
+    config_data["channels"] = _process_channel_list(
+        config_data.get("channels"), constants.DEFAULT_CHANNELS, "channels"
+    )
+
+    # Process main channels
+    config_data["main_channels"] = _process_channel_list(
+        config_data.get("main_channels"), constants.DEFAULT_MAIN_CHANNELS, "main channels"
+    )
+
+    return config_data
+
+
+def get_config_value(config_data: Dict[str, Any], key: str, default_value: Any = None) -> Any:
+    """
+    Get a configuration value with fallback to default.
+
+    Args:
+        config_data: Configuration data
+        key: Configuration key
+        default_value: Default value if key is not found
+
+    Returns:
+        Any: Configuration value or default
+    """
+    return config_data.get(key, default_value)
+
+
+def merge_configs(*configs: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Merge multiple configuration dictionaries.
+    Later dictionaries take precedence over earlier ones.
+
+    Args:
+        *configs: Configuration dictionaries to merge
+
+    Returns:
+        Dict[str, Any]: Merged configuration
+    """
+    result = {}
+    for config in configs:
+        for key, value in config.items():
+            if value is not None:  # Only update if value is not None
+                result[key] = value
+    return result

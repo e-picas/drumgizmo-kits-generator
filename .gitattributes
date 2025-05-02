@@ -5,3 +5,5 @@ tests       export-ignore
 .pre-commit-config.yaml   export-ignore
 requirements-dev.txt   export-ignore
 sonar-project.properties   export-ignore
+.cascade-config   export-ignore
+models/   export-ignore

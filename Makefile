@@ -3,19 +3,26 @@
 #		python3 -m venv .venv;
 #		source .venv/bin/activate;
 #
-.PHONY: help install lint test coverage
+.PHONY: help install lint test coverage generate
 default: help
 
 install-ci:
-	pip install -r requirements-dev.txt
+	pip install .[dev]
+
+test-ci:
+	python3 -m pytest
 
 coverage-ci:
-	coverage run -m unittest discover tests && coverage xml
+	python -m pytest --cov=drumgizmo_kits_generator --cov-report=xml
 
 ## Install the app's dependencies & git hooks
 install: install-ci
 	pre-commit install
 	pre-commit install --hook-type commit-msg
+
+## Format the code following the '.pre-commit-config.yaml'
+format:
+	pre-commit run --hook-stage manual --show-diff-on-failure --color=always --all-files
 
 ## Run the linter
 lint:
@@ -23,15 +30,15 @@ lint:
 
 ## Run the tests
 test:
-	python3 -m unittest discover tests
+	python3 -m pytest -v
 
 ## Get coverage info
 coverage:
-	coverage run -m unittest discover tests && coverage report -m
+	python -m pytest --cov=drumgizmo_kits_generator --cov-report=term-missing
 
-## Run the 'pre-commit' hook locally
-pre-commit-run:
-	pre-commit run --hook-stage manual --show-diff-on-failure --color=always --all-files
+## Generate a test kit to `tests/target_test/`
+generate:
+	python create_drumgizmo_kit.py -s models/sources/ -t tests/target_test/
 
 # This generates a 'help' string with the list of available tasks & variables
 # in your Makefile(s) with their description if it is prefixed by two dashes:

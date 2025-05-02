@@ -1,62 +1,261 @@
 # DrumGizmo Kit Generator - Cascade Configuration
 
+You are a Python application generator writing robust Python application codebase following best practices and I am a requester.
+Your role is to provide me the best application possible following all the rules and steps described in this file.
+
 ## Project Description
-The DrumGizmo Kit Generator is a Python tool that generates kits for DrumGizmo from audio samples. It creates complete kits with velocity variations, MIDI mappings, and custom audio channel configurations.
+The DrumGizmo Kit Generator is a Python tool that generates kits for [DrumGizmo](https://drumgizmo.org/wiki/doku.php?id=start) from audio samples. It creates complete kits with velocity variations, MIDI mappings, and custom audio channel configurations. It uses SoX to convert audio files to the target samplerate and generate the volumes variations. The XML files are generated following the [DrumGizmo XML schema](https://drumgizmo.org/wiki/doku.php?id=xml_schema). The application prints messages about the process and errors.
 
-## Project Structure
-- `drumgizmo_kits_generator/` - Main module
-  - `main.py` - Main entry point, contains the `main()` function
-  - `config.py` - Configuration management (channels, default values)
-  - `audio.py` - Audio file processing (conversion, copying)
-  - `utils.py` - Utility functions (getting sample rate)
-  - `xml_generator.py` - XML file generation for DrumGizmo
-- `tests/` - Unit and integration tests
-  - `test_config.py` - Tests for the config module
-  - `test_audio.py` - Tests for the audio module
-  - `test_main.py` - Tests for the main module
-  - `test_xml_generator.py` - Tests for the xml_generator module
-  - `mocks/` - Configuration files for testing
-  - `sources/` - Audio files and other resources for testing
-  - `target/` - Verification kit generated from `sources/` for testing
+## Important Notes & guidelines
+- The test coverage of the code must be the highest possible and at least 80%
+- Any method must be self-explanatory, commented and tested
+- All code, comments and documentation should be written in English
+- After each codebase update you may run the `format`, `lint` and `test` commands to check the code quality
+- Each rule defined in the `rule` sections of this file is mandatory and must be tested in the `validators.py` file.
+- Each rule must have a test case in the `tests` directory.
+- When a new rule is added, a test case must be added in the `tests` directory.
+- When a config entry is a single or a list of file paths and they must exist, a test must be done to validate that an error is raised if the file does not exist.
+- You must never update the contents outside the `drumgizmo_kits_generator` and `tests` directories.
+- When an error is raised, the application must print the error message and exit with a non-zero status code.
+- You must not use comments to silent linting rules inside modules of the `drumgizmo_kits_generator/` directory. You can use these comments in the `tests/` directory.
 
-## Main Features
-1. DrumGizmo kit generation from audio samples
-2. Creation of velocity variations for each instrument
-3. Generation of XML files for DrumGizmo (drumkit.xml, midimap.xml, etc.)
-4. Automatic sample rate conversion
-5. Customization of audio channels and main channels
-6. Validation of MIDI and velocity configurations
+## Application process steps
+1. Validate the `source`, `target` and `config` options
+2. Load aggregated configuration entries in a `metadata` object, which may always contain all entries
+3. Validate configuration: apply the transformations and validations
+3.2. If the `dry-run` mode is enabled, stop here
+4. Prepare the target directory
+5. Process audio files:
+    *   convert original sample to target samplerate
+    *   duplicate it for velocity variations
+6. Generate XML files:
+    *   drumkit.xml: main kit configuration
+    *   midimap.xml: MIDI mapping configuration, the midi notes must be distributed around the `midi_note_median` value and must be between `midi_note_min` and `midi_note_max`
+    *   instrument.xml: instrument configuration using all samples with various `power` values (from 0 to 1) and a real channel mapping based on the available original sample channels
+7. Copy extra files
+8. Copy logo
 
-## Recent Changes
-1. Removal of the "instrument_prefix" variable from the code
-2. Addition of automatic sample rate conversion using SoX
-3. Improved handling of custom audio channels
-4. Validation of MIDI and velocity values
-5. Enhanced robustness against invalid inputs
+## Reference models
+A reference kit has been generated in the `models/target/` directory from the source `models/sources/` directory.
+The command was `python create_drumgizmo_kit.py -s models/sources/ -t models/target/`.
+The output of that generation is stored in `models/generate-target-output.txt`.
+The kit, source and output must be used as models.
+
+## Modules
+All the application modules are stored in the `drumgizmo_kits_generator` directory.
+All the tests of the code are stored in the `tests` directory.
+
+constants.py
+: Embeds all the constants used in the app
+
+main.py
+: Common options transform and validate (`source`, `target` and `config`)
+: Options aggregation in the following order: defaults + configuration file + cli options
+: Options transformations and validations
+: Kit generation process
+
+logger.py
+: Methods `info`, `debug` (to output only in verbose mode), `warning` to manage the output
+
+config.py
+: Manage the configuration file and the command line options
+
+transformers.py
+: Transformers of each option by optional methods `transform_<option_name>`
+: i.e. `transform_extensions` should call a method like `transform_comma_separated_string_to_list`
+
+validators.py
+: Validation of each option by optional methods `validate_<option_name>`
+: i.e. `validate_midi_note_min` should call a method like `validate_midi_note` and test that the value is in range `[0-127]`
+
+utils.py
+: Set of utilities in a "Keep It Simple Stupid" concept
+
+audio.py
+: Management of the audio samples and volumes variations
+
+xml_generator.py
+: Management of the XML files of the generated kit
+
+## Command line calls
+These options are for the command line run only, not for the configuration file.
+
+source
+: desc: The audio samples source directory
+: type: string (path)
+: required: true
+: rule: If the directory does not exist, an error is raised
+: rule: A warning must be printed if the directory contains more than `midi_note_max - midi_note_min` audio files
+
+target
+: desc: The generated kit target directory
+: type: string (path)
+: required: true
+: rule: If the parent directory does not exist, an error is raised
+: rule: The directory contents are deleted before generating the new ones
+
+config
+: desc: A configuration file to load
+: type: string (path)
+: rule: If the file does not exist, an error is raised
+: rule: If the default file name exists in the `source` it is loaded automatically
+: default: `drumgizmo-kit.ini`
+
+-h/--help
+: desc: Read the help string
+
+-v/--verbose
+: desc: Increase process verbosity
+
+-x/--dry-run
+: desc: Enable the DEBUG or "dry run" mode: metadata and samples list are printed instead of generating the kit
+
+## Configuration entries
+Each of these configuration entries can be defined in the configuration file with a `kit_` prefix or as a command line option (without prefix).
+They are loaded in the following precedence order: defaults then configuration file then command line options.
+All default values are stored as constants.
+
+### Specifications
+
+name
+: desc: Kit name
+: type: string
+: rule: Can not be empty
+: rule: If an empty value is set, an error is raised
+: default: `"DrumGizmo Kit"`
+
+version
+: desc: Kit version
+: type: string
+: default: `"1.0"`
+
+description
+: desc: Kit description
+: type: string
+: default: `null`
+
+notes
+: desc: Additional notes about the kit
+: type: string
+: default: `null`
+
+author
+: desc: Kit author
+: type: string
+: default: `null`
+
+license
+: desc: Kit license
+: type: string
+: default: `"Private license"`
+
+website
+: desc: Kit website
+: type: string (URL)
+: default: `null`
+
+logo
+: desc: Kit logo filename
+: type: string
+: rule: Must be the local path of an existing file in the sources
+: rule: If the file does not exist, an error is raised
+: default: `null`
+
+samplerate
+: desc: Sample rate in Hz
+: type: number
+: rule: Can not be empty
+: rule: If an empty value is set, the default value is used and a warning is printed
+: rule: Must be `> 0`
+: default: `44100`
+
+extra_files
+: desc: Additional files to copy
+: type: list of strings
+: rule: Each list item must be left and right trimed
+: rule: Comma-separated list of local paths of existing files in the sources
+: rule: If one or more of the files does not exist, an error is raised
+: default: `null`
+
+velocity_levels
+: desc: Number of velocity levels to generate
+: type: number
+: rule: Can not be empty
+: rule: If an empty value is set, the default value is used and a warning is printed
+: rule: Must be `> 0`
+: default: `10`
+
+midi_note_min
+: desc: Minimum MIDI note number allowed
+: type: number
+: rule: Can not be empty
+: rule: If an empty value is set, the default value is used and a warning is printed
+: rule: Must be `>= 0`
+: rule: Must be `<= 127`
+: rule: Must be `< midi_note_max`
+: rule: Must be `<= midi_note_median`
+: default: `0`
+
+midi_note_max
+: desc: Maximum MIDI note number allowed
+: type: number
+: rule: Can not be empty
+: rule: If an empty value is set, the default value is used and a warning is printed
+: rule: Must be `>= 0`
+: rule: Must be `<= 127`
+: rule: Must be `> midi_note_min`
+: rule: Must be `>= midi_note_median`
+: default: `127`
+
+midi_note_median
+: desc: Median MIDI note for distributing instruments
+: type: number
+: rule: Can not be empty
+: rule: If an empty value is set, the default value is used and a warning is printed
+: rule: Must be `>= 0`
+: rule: Must be `<= 127`
+: rule: Must be `>= midi_note_min`
+: rule: Must be `<= midi_note_max`
+: default: `60`
+
+extensions
+: desc: Audio file extensions to process
+: type: list of strings
+: rule: Can not be empty
+: rule: If an empty value is set, an error is raised
+: rule: Comma-separated list of file extensions
+: rule: Each list item must be left and right trimed
+: default: `"wav,WAV,flac,FLAC,ogg,OGG"`
+
+channels
+: desc: Comma-separated list of audio channels to use
+: type: list of strings
+: rule: Can not be empty
+: rule: If an empty value is set, an error is raised
+: rule: Each list item must be left and right trimed
+: rule: Each list item can have a space inside
+: rule: The order of the list items must be kept as-is
+: default: `"AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"`
+
+main_channels
+: desc: Comma-separated list of main audio channels
+: type: list of strings
+: rule: Can be empty
+: rule: Each list item must be left and right trimed
+: rule: Each list item can have a space inside
+: rule: Each list item must exist in the `channels` list or an error is raised
+: default: `"AmbL,AmbR,OHL,OHR"`
+
+## Development helpers
+We use [Make](https://www.gnu.org/software/make/) to manage the development tasks.
+
+- to install the project: `make install`
+- to format the code: `make format`
+- to run the linter: `make lint`
+- to run the tests: `make test`
+- to generate a test kit (for debug): `make generate`
+- Alternate running tests: `python -m unittest discover` or `pytest`
 
 ## Dependencies
 - Python 3.9+ (for modern Python features)
 - SoX (for sample rate conversion)
-
-## Tests
-- Code coverage: 91% for the entire project
-- Coverage by module:
-  - audio.py: 94%
-  - config.py: 94%
-  - main.py: 88%
-  - xml_generator.py: 100%
-  - utils.py: 88%
-- Running tests: `python3 -m unittest discover`
-
-## Areas for Improvement
-1. Better error handling in audio processing functions
-2. Additional tests for edge cases and invalid inputs
-3. Refactoring of the main.py module to reduce complexity
-4. Improved code documentation
-5. Additional features for further kit customization
-
-## Important Notes
-- Channel values can contain spaces or be numbers
-- The `update_channels_config` function handles non-string values by converting them to strings
-- Tests use 4 velocity levels by default, as per the configuration in drumgizmo-kit.ini
-- All code, comments, documentation, and commit messages should be written in English

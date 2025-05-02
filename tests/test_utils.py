@@ -1,298 +1,490 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: disable=duplicate-code
+# pylint: disable=redefined-outer-name
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-arguments
+# pylint: disable=unused-argument
 """
-Unit tests for the utils module of the DrumGizmo kit generator.
-
-These tests verify the functionality of utility functions used throughout
-the application, including directory preparation, file handling, and output
-formatting.
+Tests for the utils module of the DrumGizmo kit generator.
 """
 
 import os
-import re
-import shutil
 import subprocess
-import sys
 import tempfile
-import unittest
-from unittest.mock import MagicMock, patch
+from unittest import mock
 
-# Add the parent directory to the path to be able to import modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import pytest
 
-# Import the module to test
-# pylint: disable-next=wrong-import-position
-from drumgizmo_kits_generator.utils import (
-    extract_instrument_name,
-    get_audio_samplerate,
-    get_file_extension,
-    get_timestamp,
-    prepare_instrument_directory,
-    prepare_target_directory,
-    print_summary,
-)
+from drumgizmo_kits_generator import constants, utils
 
 
-class TestUtils(unittest.TestCase):
-    """Tests for the utils module."""
-
-    def setUp(self):
-        """Initialize before each test by creating a temporary directory."""
-        # Create a temporary directory for tests
-        self.temp_dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        """Cleanup after each test by removing the temporary directory."""
-        if os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
-
-    def test_prepare_target_directory(self):
-        """Test preparing the target directory under various conditions."""
-        # Test with a non-existent directory
-        target_dir = os.path.join(self.temp_dir, "new_dir")
-        self.assertTrue(
-            prepare_target_directory(target_dir), "Should return True for non-existent directory"
-        )
-        self.assertTrue(
-            os.path.exists(target_dir), "Directory should be created if it doesn't exist"
-        )
-
-        # Test with an existing directory (should be removed and recreated)
-        # Create a file in the directory
-        with open(os.path.join(target_dir, "test_file.txt"), "w", encoding="utf-8") as f:
-            f.write("Test content")
-
-        # Verify the file was created
-        self.assertTrue(
-            os.path.exists(os.path.join(target_dir, "test_file.txt")), "Test file should exist"
-        )
-
-        # The function should remove the directory and recreate it empty
-        self.assertTrue(
-            prepare_target_directory(target_dir),
-            "Should return True when removing and recreating directory",
-        )
-
-        # Verify that the directory exists but is empty
-        self.assertTrue(os.path.exists(target_dir), "Directory should exist after preparation")
-        self.assertEqual(
-            len(os.listdir(target_dir)), 0, "Directory should be empty after preparation"
-        )
-
-        # Test with a directory that cannot be removed (simulate permission error)
-        with patch("shutil.rmtree", side_effect=PermissionError("Permission denied")):
-            self.assertFalse(
-                prepare_target_directory(target_dir),
-                "Should return False when directory cannot be removed",
-            )
-
-        # Test with a directory that cannot be created
-        with patch("os.makedirs", side_effect=PermissionError("Permission denied")):
-            # First remove the directory to test creation
-            shutil.rmtree(target_dir)
-            self.assertFalse(
-                prepare_target_directory(target_dir),
-                "Should return False when directory cannot be created",
-            )
-
-    def test_prepare_instrument_directory(self):
-        """Test preparing the instrument directory and its samples subdirectory."""
-        instrument_name = "Test-Instrument"
-
-        # Test with a valid target directory
-        result = prepare_instrument_directory(instrument_name, self.temp_dir)
-        self.assertTrue(result, "Should return True for successful directory creation")
-
-        # Verify that the instrument directory has been created
-        instrument_dir = os.path.join(self.temp_dir, instrument_name)
-        self.assertTrue(os.path.exists(instrument_dir), "Instrument directory should be created")
-
-        # Verify that the samples directory has been created
-        samples_dir = os.path.join(instrument_dir, "samples")
-        self.assertTrue(os.path.exists(samples_dir), "Samples directory should be created")
-
-        # Test with an existing instrument directory
-        result = prepare_instrument_directory(instrument_name, self.temp_dir)
-        self.assertTrue(result, "Should return True even if directory already exists")
-
-        # Test with a special character in the instrument name
-        special_instrument = "Test/Instrument"
-        result = prepare_instrument_directory(special_instrument, self.temp_dir)
-        self.assertTrue(result, "Should handle special characters in instrument name")
-        special_dir = os.path.join(self.temp_dir, special_instrument)
-        self.assertTrue(
-            os.path.exists(special_dir), "Directory with special character should be created"
-        )
-
-    def test_get_timestamp(self):
-        """Test generating a timestamp with the correct format."""
-        timestamp = get_timestamp()
-
-        # Verify that the timestamp is a non-empty string
-        self.assertIsInstance(timestamp, str, "Timestamp should be a string")
-        self.assertGreater(len(timestamp), 0, "Timestamp should not be empty")
-
-        # Verify that the timestamp contains a date in YYYY-MM-DD format
-        self.assertRegex(
-            timestamp, r"\d{4}-\d{2}-\d{2}", "Timestamp should match YYYY-MM-DD format"
-        )
-
-        # Le format réel est YYYY-MM-DD et non YYYY-MM-DD HH:MM:SS
-        # Adapter le test au format réel
-        date_pattern = re.compile(r"\d{4}-\d{2}-\d{2}")
-        self.assertTrue(date_pattern.match(timestamp), "Timestamp should match YYYY-MM-DD format")
-
-    def test_extract_instrument_name(self):
-        """Test extracting the instrument name from various file paths."""
-        # Test different file paths
-        test_cases = [
-            ("/path/to/Kick.wav", "Kick"),
-            ("/path/to/Snare-Drum.flac", "Snare-Drum"),
-            ("/path/to/Hi-Hat-Open.ogg", "Hi-Hat-Open"),
-            ("Cymbal-Crash.wav", "Cymbal-Crash"),
-            ("/path/with spaces/Tom Tom.wav", "Tom Tom"),
-            ("/path/to/file/without/extension", "extension"),
-        ]
-
-        for file_path, expected in test_cases:
-            self.assertEqual(
-                extract_instrument_name(file_path),
-                expected,
-                f"Should extract '{expected}' from '{file_path}'",
-            )
-
-    def test_get_file_extension(self):
-        """Test extracting file extensions from various file paths."""
-        # Test different extensions
-        test_cases = [
-            ("/path/to/file.wav", ".wav"),
-            ("/path/to/file.WAV", ".WAV"),
-            ("/path/to/file.flac", ".flac"),
-            ("/path/to/file.ogg", ".ogg"),
-            ("file.mp3", ".mp3"),
-            ("/path/to/file", ""),
-            ("/path.to/file", ""),
-            # La fonction actuelle ne considère pas .hidden comme une extension
-            # car elle cherche un point suivi d'au moins un caractère
-            ("/path/to/.hidden", ""),
-        ]
-
-        for file_path, expected in test_cases:
-            self.assertEqual(
-                get_file_extension(file_path),
-                expected,
-                f"Should extract '{expected}' from '{file_path}'",
-            )
-
-    def test_get_audio_samplerate(self):
-        """Test getting the sample rate of an audio file."""
-        # Create a temporary audio file
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-            temp_path = temp_file.name
-
-        # Create a test WAV file with SoX at 44100 Hz
-        try:
-            subprocess.run(
-                ["sox", "-n", temp_path, "rate", "44100", "trim", "0", "0.1"],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-        except (subprocess.SubprocessError, FileNotFoundError):
-            self.skipTest("SoX is not available or failed to create test file")
-
-        # Test getting the sample rate
-        sample_rate = get_audio_samplerate(temp_path)
-        self.assertEqual(44100, sample_rate, "Should return the correct sample rate")
-
-        # Clean up
-        try:
-            os.unlink(temp_path)
-        except OSError:
-            pass
-
-    def test_get_audio_samplerate_nonexistent_file(self):
-        """Test getting the sample rate of a non-existent file."""
-        sample_rate = get_audio_samplerate("nonexistent.wav")
-        self.assertIsNone(sample_rate, "Should return None for non-existent file")
-
-    def test_get_audio_samplerate_invalid_file(self):
-        """Test getting the sample rate of an invalid audio file."""
-        # Create a temporary file that is not a valid audio file
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-            temp_path = temp_file.name
-            temp_file.write(b"This is not a valid WAV file")
-
-        # Test getting the sample rate
-        sample_rate = get_audio_samplerate(temp_path)
-        self.assertIsNone(sample_rate, "Should return None for invalid audio file")
-
-        # Clean up
-        try:
-            os.unlink(temp_path)
-        except OSError:
-            pass
-
-    @patch("sys.stderr", new_callable=MagicMock)
-    def test_print_summary(self, mock_stderr):
-        """Test displaying the summary with various metadata configurations."""
-        # Prepare data for the test
-        metadata = {
-            "name": "Test Kit",
-            "version": "1.0",
-            "description": "Test description",
-            "notes": "Test notes",
-            "author": "Test Author",
-            "license": "Test License",
-            "website": "http://example.com",
-            "samplerate": "44100",
-            "logo": "test_logo.png",
+@pytest.fixture
+def mock_logger_fixture():
+    """Mock logger functions."""
+    with mock.patch("drumgizmo_kits_generator.logger.info") as mock_info, mock.patch(
+        "drumgizmo_kits_generator.logger.debug"
+    ) as mock_debug, mock.patch(
+        "drumgizmo_kits_generator.logger.warning"
+    ) as mock_warning, mock.patch(
+        "drumgizmo_kits_generator.logger.error"
+    ) as mock_error, mock.patch(
+        "drumgizmo_kits_generator.logger.section"
+    ) as mock_section:
+        yield {
+            "info": mock_info,
+            "debug": mock_debug,
+            "warning": mock_warning,
+            "error": mock_error,
+            "section": mock_section,
         }
-        instruments = ["Kick", "Snare", "Hi-Hat"]
-        target_dir = "/path/to/target"
 
-        # Call the function to test
-        print_summary(metadata, instruments, target_dir)
 
-        # Verify that the function wrote to stderr
-        mock_stderr.write.assert_called()
+@pytest.fixture
+def sample_file_fixture():
+    """Create a temporary audio file for testing."""
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+        temp_file_path = temp_file.name
+    yield temp_file_path
+    if os.path.exists(temp_file_path):
+        os.unlink(temp_file_path)
 
-        # Verify that key information is present in the output
-        output = "".join([call_args[0][0] for call_args in mock_stderr.write.call_args_list])
 
-        self.assertIn("Test Kit", output, "Kit name should be in the summary")
-        self.assertIn("1.0", output, "Version should be in the summary")
-        self.assertIn("Author", output, "Author should be in the summary")
-        self.assertIn("Test License", output, "License should be in the summary")
-        self.assertIn(
-            "Number of instruments created: 3", output, "Instrument count should be in the summary"
+class TestConvertSampleRate:
+    """Tests for the convert_sample_rate function."""
+
+    @mock.patch("shutil.which")
+    def test_convert_sample_rate_no_sox(self, mock_which, sample_file_fixture, mock_logger_fixture):
+        """Test convert_sample_rate with SoX not available."""
+        # Setup mocks
+        mock_which.return_value = None  # SoX is not available
+
+        # Call the function
+        result = utils.convert_sample_rate(sample_file_fixture, "48000")
+
+        # Assertions
+        assert result == sample_file_fixture  # Should return the original file
+        assert mock_logger_fixture["error"].call_count >= 1  # Error about SoX not found
+
+    @mock.patch("shutil.which")
+    @mock.patch("subprocess.run")
+    @mock.patch("tempfile.mkdtemp")
+    def test_convert_sample_rate_with_sox(
+        self, mock_mkdtemp, mock_run, mock_which, sample_file_fixture, mock_logger_fixture
+    ):
+        """Test convert_sample_rate with SoX available."""
+        # Setup mocks
+        mock_which.return_value = "/usr/bin/sox"  # SoX is available
+        mock_run.return_value = mock.MagicMock(returncode=0)
+        temp_dir = "/tmp/drumgizmo_temp"
+        mock_mkdtemp.return_value = temp_dir
+
+        # Call the function
+        result = utils.convert_sample_rate(sample_file_fixture, "48000")
+
+        # Assertions
+        assert result != sample_file_fixture  # Should return a new file
+        assert temp_dir in result  # Should be in the temp directory
+        assert mock_logger_fixture["debug"].call_count >= 1  # Log about conversion
+        mock_run.assert_called_once()  # SoX command should be called
+
+    @mock.patch("shutil.which")
+    @mock.patch("subprocess.run")
+    @mock.patch("tempfile.mkdtemp")
+    @mock.patch("shutil.rmtree")
+    def test_convert_sample_rate_with_error(
+        self,
+        mock_rmtree,
+        mock_mkdtemp,
+        mock_run,
+        mock_which,
+        sample_file_fixture,
+        mock_logger_fixture,
+    ):
+        """Test convert_sample_rate with SoX error."""
+        # Setup mocks
+        mock_which.return_value = "/usr/bin/sox"  # SoX is available
+        mock_run.side_effect = subprocess.CalledProcessError(1, "sox")
+        temp_dir = "/tmp/drumgizmo_temp"
+        mock_mkdtemp.return_value = temp_dir
+
+        # Call the function
+        result = utils.convert_sample_rate(sample_file_fixture, "48000")
+
+        # Assertions
+        assert result == sample_file_fixture  # Should return the original file on error
+        assert mock_logger_fixture["error"].call_count >= 1  # Error about SoX failure
+        mock_rmtree.assert_called_once_with(
+            temp_dir, ignore_errors=True
+        )  # Temp dir should be cleaned up
+
+
+class TestGetAudioInfo:
+    """Tests for the get_audio_info function."""
+
+    @mock.patch("shutil.which")
+    def test_get_audio_info_no_soxi(self, mock_which, sample_file_fixture, mock_logger_fixture):
+        """Test get_audio_info with soxi not available."""
+        # Setup mocks
+        mock_which.return_value = None  # soxi is not available
+
+        # Call the function
+        result = utils.get_audio_info(sample_file_fixture)
+
+        # Assertions
+        assert result["channels"] == 2  # Default values
+        assert result["samplerate"] == 44100
+        assert result["bits"] == 16
+        assert result["duration"] == 0
+        assert mock_logger_fixture["warning"].call_count >= 1  # Warning about soxi not found
+
+    @mock.patch("shutil.which")
+    @mock.patch("subprocess.run")
+    def test_get_audio_info_with_soxi(
+        self, mock_run, mock_which, sample_file_fixture, mock_logger_fixture
+    ):
+        """Test get_audio_info with soxi available."""
+        # Setup mocks
+        mock_which.return_value = "/usr/bin/soxi"  # soxi is available
+
+        # Mock subprocess.run to return different values for different commands
+        def mock_subprocess_run(cmd, **kwargs):
+            result = mock.MagicMock()
+            result.returncode = 0
+
+            if "-c" in cmd:  # Channels
+                result.stdout = "2\n"
+            elif "-r" in cmd:  # Sample rate
+                result.stdout = "44100\n"
+            elif "-b" in cmd:  # Bit depth
+                result.stdout = "24\n"
+            elif "-D" in cmd:  # Duration
+                result.stdout = "2.5\n"
+
+            return result
+
+        mock_run.side_effect = mock_subprocess_run
+
+        # Call the function
+        result = utils.get_audio_info(sample_file_fixture)
+
+        # Assertions
+        assert result["channels"] == 2
+        assert result["samplerate"] == 44100
+        assert result["bits"] == 24
+        assert result["duration"] == 2.5
+        assert mock_logger_fixture["debug"].call_count >= 1  # Debug log about audio info
+
+    @mock.patch("shutil.which")
+    @mock.patch("subprocess.run")
+    def test_get_audio_info_with_error(
+        self, mock_run, mock_which, sample_file_fixture, mock_logger_fixture
+    ):
+        """Test get_audio_info with soxi error."""
+        # Setup mocks
+        mock_which.return_value = "/usr/bin/soxi"  # soxi is available
+        mock_run.side_effect = subprocess.CalledProcessError(1, "soxi")
+
+        # Call the function
+        result = utils.get_audio_info(sample_file_fixture)
+
+        # Assertions
+        assert result["channels"] == 2  # Default values
+        assert result["samplerate"] == 44100
+        assert result["bits"] == 16
+        assert result["duration"] == 0
+        assert mock_logger_fixture["error"].call_count >= 1  # Error about soxi failure
+
+
+class TestCleanInstrumentName:
+    """Tests for the clean_instrument_name function."""
+
+    def test_clean_instrument_name_basic(self):
+        """Test clean_instrument_name with basic input."""
+        # Test with a simple filename (without extension)
+        assert utils.clean_instrument_name("Kick") == "Kick"
+        assert utils.clean_instrument_name("Snare") == "Snare"
+        assert utils.clean_instrument_name("HiHat") == "HiHat"
+
+    def test_clean_instrument_name_with_path(self):
+        """Test clean_instrument_name with path."""
+        # Test with paths (without extension)
+        assert utils.clean_instrument_name("Kick") == "Kick"
+        assert utils.clean_instrument_name("Snare") == "Snare"
+
+    def test_clean_instrument_name_with_special_chars(self):
+        """Test clean_instrument_name with special characters."""
+        # Test with special characters (without extension)
+        assert utils.clean_instrument_name("Kick-Drum") == "Kick-Drum"
+        assert utils.clean_instrument_name("Snare-Left") == "Snare-Left"
+        assert utils.clean_instrument_name("Hi-Hat") == "Hi-Hat"
+
+    def test_clean_instrument_name_with_numbers(self):
+        """Test clean_instrument_name with numbers."""
+        # Test with numbers (without extension)
+        assert utils.clean_instrument_name("Kick01") == "Kick01"
+        assert utils.clean_instrument_name("Snare_02") == "Snare_02"
+
+    def test_clean_instrument_name_with_velocity_prefix(self):
+        """Test clean_instrument_name with velocity prefix."""
+        # Test with velocity prefix
+        assert utils.clean_instrument_name("1-Kick") == "Kick"
+        assert utils.clean_instrument_name("2-Snare") == "Snare"
+        assert utils.clean_instrument_name("3-HiHat") == "HiHat"
+
+    def test_clean_instrument_name_with_converted_suffix(self):
+        """Test clean_instrument_name with _converted suffix."""
+        # Test with _converted suffix
+        assert utils.clean_instrument_name("Kick_converted") == "Kick"
+        assert utils.clean_instrument_name("Snare_converted") == "Snare"
+        assert utils.clean_instrument_name("1-HiHat_converted") == "HiHat"
+
+
+class TestScanSourceFiles:
+    """Tests for the scan_source_files function."""
+
+    def test_scan_source_files(self):
+        """Test scan_source_files with various extensions."""
+        # Create a temporary directory with test files
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create some test files
+            wav_file = os.path.join(temp_dir, "test1.wav")
+            flac_file = os.path.join(temp_dir, "test2.flac")
+            mp3_file = os.path.join(temp_dir, "test3.mp3")
+            txt_file = os.path.join(temp_dir, "test4.txt")
+
+            # Create subdirectory with more files
+            subdir = os.path.join(temp_dir, "subdir")
+            os.makedirs(subdir)
+            subdir_wav = os.path.join(subdir, "subtest1.wav")
+            subdir_flac = os.path.join(subdir, "subtest2.flac")
+
+            # Create all the files
+            for file_path in [wav_file, flac_file, mp3_file, txt_file, subdir_wav, subdir_flac]:
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write("dummy content")
+
+            # Test with various extension filters
+
+            # Test with wav only
+            result = utils.scan_source_files(temp_dir, ["wav"])
+            assert len(result) == 2
+            assert wav_file in result
+            assert subdir_wav in result
+            assert flac_file not in result
+            assert mp3_file not in result
+            assert txt_file not in result
+
+            # Test with wav and flac
+            result = utils.scan_source_files(temp_dir, ["wav", "flac"])
+            assert len(result) == 4
+            assert wav_file in result
+            assert flac_file in result
+            assert subdir_wav in result
+            assert subdir_flac in result
+            assert mp3_file not in result
+            assert txt_file not in result
+
+            # Test with all audio formats
+            result = utils.scan_source_files(temp_dir, ["wav", "flac", "mp3"])
+            assert len(result) == 5
+            assert wav_file in result
+            assert flac_file in result
+            assert mp3_file in result
+            assert subdir_wav in result
+            assert subdir_flac in result
+            assert txt_file not in result
+
+            # Test with case insensitivity
+            result = utils.scan_source_files(temp_dir, ["WAV", "FLAC"])
+            assert len(result) == 4
+            assert wav_file in result
+            assert flac_file in result
+            assert subdir_wav in result
+            assert subdir_flac in result
+
+            # Test with empty extensions list
+            result = utils.scan_source_files(temp_dir, [])
+            assert len(result) == 0
+
+
+class TestValidateDirectories:
+    """Tests for the validate_directories function."""
+
+    @mock.patch("os.path.isdir")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.dirname")
+    @mock.patch("os.path.abspath")
+    def test_validate_directories_all_valid(
+        self, mock_abspath, mock_dirname, mock_isfile, mock_isdir
+    ):
+        """Test validate_directories with all valid paths."""
+        # Setup mocks
+        mock_isdir.return_value = True
+        mock_isfile.return_value = True
+        mock_dirname.return_value = "/path/to/parent"
+        mock_abspath.return_value = "/path/to/target"
+
+        # Call the function
+        utils.validate_directories("/path/to/source", "/path/to/target", "/path/to/config.ini")
+
+        # Assertions
+        mock_isdir.assert_called()
+        mock_isfile.assert_called_once_with("/path/to/config.ini")
+
+    @mock.patch("os.path.isdir")
+    @mock.patch("os.path.dirname")
+    @mock.patch("os.path.abspath")
+    def test_validate_directories_invalid_source(
+        self, mock_abspath, mock_dirname, mock_isdir, mock_logger_fixture
+    ):
+        """Test validate_directories with invalid source directory."""
+        # Setup mocks
+        mock_isdir.side_effect = lambda path: path != "/path/to/source"
+        mock_dirname.return_value = "/path/to/parent"
+        mock_abspath.return_value = "/path/to/target"
+
+        # Call the function
+        utils.validate_directories("/path/to/source", "/path/to/target")
+
+        # Assertions
+        assert mock_logger_fixture["error"].call_count >= 1
+        assert "Source directory does not exist" in str(
+            mock_logger_fixture["error"].call_args[0][0]
         )
-        self.assertIn("/path/to/target", output, "Target directory should be in the summary")
 
-        # Test with minimal metadata
-        mock_stderr.reset_mock()
-        minimal_metadata = {"name": "Minimal Kit", "version": "0.1"}
+    @mock.patch("os.path.isdir")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.dirname")
+    @mock.patch("os.path.abspath")
+    def test_validate_directories_invalid_target_parent(
+        self, mock_abspath, mock_dirname, mock_exists, mock_isdir, mock_logger_fixture
+    ):
+        """Test validate_directories with invalid target parent directory."""
+        # Setup mocks
+        mock_isdir.return_value = True
+        mock_exists.return_value = False
+        mock_dirname.return_value = "/path/to/parent"
+        mock_abspath.return_value = "/path/to/target"
+        mock_isdir.side_effect = lambda path: path != "/path/to/parent"
 
-        print_summary(minimal_metadata, instruments, target_dir)
+        # Call the function
+        utils.validate_directories("/path/to/source", "/path/to/target")
 
-        # Verify output with minimal metadata
-        output = "".join([call_args[0][0] for call_args in mock_stderr.write.call_args_list])
-        self.assertIn("Minimal Kit", output, "Kit name should be in the minimal summary")
-        self.assertIn("0.1", output, "Version should be in the minimal summary")
-
-        # Test with empty instruments list
-        mock_stderr.reset_mock()
-        print_summary(metadata, [], target_dir)
-
-        # Verify output with no instruments
-        output = "".join([call_args[0][0] for call_args in mock_stderr.write.call_args_list])
-        self.assertIn(
-            "Number of instruments created: 0",
-            output,
-            "Zero instruments should be reported correctly",
+        # Assertions
+        assert mock_logger_fixture["error"].call_count >= 1
+        assert "Parent directory of target does not exist" in str(
+            mock_logger_fixture["error"].call_args[0][0]
         )
 
+    @mock.patch("os.path.isdir")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.dirname")
+    @mock.patch("os.path.abspath")
+    def test_validate_directories_invalid_config(
+        self, mock_abspath, mock_dirname, mock_isfile, mock_isdir, mock_logger_fixture
+    ):
+        """Test validate_directories with invalid config file."""
+        # Setup mocks
+        mock_isdir.return_value = True
+        mock_isfile.return_value = False
+        mock_dirname.return_value = "/path/to/parent"
+        mock_abspath.return_value = "/path/to/target"
 
-if __name__ == "__main__":
-    unittest.main()
+        # Call the function
+        utils.validate_directories("/path/to/source", "/path/to/target", "/path/to/config.ini")
+
+        # Assertions
+        assert mock_logger_fixture["error"].call_count >= 1
+        assert "Configuration file does not exist" in str(
+            mock_logger_fixture["error"].call_args[0][0]
+        )
+
+    @mock.patch("os.path.isdir")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.dirname")
+    @mock.patch("os.path.abspath")
+    def test_validate_directories_default_config(
+        self, mock_abspath, mock_dirname, mock_isfile, mock_isdir
+    ):
+        """Test validate_directories with default config file."""
+        # Setup mocks
+        mock_isdir.return_value = True
+        mock_isfile.return_value = False
+        mock_dirname.return_value = "/path/to/parent"
+        mock_abspath.return_value = "/path/to/target"
+
+        # Call the function with the default config file
+        utils.validate_directories(
+            "/path/to/source", "/path/to/target", constants.DEFAULT_CONFIG_FILE
+        )
+
+        # Assertions
+        mock_isfile.assert_not_called()  # Should not check if default config exists
+
+
+class TestPrepareTargetDirectory:
+    """Tests for the prepare_target_directory function."""
+
+    @mock.patch("os.path.exists")
+    @mock.patch("os.makedirs")
+    def test_prepare_target_directory_new(self, mock_makedirs, mock_exists, mock_logger_fixture):
+        """Test prepare_target_directory with a new directory."""
+        # Setup mocks
+        mock_exists.return_value = False
+
+        # Call the function
+        utils.prepare_target_directory("/path/to/target")
+
+        # Assertions
+        mock_makedirs.assert_called_once_with("/path/to/target")
+        assert mock_logger_fixture["section"].call_count >= 1
+        assert mock_logger_fixture["info"].call_count >= 1
+
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.isdir")
+    @mock.patch("os.listdir")
+    @mock.patch("os.path.join")
+    @mock.patch("shutil.rmtree")
+    @mock.patch("os.remove")
+    def test_prepare_target_directory_existing(
+        self,
+        mock_remove,
+        mock_rmtree,
+        mock_join,
+        mock_listdir,
+        mock_isdir,
+        mock_exists,
+        mock_logger_fixture,
+    ):
+        """Test prepare_target_directory with an existing directory."""
+        # Setup mocks
+        mock_exists.return_value = True
+        mock_listdir.return_value = ["file1.txt", "file2.txt", "dir1"]
+
+        # Mock os.path.join to return predictable paths
+        def mock_join_paths(dir_path, item):
+            return f"{dir_path}/{item}"
+
+        mock_join.side_effect = mock_join_paths
+
+        # Mock os.path.isdir to identify directories
+        def mock_is_dir(path):
+            return "dir" in path
+
+        mock_isdir.side_effect = mock_is_dir
+
+        # Call the function
+        utils.prepare_target_directory("/path/to/target")
+
+        # Assertions
+        assert mock_logger_fixture["section"].call_count >= 1
+        assert mock_logger_fixture["info"].call_count >= 1
+        assert mock_listdir.call_count == 1
+
+        # Check that directories are removed with rmtree
+        mock_rmtree.assert_called_once_with("/path/to/target/dir1")
+
+        # Check that files are removed with os.remove
+        assert mock_remove.call_count == 2
+        mock_remove.assert_any_call("/path/to/target/file1.txt")
+        mock_remove.assert_any_call("/path/to/target/file2.txt")

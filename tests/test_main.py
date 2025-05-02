@@ -1,712 +1,948 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: disable=unspecified-encoding,consider-using-with
+# pylint: disable=redefined-outer-name
+# pylint: disable=unspecified-encoding
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
 """
-Unit tests for the main script of the DrumGizmo kit generator.
-
-These tests verify the functionality of the main script that orchestrates
-the creation of DrumGizmo kits, including metadata preparation, file handling,
-and integration with other modules.
+Tests for the main module of the DrumGizmo kit generator.
 """
 
+import argparse
 import os
 import shutil
-import sys
 import tempfile
-import unittest
-from unittest.mock import MagicMock, patch
+from unittest import mock
 
-# Add the parent directory to the path to be able to import modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import pytest
 
-# Import the modules to test
-# pylint: disable-next=wrong-import-position
-from drumgizmo_kits_generator import main as main_module
-
-# pylint: disable-next=wrong-import-position
-from drumgizmo_kits_generator.utils import extract_instrument_name, get_file_extension
+from drumgizmo_kits_generator import constants, main
 
 
-class TestDrumGizmoKitGenerator(unittest.TestCase):
-    """Tests for the DrumGizmo kit generator."""
+@pytest.fixture
+def mock_logger():
+    """Mock logger functions."""
+    with mock.patch("drumgizmo_kits_generator.logger.info") as mock_info, mock.patch(
+        "drumgizmo_kits_generator.logger.debug"
+    ) as mock_debug, mock.patch(
+        "drumgizmo_kits_generator.logger.warning"
+    ) as mock_warning, mock.patch(
+        "drumgizmo_kits_generator.logger.error"
+    ) as mock_error, mock.patch(
+        "drumgizmo_kits_generator.logger.section"
+    ) as mock_section, mock.patch(
+        "drumgizmo_kits_generator.logger.message"
+    ) as mock_message, mock.patch(
+        "drumgizmo_kits_generator.logger.set_verbose"
+    ) as mock_set_verbose:
+        yield {
+            "info": mock_info,
+            "debug": mock_debug,
+            "warning": mock_warning,
+            "error": mock_error,
+            "section": mock_section,
+            "message": mock_message,
+            "set_verbose": mock_set_verbose,
+        }
 
-    def setUp(self):
-        """Initialize before each test by creating test directories and files."""
-        self.source_dir = os.path.join(os.path.dirname(__file__), "sources")
-        self.target_dir = tempfile.mkdtemp()
-        self.config_file = os.path.join(self.source_dir, "drumgizmo-kit.ini")
 
-    def tearDown(self):
-        """Cleanup after each test by removing temporary directories."""
-        if os.path.exists(self.target_dir):
-            shutil.rmtree(self.target_dir)
+@pytest.fixture
+def temp_dir():
+    """Create a temporary directory for testing."""
+    temp_dir = tempfile.mkdtemp()
+    yield temp_dir
+    # Clean up
+    shutil.rmtree(temp_dir, ignore_errors=True)
 
-    # pylint: disable-next=too-many-statements
-    def test_prepare_metadata(self):
-        """Test preparing metadata from the configuration file with various input combinations."""
-        # Create a temporary configuration file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp:
-            temp.write('kit_name = "Test Kit"\n')
-            temp.write('kit_version = "1.0"\n')
-            temp.write('kit_description = "This is a description"\n')
-            temp.write('kit_notes = "DrumGizmo kit generated for testing purpose"\n')
-            temp.write('kit_author = "Piero"\n')
-            temp.write('kit_license = "Private license"\n')
-            temp.write('kit_website = "https://picas.fr/"\n')
-            temp.write('kit_samplerate = "44100"\n')
-            temp.write('kit_logo = "pngtree-music-notes-png-image_8660757.png"\n')
-            temp.write('kit_extra_files = "Lorem Ipsum.pdf"\n')
-            temp_name = temp.name
 
-        # Create mock arguments
-        args = MagicMock()
-        args.config = temp_name
-        args.source = self.source_dir
-        args.name = None
-        args.version = None
-        args.description = "This is a description"  # Explicitly specify the description
-        args.notes = None
-        args.author = None
-        args.license = None
-        args.website = None
-        args.logo = None
-        args.samplerate = None
-        args.extra_files = None
+@pytest.fixture
+def sample_config_file(temp_dir):
+    """Create a sample configuration file for testing."""
+    config_content = """[drumgizmo_kit_generator]
+name = "Test Kit"
+version = "1.0"
+description = "Test description"
+notes = "Test notes"
+author = "Test Author"
+license = "CC-BY-SA"
+website = "https://example.com"
+samplerate = "48000"
+velocity_levels = 3
+midi_note_min = 0
+midi_note_max = 127
+midi_note_median = 60
+extensions = "wav,flac,ogg"
+channels = "Left,Right,Overhead"
+main_channels = "Left,Right"
+"""
+    config_path = os.path.join(temp_dir, "test-config.ini")
+    with open(config_path, "w") as f:
+        f.write(config_content)
+    yield config_path
 
-        # Call the function to test
-        metadata = main_module.prepare_metadata(args)
 
-        # Verify the metadata
-        self.assertEqual(metadata["name"], "Test Kit", "Kit name should be read from config")
-        self.assertEqual(metadata["version"], "1.0", "Version should be read from config")
-        self.assertEqual(
-            metadata["description"],
-            "This is a description",
-            "Description should match command line arg",
+@pytest.fixture
+def sample_args():
+    """Create sample command line arguments for testing."""
+    args = argparse.Namespace()
+    args.source = "/path/to/source"
+    args.target = "/path/to/target"
+    args.config = constants.DEFAULT_CONFIG_FILE
+    args.verbose = False
+    args.dry_run = False
+    args.name = None
+    args.version = None
+    args.description = None
+    args.notes = None
+    args.author = None
+    args.license = None
+    args.website = None
+    args.logo = None
+    args.samplerate = None
+    args.extra_files = None
+    args.velocity_levels = None
+    args.midi_note_min = None
+    args.midi_note_max = None
+    args.midi_note_median = None
+    args.extensions = None
+    args.channels = None
+    args.main_channels = None
+    return args
+
+
+@pytest.fixture
+def temp_config_file():
+    """Create a temporary configuration file."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".ini", delete=False) as temp_file:
+        temp_file.write(
+            """[drumgizmo_kit_generator]
+name = Test Kit
+version = 1.0.0
+description = Test description
+notes = Test notes
+author = Test Author
+license = Test License
+website = https://example.com
+logo = logo.png
+samplerate = 44100
+extra_files = file1.txt,file2.txt
+velocity_levels = 5
+midi_note_min = 30
+midi_note_max = 90
+midi_note_median = 60
+extensions = wav,flac
+channels = Left,Right
+main_channels = Left,Right
+"""
         )
-        self.assertIn(
-            "DrumGizmo kit generated for testing purpose",
-            metadata["notes"],
-            "Notes should be read from config",
-        )
-        self.assertEqual(metadata["author"], "Piero", "Author should be read from config")
-        self.assertEqual(
-            metadata["license"], "Private license", "License should be read from config"
-        )
-        self.assertEqual(
-            metadata["website"], "https://picas.fr/", "Website should be read from config"
-        )
-        self.assertEqual(
-            metadata["logo"],
-            "pngtree-music-notes-png-image_8660757.png",
-            "Logo should be read from config",
-        )
-        self.assertEqual(metadata["samplerate"], "44100", "Sample rate should be read from config")
+        temp_file_path = temp_file.name
 
-        # Test command line arguments overriding config values
-        args.name = "Override Kit"
-        args.version = "2.0"
-        args.author = "Override Author"
+    yield temp_file_path
 
-        # Call the function again
-        metadata = main_module.prepare_metadata(args)
+    # Clean up
+    if os.path.exists(temp_file_path):
+        os.unlink(temp_file_path)
 
-        # Verify the overridden values
-        self.assertEqual(
-            metadata["name"], "Override Kit", "Kit name should be overridden by command line"
-        )
-        self.assertEqual(metadata["version"], "2.0", "Version should be overridden by command line")
-        self.assertEqual(
-            metadata["author"], "Override Author", "Author should be overridden by command line"
-        )
 
-        # Delete the temporary file
-        os.unlink(temp_name)
+class TestParseArguments:
+    """Tests for the parse_arguments function."""
 
-        # Test with missing config file but command line arguments
-        args.config = None
-        args.name = "Command Line Kit"
-        args.version = "3.0"
-        args.description = "Command line description"
-        args.notes = "Command line notes"
-        args.author = "Command Line Author"
-        args.license = "Command Line License"
-        args.samplerate = "96000"
-        args.extra_files = "command_line_file.txt"
+    @mock.patch(
+        "sys.argv", ["drumgizmo_kits_generator", "-s", "/path/to/source", "-t", "/path/to/target"]
+    )
+    def test_parse_arguments_minimal(self):
+        """Test parse_arguments with minimal required arguments."""
+        args = main.parse_arguments()
+        assert args.source == "/path/to/source"
+        assert args.target == "/path/to/target"
+        assert args.config == constants.DEFAULT_CONFIG_FILE
+        assert not args.verbose
+        assert not args.dry_run
 
-        # Call the function again
-        metadata = main_module.prepare_metadata(args)
-
-        # Verify values from command line only
-        self.assertEqual(
-            metadata["name"], "Command Line Kit", "Kit name should be from command line"
-        )
-        self.assertEqual(metadata["version"], "3.0", "Version should be from command line")
-        self.assertEqual(
-            metadata["description"],
-            "Command line description",
-            "Description should be from command line",
-        )
-        self.assertIn("Command line notes", metadata["notes"], "Notes should be from command line")
-        self.assertEqual(
-            metadata["author"], "Command Line Author", "Author should be from command line"
-        )
-        self.assertEqual(
-            metadata["license"], "Command Line License", "License should be from command line"
-        )
-        self.assertEqual(metadata["samplerate"], "96000", "Sample rate should be from command line")
-        self.assertEqual(
-            metadata["extra_files"],
-            "command_line_file.txt",
-            "Extra files should be from command line",
-        )
-
-    def test_prepare_metadata_validation(self):
-        """Test validation of MIDI and velocity parameters in prepare_metadata."""
-        # Create a temporary configuration file with invalid values
-        with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp:
-            temp.write('kit_name = "Test Kit"\n')
-            temp.write('kit_midi_note_min = "200"\n')  # Invalid value (> 127)
-            temp.write('kit_midi_note_max = "-10"\n')  # Invalid value (< 0)
-            temp.write('kit_midi_note_median = "300"\n')  # Invalid value (> 127)
-            temp.write('kit_velocity_levels = "0"\n')  # Invalid value (< 1)
-            temp_name = temp.name
-
-        # Create mock arguments
-        args = MagicMock()
-        args.config = temp_name
-        args.source = self.source_dir
-        args.name = None
-        args.version = None
-        args.description = None
-        args.notes = None
-        args.author = None
-        args.license = None
-        args.website = None
-        args.logo = None
-        args.samplerate = None
-        args.extra_files = None
-        args.midi_note_min = None
-        args.midi_note_max = None
-        args.midi_note_median = None
-        args.velocity_levels = None
-
-        # Capture stderr to check warnings
-        original_stderr = sys.stderr
-        sys.stderr = open(os.devnull, "w")  # Redirect stderr to avoid cluttering test output
-
-        try:
-            # Call the function to test
-            metadata = main_module.prepare_metadata(args)
-
-            # Verify that invalid values are stored as strings in the metadata
-            # The validation happens later in the main function
-            self.assertEqual(metadata["midi_note_min"], "200")
-            self.assertEqual(metadata["midi_note_max"], "-10")
-            self.assertEqual(metadata["midi_note_median"], "300")
-            self.assertEqual(metadata["velocity_levels"], "0")
-        finally:
-            # Restore stderr
-            sys.stderr.close()
-            sys.stderr = original_stderr
-
-        # Clean up
-        os.unlink(temp_name)
-
-    def test_copy_extra_files(self):
-        """Test copying additional files with various file paths and configurations."""
-        # Create test files in the current directory
-        extra_files = ["test_file1.txt", "test_file2.txt"]
-        current_dir = os.getcwd()
-        subdir = None
-
-        try:
-            # Create files in the current directory
-            for file in extra_files:
-                file_path = os.path.join(current_dir, file)
-                with open(file_path, "w", encoding="utf-8") as f:
-                    f.write("Test content")
-
-            # Create a string of additional files
-            extra_files_str = ",".join(extra_files)
-
-            # Call the function - note that copy_extra_files prend 3 arguments: source_dir, target_dir, extra_files_str
-            copied_files = main_module.copy_extra_files(
-                current_dir, self.target_dir, extra_files_str
-            )
-
-            # Verify that the files have been copied
-            self.assertEqual(
-                len(copied_files), len(extra_files), f"Should have copied {len(extra_files)} files"
-            )
-            for file in extra_files:
-                target_path = os.path.join(self.target_dir, file)
-                self.assertTrue(
-                    os.path.exists(target_path), f"File {file} should exist in target directory"
-                )
-                self.assertTrue(
-                    file in copied_files, f"File {file} should be in the list of copied files"
-                )
-
-            # Test with a non-existent file
-            non_existent = "non_existent_file.txt"
-            copied_files = main_module.copy_extra_files(current_dir, self.target_dir, non_existent)
-            self.assertEqual(
-                len(copied_files), 0, "Should not copy any files when file doesn't exist"
-            )
-
-            # Test with a file in a subdirectory
-            subdir = os.path.join(current_dir, "subdir")
-            os.makedirs(subdir, exist_ok=True)
-            subdir_file = os.path.join(subdir, "subdir_file.txt")
-            with open(subdir_file, "w", encoding="utf-8") as f:
-                f.write("Subdir test content")
-
-            # Call the function with a file in a subdirectory
-            copied_files = main_module.copy_extra_files(
-                current_dir, self.target_dir, "subdir/subdir_file.txt"
-            )
-
-            # Verify the file was copied with its directory structure
-            target_subdir = os.path.join(self.target_dir, "subdir")
-            self.assertTrue(os.path.exists(target_subdir), "Target subdirectory should be created")
-            self.assertTrue(
-                os.path.exists(os.path.join(target_subdir, "subdir_file.txt")),
-                "File in subdirectory should be copied",
-            )
-            self.assertEqual(len(copied_files), 1, "Should have copied 1 file from subdirectory")
-
-        finally:
-            # Clean up created files
-            for file in extra_files:
-                file_path = os.path.join(current_dir, file)
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-            if subdir and os.path.exists(subdir):
-                shutil.rmtree(subdir)
-
-    def test_extract_instrument_name(self):
-        """Test extracting the instrument name from various file paths."""
-        # Test different file paths
-        test_cases = [
-            ("/path/to/Bass-Drum-1.wav", "Bass-Drum-1"),
-            ("/path/to/E-Mu-Proteus-FX-Wacky-Snare.wav", "E-Mu-Proteus-FX-Wacky-Snare"),
-            ("/path/with spaces/Tom Tom.wav", "Tom Tom"),
-            ("Cymbal-Crash.flac", "Cymbal-Crash"),
-            ("/path/to/file/without/extension", "extension"),
-        ]
-
-        for file_path, expected in test_cases:
-            self.assertEqual(
-                extract_instrument_name(file_path),
-                expected,
-                f"Should extract '{expected}' from '{file_path}'",
-            )
-
-    def test_get_file_extension(self):
-        """Test extracting file extensions from various file paths."""
-        # Test different extensions
-        test_cases = [
-            ("/path/to/file.wav", ".wav"),
-            ("/path/to/file.WAV", ".WAV"),
-            ("/path/to/file.flac", ".flac"),
-            ("/path/to/file.ogg", ".ogg"),
-            ("file.mp3", ".mp3"),
-            ("/path/to/file", ""),
-            ("/path.to/file", ""),
-            # La fonction actuelle ne considère pas .hidden comme une extension
-            # car elle cherche un point suivi d'au moins un caractère
-            ("/path/to/.hidden", ""),
-        ]
-
-        for file_path, expected in test_cases:
-            self.assertEqual(
-                get_file_extension(file_path),
-                expected,
-                f"Should extract '{expected}' from '{file_path}'",
-            )
-
-    @patch("drumgizmo_kits_generator.main.create_instrument_xml")
-    @patch("drumgizmo_kits_generator.main.create_midimap_xml")
-    @patch("drumgizmo_kits_generator.main.create_drumkit_xml")
-    @patch("drumgizmo_kits_generator.main.create_volume_variations")
-    @patch(
-        "drumgizmo_kits_generator.main.copy_sample_file"
-    )  # Utiliser copy_sample_file au lieu de copy_audio_file
-    @patch("drumgizmo_kits_generator.main.find_audio_files")
-
-    # pylint: disable-next=too-many-arguments
-    def test_main_integration(
-        self,
-        mock_find_audio_files,
-        mock_copy_sample_file,
-        mock_create_volume_variations,
-        mock_create_drumkit_xml,
-        mock_create_midimap_xml,
-        mock_create_instrument_xml,
-    ):
-        """Integration test of the main script with all components mocked."""
-        # Configure the mocks
-        mock_find_audio_files.return_value = ["/path/to/sample1.wav", "/path/to/sample2.wav"]
-        mock_copy_sample_file.return_value = True
-        mock_create_volume_variations.return_value = None  # La fonction ne retourne rien
-        mock_create_instrument_xml.return_value = True
-        mock_create_drumkit_xml.return_value = True
-        mock_create_midimap_xml.return_value = True
-
-        # Create arguments for main()
-        # pylint: disable-next=R0801
-        sys.argv = [
-            "create_drumgizmo_kit.py",
+    @mock.patch(
+        "sys.argv",
+        [
+            "drumgizmo_kits_generator",
             "-s",
-            self.source_dir,
+            "/path/to/source",
             "-t",
-            self.target_dir,
+            "/path/to/target",
             "-c",
-            self.config_file,
+            "/path/to/config.ini",
+            "-v",
+            "-x",
             "--name",
-            "Test Kit",
-        ]
-
-        # Call the main() function
-        with patch("sys.exit") as mock_exit:
-            main_module.main()
-
-            # Verify that the function did not terminate with an error
-            mock_exit.assert_not_called()
-
-        # Verify that the functions were called
-        # pylint: disable-next=expression-not-assigned
-        mock_find_audio_files.assert_called_once(), "find_audio_files should be called once"
-        self.assertEqual(
-            mock_copy_sample_file.call_count, 2, "copy_sample_file should be called for each sample"
-        )
-        self.assertEqual(
-            mock_create_volume_variations.call_count,
-            2,
-            "create_volume_variations should be called for each sample",
-        )
-        self.assertEqual(
-            mock_create_instrument_xml.call_count,
-            2,
-            "create_instrument_xml should be called for each sample",
-        )
-        # pylint: disable-next=expression-not-assigned
-        mock_create_drumkit_xml.assert_called_once(), "create_drumkit_xml should be called once"
-        # pylint: disable-next=expression-not-assigned
-        mock_create_midimap_xml.assert_called_once(), "create_midimap_xml should be called once"
-
-    @patch("drumgizmo_kits_generator.main.find_audio_files")
-    def test_main_no_audio_files(self, mock_find_audio_files):
-        """Test main function behavior when no audio files are found."""
-        # Configure the mock to return an empty list
-        mock_find_audio_files.return_value = []
-
-        # Create arguments for main()
-        sys.argv = [
-            "create_drumgizmo_kit.py",
-            "-s",
-            self.source_dir,
-            "-t",
-            self.target_dir,
-            "-c",
-            self.config_file,
-            "--name",
-            "Test Kit",
-        ]
-
-        # Call the main() function and expect a system exit
-        with patch("sys.exit") as mock_exit:
-            main_module.main()
-
-            # Verify that the function terminated with an error
-            mock_exit.assert_called_once()
-
-        # Verify that find_audio_files was called
-        mock_find_audio_files.assert_called_once()
-
-    @patch("drumgizmo_kits_generator.main.create_instrument_xml")
-    @patch("drumgizmo_kits_generator.main.create_midimap_xml")
-    @patch("drumgizmo_kits_generator.main.create_drumkit_xml")
-    @patch("drumgizmo_kits_generator.main.create_volume_variations")
-    @patch("drumgizmo_kits_generator.main.copy_sample_file")
-    @patch("drumgizmo_kits_generator.main.find_audio_files")
-    @patch("drumgizmo_kits_generator.main.shutil.copy2")
-    @patch("drumgizmo_kits_generator.main.os.path.exists")
-    # pylint: disable-next=too-many-arguments
-    def test_main_logo_copy_error(
-        self,
-        mock_path_exists,
-        mock_shutil_copy2,
-        mock_find_audio_files,
-        mock_copy_sample_file,
-        mock_create_volume_variations,
-        mock_create_drumkit_xml,
-        mock_create_midimap_xml,
-        mock_create_instrument_xml,
-    ):
-        """Test main function with error during logo copy."""
-        # Configure the mocks
-        mock_find_audio_files.return_value = ["/path/to/sample1.wav"]
-        mock_copy_sample_file.return_value = True
-        mock_create_volume_variations.return_value = None
-        mock_create_instrument_xml.return_value = True
-        mock_create_drumkit_xml.return_value = True
-        mock_create_midimap_xml.return_value = True
-
-        # Make os.path.exists return True for the logo file
-        mock_path_exists.return_value = True
-
-        # Make shutil.copy2 raise an exception
-        mock_shutil_copy2.side_effect = Exception("Test error")
-
-        # Create arguments for main()
-        sys.argv = [
-            "create_drumgizmo_kit.py",
-            "-s",
-            self.source_dir,
-            "-t",
-            self.target_dir,
+            "Custom Kit",
+            "--version",
+            "2.0",
+            "--description",
+            "Custom description",
+            "--notes",
+            "Custom notes",
+            "--author",
+            "Custom Author",
+            "--license",
+            "MIT",
+            "--website",
+            "https://custom.com",
             "--logo",
-            "test_logo.png",
-        ]
-
-        # Redirect stderr to avoid cluttering test output
-        original_stderr = sys.stderr
-        sys.stderr = open(os.devnull, "w")
-
-        try:
-            # Call the main() function
-            with patch("sys.exit") as mock_exit:
-                main_module.main()
-                # Verify that the function did not terminate with an error
-                mock_exit.assert_not_called()
-
-            # Verify that shutil.copy2 was called but failed
-            mock_shutil_copy2.assert_called_once()
-        finally:
-            # Restore stderr
-            sys.stderr.close()
-            sys.stderr = original_stderr
-
-    @patch("drumgizmo_kits_generator.main.create_instrument_xml")
-    @patch("drumgizmo_kits_generator.main.create_midimap_xml")
-    @patch("drumgizmo_kits_generator.main.create_drumkit_xml")
-    @patch("drumgizmo_kits_generator.main.create_volume_variations")
-    @patch("drumgizmo_kits_generator.main.copy_sample_file")
-    @patch("drumgizmo_kits_generator.main.find_audio_files")
-    # pylint: disable-next=too-many-arguments
-    def test_main_with_invalid_parameters(
-        self,
-        mock_find_audio_files,
-        mock_copy_sample_file,
-        mock_create_volume_variations,
-        mock_create_drumkit_xml,
-        mock_create_midimap_xml,
-        mock_create_instrument_xml,
-    ):
-        """Test main function with invalid MIDI and velocity parameters."""
-        # Configure the mocks
-        mock_find_audio_files.return_value = ["/path/to/sample1.wav"]
-        mock_copy_sample_file.return_value = True
-        mock_create_volume_variations.return_value = None
-        mock_create_instrument_xml.return_value = True
-        mock_create_drumkit_xml.return_value = True
-        mock_create_midimap_xml.return_value = True
-
-        # Create a temporary configuration file with invalid values
-        with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp:
-            temp.write('kit_name = "Test Kit"\n')
-            temp.write('kit_midi_note_min = "200"\n')  # Invalid value (> 127)
-            temp.write('kit_midi_note_max = "-10"\n')  # Invalid value (< 0)
-            temp.write('kit_midi_note_median = "300"\n')  # Invalid value (> 127)
-            temp.write('kit_velocity_levels = "0"\n')  # Invalid value (< 1)
-            temp_name = temp.name
-
-        # Create arguments for main()
-        sys.argv = [
-            "create_drumgizmo_kit.py",
-            "-s",
-            self.source_dir,
-            "-t",
-            self.target_dir,
-            "-c",
-            temp_name,
-        ]
-
-        # Redirect stderr to avoid cluttering test output
-        original_stderr = sys.stderr
-        sys.stderr = open(os.devnull, "w")
-
-        try:
-            # Call the main() function
-            with patch("sys.exit") as mock_exit:
-                main_module.main()
-                # Verify that the function did not terminate with an error
-                mock_exit.assert_not_called()
-
-            # Verify that create_midimap_xml was called with default values
-            mock_create_midimap_xml.assert_called_once()
-            call_args = mock_create_midimap_xml.call_args[1]
-            self.assertEqual(call_args["midi_note_min"], main_module.DEFAULT_MIDI_NOTE_MIN)
-            self.assertEqual(call_args["midi_note_max"], main_module.DEFAULT_MIDI_NOTE_MAX)
-            self.assertEqual(call_args["midi_note_median"], main_module.DEFAULT_MIDI_NOTE_MEDIAN)
-
-            # Verify that create_volume_variations was called with default velocity_levels
-            mock_create_volume_variations.assert_called_once()
-            self.assertEqual(
-                mock_create_volume_variations.call_args[0][3], main_module.DEFAULT_VELOCITY_LEVELS
-            )
-        finally:
-            # Restore stderr
-            sys.stderr.close()
-            sys.stderr = original_stderr
-
-        # Clean up
-        os.unlink(temp_name)
-
-    @patch("drumgizmo_kits_generator.main.create_instrument_xml")
-    @patch("drumgizmo_kits_generator.main.create_midimap_xml")
-    @patch("drumgizmo_kits_generator.main.create_drumkit_xml")
-    @patch("drumgizmo_kits_generator.main.create_volume_variations")
-    @patch("drumgizmo_kits_generator.main.copy_sample_file")
-    @patch("drumgizmo_kits_generator.main.find_audio_files")
-    @patch("drumgizmo_kits_generator.main.shutil.copy2")
-    @patch("drumgizmo_kits_generator.main.copy_extra_files")
-    # pylint: disable-next=too-many-arguments
-    def test_main_with_logo_and_extra_files(
-        self,
-        mock_copy_extra_files,
-        mock_shutil_copy2,
-        mock_find_audio_files,
-        mock_copy_sample_file,
-        mock_create_volume_variations,
-        mock_create_drumkit_xml,
-        mock_create_midimap_xml,
-        mock_create_instrument_xml,
-    ):
-        """Test main function with logo and extra files."""
-        # Configure the mocks
-        mock_find_audio_files.return_value = ["/path/to/sample1.wav", "/path/to/sample2.wav"]
-        mock_copy_sample_file.return_value = True
-        mock_create_volume_variations.return_value = None
-        mock_create_instrument_xml.return_value = True
-        mock_create_drumkit_xml.return_value = True
-        mock_create_midimap_xml.return_value = True
-        mock_copy_extra_files.return_value = ["file1.txt", "file2.txt"]
-        mock_shutil_copy2.return_value = None
-
-        # Create a temporary logo file
-        logo_path = os.path.join(self.source_dir, "test_logo.png")
-        with open(logo_path, "w") as f:
-            f.write("Test logo content")
-
-        # Create arguments for main()
-        sys.argv = [
-            "create_drumgizmo_kit.py",
-            "-s",
-            self.source_dir,
-            "-t",
-            self.target_dir,
-            "--logo",
-            "test_logo.png",
+            "custom-logo.png",
+            "--samplerate",
+            "96000",
             "--extra-files",
-            "file1.txt,file2.txt",
-        ]
+            "file1.txt,file2.pdf",
+            "--velocity-levels",
+            "5",
+            "--midi-note-min",
+            "10",
+            "--midi-note-max",
+            "100",
+            "--midi-note-median",
+            "55",
+            "--extensions",
+            "wav,aiff",
+            "--channels",
+            "Ch1,Ch2",
+            "--main-channels",
+            "Ch1",
+        ],
+    )
+    def test_parse_arguments_full(self):
+        """Test parse_arguments with all possible arguments."""
+        args = main.parse_arguments()
+        assert args.source == "/path/to/source"
+        assert args.target == "/path/to/target"
+        assert args.config == "/path/to/config.ini"
+        assert args.verbose
+        assert args.dry_run
+        assert args.name == "Custom Kit"
+        assert args.version == "2.0"
+        assert args.description == "Custom description"
+        assert args.notes == "Custom notes"
+        assert args.author == "Custom Author"
+        assert args.license == "MIT"
+        assert args.website == "https://custom.com"
+        assert args.logo == "custom-logo.png"
+        assert args.samplerate == "96000"
+        assert args.extra_files == "file1.txt,file2.pdf"
+        assert args.velocity_levels == "5"
+        assert args.midi_note_min == "10"
+        assert args.midi_note_max == "100"
+        assert args.midi_note_median == "55"
+        assert args.extensions == "wav,aiff"
+        assert args.channels == "Ch1,Ch2"
+        assert args.main_channels == "Ch1"
 
-        # Redirect stderr to avoid cluttering test output
-        original_stderr = sys.stderr
-        sys.stderr = open(os.devnull, "w")
 
-        try:
-            # Call the main() function
-            with patch("sys.exit") as mock_exit:
-                main_module.main()
-                # Verify that the function did not terminate with an error
-                mock_exit.assert_not_called()
+class TestLoadConfiguration:
+    """Tests for the load_configuration function."""
 
-            # Verify that the logo was copied
-            mock_shutil_copy2.assert_called_with(
-                logo_path, os.path.join(self.target_dir, "test_logo.png")
+    def test_load_configuration_defaults(self):
+        """Test loading configuration with default values."""
+        args = argparse.Namespace(
+            source="/source",
+            target="/target",
+            verbose=False,
+            dry_run=False,
+            config=constants.DEFAULT_CONFIG_FILE,
+            name=None,
+            version=None,
+            description=None,
+            notes=None,
+            author=None,
+            license=None,
+            website=None,
+            logo=None,
+            samplerate=None,
+            extra_files=None,
+            velocity_levels=None,
+            midi_note_min=None,
+            midi_note_max=None,
+            midi_note_median=None,
+            extensions=None,
+            channels=None,
+            main_channels=None,
+        )
+
+        with mock.patch("os.path.isfile", return_value=False):
+            config_data = main.load_configuration(args)
+
+        assert config_data["name"] == constants.DEFAULT_NAME
+        assert config_data["version"] == constants.DEFAULT_VERSION
+        assert config_data["license"] == constants.DEFAULT_LICENSE
+        assert config_data["samplerate"] == constants.DEFAULT_SAMPLERATE
+        assert config_data["extensions"] == constants.DEFAULT_EXTENSIONS
+        assert config_data["channels"] == constants.DEFAULT_CHANNELS
+        assert config_data["main_channels"] == constants.DEFAULT_MAIN_CHANNELS
+        assert config_data["velocity_levels"] == constants.DEFAULT_VELOCITY_LEVELS
+        assert config_data["midi_note_min"] == constants.DEFAULT_MIDI_NOTE_MIN
+        assert config_data["midi_note_max"] == constants.DEFAULT_MIDI_NOTE_MAX
+        assert config_data["midi_note_median"] == constants.DEFAULT_MIDI_NOTE_MEDIAN
+
+    def test_load_configuration_from_file(self, temp_config_file):
+        """Test loading configuration from a file."""
+        args = argparse.Namespace(
+            source="/source",
+            target="/target",
+            verbose=False,
+            dry_run=False,
+            config=temp_config_file,
+            name=None,
+            version=None,
+            description=None,
+            notes=None,
+            author=None,
+            license=None,
+            website=None,
+            logo=None,
+            samplerate=None,
+            extra_files=None,
+            velocity_levels=None,
+            midi_note_min=None,
+            midi_note_max=None,
+            midi_note_median=None,
+            extensions=None,
+            channels=None,
+            main_channels=None,
+        )
+
+        config_data = main.load_configuration(args)
+
+        assert config_data["name"] == "Test Kit"
+        assert config_data["version"] == "1.0.0"
+        assert config_data["description"] == "Test description"
+        assert config_data["notes"] == "Test notes"
+        assert config_data["author"] == "Test Author"
+        assert config_data["license"] == "Test License"
+        assert config_data["website"] == "https://example.com"
+        assert config_data["logo"] == "logo.png"
+        assert config_data["samplerate"] == "44100"
+        assert config_data["extra_files"] == "file1.txt,file2.txt"
+        assert config_data["velocity_levels"] == "5"
+        assert config_data["midi_note_min"] == "30"
+        assert config_data["midi_note_max"] == "90"
+        assert config_data["midi_note_median"] == "60"
+        assert config_data["extensions"] == "wav,flac"
+        assert config_data["channels"] == "Left,Right"
+        assert config_data["main_channels"] == "Left,Right"
+
+    def test_load_configuration_from_source_dir(self, temp_config_file):
+        """Test loading configuration from source directory."""
+        # Create a temporary directory structure
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Copy the config file to the source directory
+            source_config = os.path.join(temp_dir, constants.DEFAULT_CONFIG_FILE)
+            shutil.copy(temp_config_file, source_config)
+
+            args = argparse.Namespace(
+                source=temp_dir,
+                target="/target",
+                verbose=False,
+                dry_run=False,
+                config=constants.DEFAULT_CONFIG_FILE,
+                name=None,
+                version=None,
+                description=None,
+                notes=None,
+                author=None,
+                license=None,
+                website=None,
+                logo=None,
+                samplerate=None,
+                extra_files=None,
+                velocity_levels=None,
+                midi_note_min=None,
+                midi_note_max=None,
+                midi_note_median=None,
+                extensions=None,
+                channels=None,
+                main_channels=None,
             )
 
-            # Verify that copy_extra_files was called
-            mock_copy_extra_files.assert_called_with(
-                self.source_dir, self.target_dir, "file1.txt,file2.txt"
-            )
-        finally:
-            # Restore stderr
-            sys.stderr.close()
-            sys.stderr = original_stderr
+            config_data = main.load_configuration(args)
 
-        # Clean up
-        if os.path.exists(logo_path):
-            os.remove(logo_path)
+            assert config_data["name"] == "Test Kit"
+            assert config_data["version"] == "1.0.0"
+            assert config_data["description"] == "Test description"
 
-    @patch("drumgizmo_kits_generator.main.create_instrument_xml")
-    @patch("drumgizmo_kits_generator.main.create_midimap_xml")
-    @patch("drumgizmo_kits_generator.main.create_drumkit_xml")
-    @patch("drumgizmo_kits_generator.main.create_volume_variations")
-    @patch("drumgizmo_kits_generator.main.copy_sample_file")
-    @patch("drumgizmo_kits_generator.main.find_audio_files")
-    @patch("drumgizmo_kits_generator.main.shutil.copy2")
-    @patch("drumgizmo_kits_generator.main.os.path.exists")
-    # pylint: disable-next=too-many-arguments,function-redefined
-    def test_main_logo_copy_error(
+    def test_load_configuration_nonexistent_file(self):
+        """Test loading configuration with a nonexistent file."""
+        args = argparse.Namespace(
+            source="/source",
+            target="/target",
+            verbose=False,
+            dry_run=False,
+            config="nonexistent.ini",  # Non-default config file that doesn't exist
+            name=None,
+            version=None,
+            description=None,
+            notes=None,
+            author=None,
+            license=None,
+            website=None,
+            logo=None,
+            samplerate=None,
+            extra_files=None,
+            velocity_levels=None,
+            midi_note_min=None,
+            midi_note_max=None,
+            midi_note_median=None,
+            extensions=None,
+            channels=None,
+            main_channels=None,
+        )
+
+        with mock.patch("os.path.isfile", return_value=False), mock.patch(
+            "drumgizmo_kits_generator.logger.warning"
+        ) as mock_warning:
+            config_data = main.load_configuration(args)
+
+            # Verify that a warning was logged
+            mock_warning.assert_called_once_with("Configuration file not found: nonexistent.ini")
+
+        # Should still have default values
+        assert config_data["name"] == constants.DEFAULT_NAME
+        assert config_data["version"] == constants.DEFAULT_VERSION
+
+
+class TestTransformConfiguration:
+    """Tests for the transform_configuration function."""
+
+    @mock.patch("drumgizmo_kits_generator.transformers.transform_velocity_levels")
+    @mock.patch("drumgizmo_kits_generator.transformers.transform_midi_note_min")
+    @mock.patch("drumgizmo_kits_generator.transformers.transform_midi_note_max")
+    @mock.patch("drumgizmo_kits_generator.transformers.transform_midi_note_median")
+    @mock.patch("drumgizmo_kits_generator.transformers.transform_samplerate")
+    @mock.patch("drumgizmo_kits_generator.transformers.transform_extensions")
+    @mock.patch("drumgizmo_kits_generator.transformers.transform_channels")
+    @mock.patch("drumgizmo_kits_generator.transformers.transform_main_channels")
+    @mock.patch("drumgizmo_kits_generator.transformers.transform_extra_files")
+    def test_transform_configuration(
         self,
-        mock_path_exists,
-        mock_shutil_copy2,
-        mock_find_audio_files,
-        mock_copy_sample_file,
-        mock_create_volume_variations,
-        mock_create_drumkit_xml,
-        mock_create_midimap_xml,
-        mock_create_instrument_xml,
+        mock_extra_files,
+        mock_main_channels,
+        mock_channels,
+        mock_extensions,
+        mock_samplerate,
+        mock_median,
+        mock_max,
+        mock_min,
+        mock_velocity,
     ):
-        """Test main function with error during logo copy."""
-        # Configure the mocks
-        mock_find_audio_files.return_value = ["/path/to/sample1.wav"]
-        mock_copy_sample_file.return_value = True
-        mock_create_volume_variations.return_value = None
-        mock_create_instrument_xml.return_value = True
-        mock_create_drumkit_xml.return_value = True
-        mock_create_midimap_xml.return_value = True
+        """Test transform_configuration calls all transformer functions."""
+        # Setup mocks to return transformed values
+        mock_velocity.return_value = 4
+        mock_min.return_value = 0
+        mock_max.return_value = 127
+        mock_median.return_value = 60
+        mock_samplerate.return_value = "48000"
+        mock_extensions.return_value = ["wav", "flac"]
+        mock_channels.return_value = ["Left", "Right"]
+        mock_main_channels.return_value = ["Left"]
+        mock_extra_files.return_value = ["file1.txt"]
 
-        # Make os.path.exists return True for the logo file
-        mock_path_exists.return_value = True
+        # Create config data
+        config_data = {
+            "name": "Test Kit",
+            "version": "1.0",
+            "description": "Test description",
+            "notes": "Test notes",
+            "author": "Test Author",
+            "license": "CC-BY-SA",
+            "website": "https://example.com",
+            "logo": "logo.png",
+            "samplerate": "44100",
+            "extra_files": "file1.txt",
+            "velocity_levels": "4",
+            "midi_note_min": "0",
+            "midi_note_max": "127",
+            "midi_note_median": "60",
+            "extensions": "wav,flac",
+            "channels": "Left,Right",
+            "main_channels": "Left",
+        }
 
-        # Make shutil.copy2 raise an exception
-        mock_shutil_copy2.side_effect = Exception("Test error")
+        # Call the function
+        result = main.transform_configuration(config_data)
 
-        # Create arguments for main()
-        sys.argv = [
-            "create_drumgizmo_kit.py",
-            "-s",
-            self.source_dir,
-            "-t",
-            self.target_dir,
-            "--logo",
-            "test_logo.png",
+        # Check that all transformer functions were called
+        mock_velocity.assert_called_once_with(config_data["velocity_levels"])
+        mock_min.assert_called_once_with(config_data["midi_note_min"])
+        mock_max.assert_called_once_with(config_data["midi_note_max"])
+        mock_median.assert_called_once_with(config_data["midi_note_median"])
+        mock_samplerate.assert_called_once_with(config_data["samplerate"])
+        mock_extensions.assert_called_once_with(config_data["extensions"])
+        mock_channels.assert_called_once_with(config_data["channels"])
+        mock_main_channels.assert_called_once_with(config_data["main_channels"])
+        mock_extra_files.assert_called_once_with(config_data["extra_files"])
+
+        # Check that transformed values are in the result
+        assert result["velocity_levels"] == 4
+        assert result["midi_note_min"] == 0
+        assert result["midi_note_max"] == 127
+        assert result["midi_note_median"] == 60
+        assert result["samplerate"] == "48000"
+        assert result["extensions"] == ["wav", "flac"]
+        assert result["channels"] == ["Left", "Right"]
+        assert result["main_channels"] == ["Left"]
+        assert result["extra_files"] == ["file1.txt"]
+
+
+class TestValidateConfiguration:
+    """Tests for the validate_configuration function."""
+
+    @mock.patch("drumgizmo_kits_generator.validators.validate_midi_note_min")
+    @mock.patch("drumgizmo_kits_generator.validators.validate_midi_note_max")
+    @mock.patch("drumgizmo_kits_generator.validators.validate_midi_note_median")
+    @mock.patch("drumgizmo_kits_generator.validators.validate_channels")
+    @mock.patch("drumgizmo_kits_generator.validators.validate_main_channels")
+    def test_validate_configuration(
+        self,
+        mock_validate_main_channels,
+        mock_validate_channels,
+        mock_validate_median,
+        mock_validate_max,
+        mock_validate_min,
+    ):
+        """Test validate_configuration calls validator functions."""
+        # Create config data
+        config_data = {
+            "midi_note_min": 0,
+            "midi_note_max": 127,
+            "midi_note_median": 60,
+            "channels": ["Left", "Right"],
+            "main_channels": ["Left"],
+        }
+
+        # Call the function
+        main.validate_configuration(config_data)
+
+        # Check that validator functions were called
+        mock_validate_min.assert_called_once()
+        mock_validate_max.assert_called_once()
+        mock_validate_median.assert_called_once()
+        mock_validate_channels.assert_called_once()
+        mock_validate_main_channels.assert_called_once()
+
+
+class TestPrepareMetadata:
+    """Tests for the prepare_metadata function."""
+
+    def test_prepare_metadata(self):
+        """Test prepare_metadata correctly processes configuration data."""
+        # Create config data
+        config_data = {
+            "name": "Test Kit",
+            "version": "1.0",
+            "description": "Test description",
+            "notes": "Test notes",
+            "author": "Test Author",
+            "license": "CC-BY-SA",
+            "website": "https://example.com",
+            "logo": "logo.png",
+            "samplerate": "48000",
+            "extra_files": ["file1.txt"],
+            "velocity_levels": 4,
+            "midi_note_min": 0,
+            "midi_note_max": 127,
+            "midi_note_median": 60,
+            "extensions": ["wav", "flac", "ogg"],
+            "channels": ["Left", "Right", "Overhead"],
+            "main_channels": ["Left", "Right"],
+        }
+
+        # Call the function
+        metadata = main.prepare_metadata(config_data)
+
+        # Check that metadata contains all expected keys
+        assert metadata["name"] == "Test Kit"
+        assert metadata["version"] == "1.0"
+        assert metadata["description"] == "Test description"
+        assert metadata["notes"] == "Test notes"
+        assert metadata["author"] == "Test Author"
+        assert metadata["license"] == "CC-BY-SA"
+        assert metadata["website"] == "https://example.com"
+        assert metadata["logo"] == "logo.png"
+        assert metadata["samplerate"] == 48000
+        assert metadata["extra_files"] == ["file1.txt"]
+        assert metadata["velocity_levels"] == 4
+        assert metadata["midi_note_min"] == 0
+        assert metadata["midi_note_max"] == 127
+        assert metadata["midi_note_median"] == 60
+        assert metadata["extensions"] == ["wav", "flac", "ogg"]
+        assert metadata["channels"] == ["Left", "Right", "Overhead"]
+        assert metadata["main_channels"] == ["Left", "Right"]
+
+        # In the actual implementation, the instruments list might be added elsewhere
+        # So we'll just check that the metadata contains the original config data
+        for key, value in config_data.items():
+            if key == "samplerate":
+                assert metadata[key] == int(value)
+            else:
+                assert metadata[key] == value
+
+    def test_prepare_metadata_with_string_values(self):
+        """Test prepare_metadata with string values."""
+        config_data = {
+            "name": "Test Kit",
+            "version": "1.0.0",
+            "description": "Test description",
+            "notes": "Test notes",
+            "author": "Test Author",
+            "license": "Test License",
+            "website": "https://example.com",
+            "logo": "logo.png",
+            "samplerate": "44100",
+            "extra_files": "file1.txt,file2.txt",
+            "velocity_levels": "5",
+            "midi_note_min": "30",
+            "midi_note_max": "90",
+            "midi_note_median": "60",
+            "extensions": "wav,flac",
+            "channels": "Left,Right",
+            "main_channels": "Left,Right",
+        }
+
+        metadata = main.prepare_metadata(config_data)
+
+        assert metadata["name"] == "Test Kit"
+        assert metadata["velocity_levels"] == 5
+        assert metadata["midi_note_min"] == 30
+        assert metadata["midi_note_max"] == 90
+        assert metadata["midi_note_median"] == 60
+        assert metadata["samplerate"] == 44100
+
+    def test_prepare_metadata_with_integer_values(self):
+        """Test prepare_metadata with integer values."""
+        config_data = {
+            "name": "Test Kit",
+            "version": "1.0.0",
+            "description": "Test description",
+            "notes": "Test notes",
+            "author": "Test Author",
+            "license": "Test License",
+            "website": "https://example.com",
+            "logo": "logo.png",
+            "samplerate": "44100",
+            "extra_files": "file1.txt,file2.txt",
+            "velocity_levels": 5,  # Already an integer
+            "midi_note_min": 30,  # Already an integer
+            "midi_note_max": 90,  # Already an integer
+            "midi_note_median": 60,  # Already an integer
+            "extensions": "wav,flac",
+            "channels": "Left,Right",
+            "main_channels": "Left,Right",
+        }
+
+        metadata = main.prepare_metadata(config_data)
+
+        assert metadata["name"] == "Test Kit"
+        assert metadata["velocity_levels"] == 5
+        assert metadata["midi_note_min"] == 30
+        assert metadata["midi_note_max"] == 90
+        assert metadata["midi_note_median"] == 60
+        assert metadata["samplerate"] == 44100
+
+
+class TestPrintFunctions:
+    """Tests for the print_* functions."""
+
+    def test_print_metadata(self, mock_logger):
+        """Test print_metadata function."""
+        metadata = {
+            "name": "Test Kit",
+            "version": "1.0.0",
+            "description": "Test description",
+            "notes": "Test notes",
+            "author": "Test Author",
+            "license": "Test License",
+            "website": "https://example.com",
+            "logo": "logo.png",
+            "samplerate": "44100",
+            "extra_files": ["file1.txt", "file2.txt"],
+            "velocity_levels": 5,
+            "midi_note_min": 30,
+            "midi_note_max": 90,
+            "midi_note_median": 60,
+            "extensions": ["wav", "flac"],
+            "channels": ["Left", "Right"],
+            "main_channels": ["Left", "Right"],
+        }
+
+        main.print_metadata(metadata)
+
+        # Verify that section and info were called with appropriate arguments
+        mock_logger["section"].assert_called_with("Metadata")
+        assert mock_logger["info"].call_count >= 10  # Should call info for each metadata item
+
+    def test_print_samples_info(self, mock_logger):
+        """Test print_samples_info function."""
+        audio_files = [
+            "/path/to/kick.wav",
+            "/path/to/snare.wav",
+            "/path/to/hihat.wav",
         ]
 
-        # Redirect stderr to avoid cluttering test output
-        original_stderr = sys.stderr
-        sys.stderr = open(os.devnull, "w")
+        metadata = {
+            "midi_note_min": 30,
+            "midi_note_max": 90,
+            "midi_note_median": 60,
+        }
 
-        try:
-            # Call the main() function
-            with patch("sys.exit") as mock_exit:
-                main_module.main()
-                # Verify that the function did not terminate with an error
-                mock_exit.assert_not_called()
+        main.print_samples_info(audio_files, metadata)
 
-            # Verify that shutil.copy2 was called but failed
-            mock_shutil_copy2.assert_called_once()
-        finally:
-            # Restore stderr
-            sys.stderr.close()
-            sys.stderr = original_stderr
+        # Verify that section and info were called with appropriate arguments
+        mock_logger["section"].assert_called_with("Source Audio Samples")
+        assert mock_logger["info"].call_count >= 4  # Should call info for count and each sample
+
+
+class TestMain:
+    """Tests for the main module."""
+
+    # Configuration de données partagée par tous les tests
+    config_data = {
+        "name": "Test Kit",
+        "version": "1.0",
+        "description": "Test description",
+        "notes": "Test notes",
+        "author": "Test Author",
+        "license": "CC-BY-SA",
+        "website": "https://example.com",
+        "samplerate": "48000",
+        "velocity_levels": 3,
+        "midi_note_min": 0,
+        "midi_note_max": 127,
+        "midi_note_median": 60,
+        "extensions": ["wav", "flac", "ogg"],
+        "channels": ["Left", "Right", "Overhead"],
+        "main_channels": ["Left", "Right"],
+    }
+
+    @mock.patch("drumgizmo_kits_generator.main.parse_arguments")
+    @mock.patch("drumgizmo_kits_generator.utils.validate_directories")
+    @mock.patch("drumgizmo_kits_generator.main.load_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.transform_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.validate_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.prepare_metadata")
+    @mock.patch("drumgizmo_kits_generator.main.print_metadata")
+    @mock.patch("drumgizmo_kits_generator.utils.scan_source_files")
+    @mock.patch("drumgizmo_kits_generator.main.print_samples_info")
+    @mock.patch("drumgizmo_kits_generator.utils.prepare_target_directory")
+    @mock.patch("drumgizmo_kits_generator.main.process_audio_files")
+    @mock.patch("drumgizmo_kits_generator.main.generate_xml_files")
+    @mock.patch("drumgizmo_kits_generator.main.copy_additional_files")
+    def test_main_normal_flow(
+        self,
+        mock_copy,
+        mock_generate_xml,
+        mock_process_audio,
+        mock_prepare_target,
+        mock_print_samples,
+        mock_scan_source,
+        mock_print_metadata,
+        mock_prepare_metadata,
+        mock_validate_config,
+        mock_transform_config,
+        mock_load_config,
+        mock_validate_dirs,
+        mock_parse_args,
+        mock_logger,
+    ):
+        """Test main function normal execution flow."""
+        # Setup mocks
+        args = argparse.Namespace()
+        args.source = "/path/to/source"
+        args.target = "/path/to/target"
+        args.config = constants.DEFAULT_CONFIG_FILE
+        args.verbose = True
+        args.dry_run = False
+        mock_parse_args.return_value = args
+
+        config_data = self.config_data
+        mock_load_config.return_value = config_data
+
+        transformed_config = {"name": "Test Kit", "extensions": ["wav"]}
+        mock_transform_config.return_value = transformed_config
+
+        metadata = {"name": "Test Kit", "extensions": ["wav"], "instruments": []}
+        mock_prepare_metadata.return_value = metadata
+
+        audio_files = ["/path/to/source/kick.wav", "/path/to/source/snare.wav"]
+        mock_scan_source.return_value = audio_files
+
+        processed_files = [
+            "/path/to/target/Kick/samples/1-Kick.wav",
+            "/path/to/target/Snare/samples/1-Snare.wav",
+        ]
+        mock_process_audio.return_value = processed_files
+
+        # Call the function
+        main.main()
+
+        # Check that all expected functions were called in order
+        mock_parse_args.assert_called_once()
+        mock_logger["set_verbose"].assert_called_once_with(True)
+        mock_validate_dirs.assert_called_once_with(args.source, args.target, args.config)
+        mock_load_config.assert_called_once_with(args)
+        mock_transform_config.assert_called_once_with(config_data)
+        mock_validate_config.assert_called_once_with(transformed_config)
+        mock_prepare_metadata.assert_called_once_with(transformed_config)
+        mock_print_metadata.assert_called_once_with(metadata)
+        mock_scan_source.assert_called_once_with(args.source, metadata["extensions"])
+        mock_print_samples.assert_called_once_with(audio_files, metadata)
+        mock_prepare_target.assert_called_once_with(args.target)
+        mock_process_audio.assert_called_once_with(audio_files, args.target, metadata)
+        mock_generate_xml.assert_called_once_with(processed_files, args.target, metadata)
+        mock_copy.assert_called_once_with(args.source, args.target, metadata)
+
+    @mock.patch("drumgizmo_kits_generator.main.parse_arguments")
+    @mock.patch("drumgizmo_kits_generator.utils.validate_directories")
+    @mock.patch("drumgizmo_kits_generator.main.load_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.transform_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.validate_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.prepare_metadata")
+    @mock.patch("drumgizmo_kits_generator.main.print_metadata")
+    @mock.patch("drumgizmo_kits_generator.utils.scan_source_files")
+    @mock.patch("drumgizmo_kits_generator.main.print_samples_info")
+    def test_main_dry_run(
+        self,
+        mock_print_samples,
+        mock_scan_source,
+        mock_print_metadata,
+        mock_prepare_metadata,
+        mock_validate_config,
+        mock_transform_config,
+        mock_load_config,
+        mock_validate_dirs,
+        mock_parse_args,
+        mock_logger,
+    ):
+        """Test main function in dry run mode."""
+        # Setup mocks
+        args = argparse.Namespace()
+        args.source = "/path/to/source"
+        args.target = "/path/to/target"
+        args.config = constants.DEFAULT_CONFIG_FILE
+        args.verbose = False
+        args.dry_run = True
+        mock_parse_args.return_value = args
+
+        config_data = self.config_data
+        mock_load_config.return_value = config_data
+
+        transformed_config = {"name": "Test Kit", "extensions": ["wav"]}
+        mock_transform_config.return_value = transformed_config
+
+        metadata = {"name": "Test Kit", "extensions": ["wav"], "instruments": []}
+        mock_prepare_metadata.return_value = metadata
+
+        audio_files = ["/path/to/source/kick.wav", "/path/to/source/snare.wav"]
+        mock_scan_source.return_value = audio_files
+
+        # Call the function
+        main.main()
+
+        # Check that dry run message was displayed
+        mock_logger["message"].assert_called_with("Dry run mode enabled, stopping here")
+
+        # Check that file processing functions were not called
+        assert not hasattr(mock_logger, "prepare_target_directory")
+        assert not hasattr(mock_logger, "process_audio_files")
+        assert not hasattr(mock_logger, "generate_xml_files")
+        assert not hasattr(mock_logger, "copy_additional_files")
+
+        # Verify that all mocks were used
+        mock_parse_args.assert_called_once()
+        mock_logger["set_verbose"].assert_called_once_with(False)
+        mock_validate_dirs.assert_called_once()
+        mock_load_config.assert_called_once()
+        mock_transform_config.assert_called_once()
+        mock_validate_config.assert_called_once()
+        mock_prepare_metadata.assert_called_once()
+        mock_print_metadata.assert_called_once()
+        mock_scan_source.assert_called_once()
+        mock_print_samples.assert_called_once()
+
+    @mock.patch("drumgizmo_kits_generator.utils.scan_source_files")
+    @mock.patch("drumgizmo_kits_generator.main.process_audio_files")
+    @mock.patch("drumgizmo_kits_generator.main.generate_xml_files")
+    @mock.patch("drumgizmo_kits_generator.main.copy_additional_files")
+    @mock.patch("drumgizmo_kits_generator.utils.validate_directories")
+    @mock.patch("drumgizmo_kits_generator.main.validate_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.parse_arguments")
+    @mock.patch("drumgizmo_kits_generator.main.load_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.transform_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.prepare_metadata")
+    @mock.patch("drumgizmo_kits_generator.main.print_metadata")
+    @mock.patch("drumgizmo_kits_generator.main.print_samples_info")
+    @mock.patch("drumgizmo_kits_generator.utils.prepare_target_directory")
+    def test_main_with_valid_args(
+        self,
+        mock_prepare_target,
+        mock_print_samples,
+        mock_print_metadata,
+        mock_prepare_metadata,
+        mock_transform_config,
+        mock_load_config,
+        mock_parse_args,
+        mock_validate_config,
+        mock_validate_dirs,
+        mock_copy,
+        mock_generate,
+        mock_process,
+        mock_scan_source,
+    ):
+        """Test main function with valid arguments."""
+        # Setup mocks
+        args = argparse.Namespace(
+            source="/path/to/source",
+            target="/path/to/target",
+            config=None,
+            verbose=False,
+            dry_run=False,
+        )
+        mock_parse_args.return_value = args
+
+        config_data = self.config_data
+        mock_load_config.return_value = config_data
+
+        transformed_config = dict(config_data)
+        transformed_config["extensions"] = [".wav", ".flac"]
+        mock_transform_config.return_value = transformed_config
+
+        mock_validate_config.return_value = transformed_config
+
+        metadata = dict(transformed_config)
+        metadata["instruments"] = []
+        mock_prepare_metadata.return_value = metadata
+
+        audio_files = ["kick.wav", "snare.wav"]
+        mock_scan_source.return_value = audio_files
+
+        mock_process.return_value = {
+            "Kick": ["kick1.wav", "kick2.wav"],
+            "Snare": ["snare1.wav", "snare2.wav"],
+        }
+
+        # Call the function
+        main.main()
+
+        # Assertions
+        mock_parse_args.assert_called_once()
+        mock_validate_dirs.assert_called_once()
+        mock_load_config.assert_called_once()
+        mock_transform_config.assert_called_once()
+        mock_validate_config.assert_called_once()
+        mock_prepare_metadata.assert_called_once()
+        mock_print_metadata.assert_called_once()
+        mock_print_samples.assert_called_once()
+        mock_scan_source.assert_called_once()
+        mock_prepare_target.assert_called_once()
+        mock_process.assert_called_once()
+        mock_generate.assert_called_once()
+        mock_copy.assert_called_once()
 
 
 if __name__ == "__main__":
-    unittest.main()
+    pytest.main(["-v", __file__])

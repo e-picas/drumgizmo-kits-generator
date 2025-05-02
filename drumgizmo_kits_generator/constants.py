@@ -3,6 +3,7 @@
 """
 Constants module for DrumGizmo kit generator.
 Contains global constants used across the application.
+All configuration entries default values are written here.
 """
 
 import os
@@ -23,3 +24,21 @@ with open(PYPROJECT_PATH, "r", encoding="utf-8") as f:
 APP_NAME = PYPROJECT["project"]["name"]
 APP_VERSION = PYPROJECT["project"]["version"]
 APP_LINK = PYPROJECT["project"]["urls"]["Homepage"]
+
+# Default values for command line arguments and configuration
+DEFAULT_EXTENSIONS = "wav,WAV,flac,FLAC,ogg,OGG"
+DEFAULT_VELOCITY_LEVELS = 10
+DEFAULT_MIDI_NOTE_MIN = 0
+DEFAULT_MIDI_NOTE_MAX = 127
+DEFAULT_MIDI_NOTE_MEDIAN = 60
+DEFAULT_NAME = "DrumGizmo Kit"
+DEFAULT_VERSION = "1.0"
+DEFAULT_LICENSE = "Private license"
+DEFAULT_SAMPLERATE = "44100"
+DEFAULT_CHANNELS = (
+    "AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
+)
+DEFAULT_MAIN_CHANNELS = "AmbL,AmbR,OHL,OHR"
+
+# Default configuration file name
+DEFAULT_CONFIG_FILE = "drumgizmo-kit.ini"
