@@ -1,170 +1,132 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: disable=broad-exception-caught
 """
 Audio processing module for DrumGizmo kit generator.
-Contains functions to manipulate audio files and create volume variations.
+Contains functions for processing audio files.
 """
 
-import glob
 import os
 import shutil
 import subprocess
-import sys
+import tempfile
+from typing import Any, Dict, List
+
+from drumgizmo_kits_generator import constants, logger, utils
 
 
-def create_volume_variations(
-    instrument, kit_dir, extension, velocity_levels=10, target_samplerate=None
-):
+def process_sample(file_path: str, target_dir: str, metadata: Dict[str, Any]) -> List[str]:
     """
-    Creates volume variations for a given sample.
+    Process an audio sample: copy to target directory and create velocity variations.
 
     Args:
-        instrument (str): Name of the instrument
-        kit_dir (str): Target directory for the kit
-        extension (str): Audio file extension (with the dot)
-        velocity_levels (int): Number of velocity levels to generate (default: 10)
-        target_samplerate (str, optional): Target sample rate in Hz
+        file_path: Path to the audio file
+        target_dir: Path to the target directory
+        metadata: Metadata with processing parameters
+
+    Returns:
+        List[str]: List of paths to the created velocity variation files
     """
-    instrument_dir = os.path.join(kit_dir, instrument)
+    # Get file name and extension
+    file_name = os.path.basename(file_path)
+    file_base, _ = os.path.splitext(file_name)
+
+    # Clean up the instrument name
+    instrument_name = utils.clean_instrument_name(file_base)
+
+    # Create instrument directory
+    instrument_dir = os.path.join(target_dir, instrument_name)
     samples_dir = os.path.join(instrument_dir, "samples")
+    os.makedirs(samples_dir, exist_ok=True)
+    logger.info(f"Creating directory for instrument: {instrument_name}")
 
-    print(f"Creating volume variations for: {instrument}", file=sys.stderr)
+    # Convert sample rate if needed
+    temp_dirs = []  # Track temporary directories to clean up later
+    try:
+        if "samplerate" in metadata and metadata["samplerate"]:
+            converted_file = utils.convert_sample_rate(file_path, metadata["samplerate"])
+            # If the file was converted, track the temp directory
+            if converted_file != file_path:
+                temp_dirs.append(os.path.dirname(converted_file))
+        else:
+            converted_file = file_path
 
-    # Skip if only one velocity level is requested
-    if velocity_levels <= 1:
-        print("Skipping volume variations (only 1 velocity level requested)", file=sys.stderr)
-        return
-
-    # Create velocity_levels-1 versions with decreasing volume
-    for i in range(2, velocity_levels + 1):
-        # Calculate volume factor: from 0.9 down to 0.1 for 10 levels
-        # For different number of levels, scale accordingly
-        volume = 1.0 - ((i - 1) / velocity_levels)
-        source_file = os.path.join(samples_dir, f"1-{instrument}{extension}")
-        dest_file = os.path.join(samples_dir, f"{i}-{instrument}{extension}")
-
-        print(
-            f"Creating version at {volume:.1f}% volume for {instrument} (file {i}-{instrument}{extension})",
-            file=sys.stderr,
+        # Create velocity variations
+        velocity_levels = metadata.get("velocity_levels", constants.DEFAULT_VELOCITY_LEVELS)
+        variation_files = create_velocity_variations(
+            converted_file, samples_dir, velocity_levels, instrument_name
         )
 
-        # Use SoX to create a version with reduced volume
+        # Log success
+        logger.info(f"Processed {file_name} with {velocity_levels} volume variations")
+
+        return variation_files
+    finally:
+        # Clean up temporary directories
+        for temp_dir in temp_dirs:
+            if os.path.exists(temp_dir) and temp_dir.startswith(tempfile.gettempdir()):
+                shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def create_velocity_variations(
+    file_path: str, target_dir: str, velocity_levels: int, instrument_name: str
+) -> List[str]:
+    """
+    Create velocity variations of an audio file.
+
+    Args:
+        file_path: Path to the audio file
+        target_dir: Path to the target directory
+        velocity_levels: Number of velocity levels to create
+        instrument_name: Name of the instrument (used for file naming)
+
+    Returns:
+        List[str]: List of paths to the created velocity variation files
+    """
+    logger.debug(f"Creating {velocity_levels} velocity variations for {file_path}")
+
+    # Get file extension
+    _, file_ext = os.path.splitext(file_path)
+
+    variation_files = []
+    for i in range(1, velocity_levels + 1):
+        # Create a file name for this velocity level
+        velocity_file = os.path.join(target_dir, f"{i}-{instrument_name}{file_ext}")
+
+        # Calculate volume adjustment based on velocity level
+        # Level 1 = 100% volume (0 dB)
+        # Other levels decrease in volume
+        if i == 1:
+            volume_factor = 1.0  # 100% volume
+        else:
+            # Linear decrease from 1.0 to 0.25 for velocity levels
+            volume_factor = 1.0 - ((i - 1) / (velocity_levels - 1)) * 0.75
+
+        # Use SoX to adjust volume and save to the new file
         try:
-            # If a target sample rate is provided, include it in the command
-            if target_samplerate:
-                subprocess.run(
-                    ["sox", source_file, "-r", target_samplerate, dest_file, "vol", str(volume)],
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+            if os.path.exists(file_path):
+                # If SoX is available, use it to adjust volume
+                if shutil.which("sox"):
+                    # Convert volume factor to dB
+                    db_adjustment = 20 * (volume_factor - 1)
+
+                    # Create a copy with adjusted volume
+                    cmd = ["sox", file_path, velocity_file, "gain", f"{db_adjustment:.2f}"]
+                    subprocess.run(cmd, check=True, capture_output=True)
+                else:
+                    # If SoX is not available, just copy the file
+                    logger.warning("SoX not found, copying file without volume adjustment")
+                    shutil.copy2(file_path, velocity_file)
+
+                variation_files.append(velocity_file)
+                logger.debug(
+                    f"Created velocity variation {i}/{velocity_levels} at {volume_factor:.2f} volume"
                 )
             else:
-                subprocess.run(
-                    ["sox", source_file, dest_file, "vol", str(volume)],
-                    check=True,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
+                logger.error(f"Source file not found: {file_path}")
         except subprocess.CalledProcessError as e:
-            print(f"Error creating volume variation: {e}", file=sys.stderr)
-            print(f"Command output: {e.stdout.decode()}", file=sys.stderr)
-            print(f"Command error: {e.stderr.decode()}", file=sys.stderr)
-        except Exception as e:
-            print(f"Error creating volume variation: {e}", file=sys.stderr)
+            logger.error(f"Failed to create velocity variation: {e}")
+            # Fall back to copying the file
+            shutil.copy2(file_path, velocity_file)
+            variation_files.append(velocity_file)
 
-
-def convert_sample_rate(source_file, dest_file, target_samplerate):
-    """
-    Convert a sample file to the target sample rate.
-
-    Args:
-        source_file (str): Path to the source file
-        dest_file (str): Path to the destination file
-        target_samplerate (str): Target sample rate in Hz
-
-    Returns:
-        bool: True if the file was converted successfully, False otherwise
-    """
-    try:
-        # Create destination directory if it doesn't exist
-        dest_dir = os.path.dirname(dest_file)
-        if not os.path.exists(dest_dir):
-            os.makedirs(dest_dir)
-
-        # Use SoX to convert the sample rate
-        subprocess.run(
-            ["sox", source_file, "-r", target_samplerate, dest_file],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"Error converting sample rate: {e}", file=sys.stderr)
-        print(f"Command output: {e.stdout.decode()}", file=sys.stderr)
-        print(f"Command error: {e.stderr.decode()}", file=sys.stderr)
-        return False
-    except Exception as e:
-        print(f"Error converting sample rate: {e}", file=sys.stderr)
-        return False
-
-
-def copy_sample_file(source_file, dest_file, target_samplerate=None):
-    """
-    Copy a sample file to the destination, optionally converting the sample rate.
-
-    Args:
-        source_file (str): Path to the source file
-        dest_file (str): Path to the destination file
-        target_samplerate (str, optional): Target sample rate in Hz. If provided,
-                                          the file will be converted to this sample rate.
-
-    Returns:
-        bool: True if the file was copied successfully, False otherwise
-    """
-    try:
-        # Create destination directory if it doesn't exist
-        dest_dir = os.path.dirname(dest_file)
-        if not os.path.exists(dest_dir):
-            os.makedirs(dest_dir)
-
-        # If a target sample rate is provided, convert the file
-        if target_samplerate:
-            print(
-                f"Converting {os.path.basename(source_file)} to {target_samplerate} Hz",
-                file=sys.stderr,
-            )
-            return convert_sample_rate(source_file, dest_file, target_samplerate)
-
-        # Otherwise, just copy the file
-        shutil.copy2(source_file, dest_file)
-        return True
-    except Exception as e:
-        print(f"Error copying sample file: {e}", file=sys.stderr)
-        return False
-
-
-def find_audio_files(source_dir, extensions):
-    """
-    Find audio files in the source directory with the specified extensions.
-
-    Args:
-        source_dir (str): Source directory to search in
-        extensions (list): List of file extensions to search for
-
-    Returns:
-        list: List of audio files found
-    """
-    audio_files = []
-
-    for ext in extensions:
-        # Add a dot to the extension if it doesn't have one
-        if not ext.startswith("."):
-            ext = f".{ext}"
-
-        # Find files with the extension
-        pattern = os.path.join(source_dir, f"*{ext}")
-        audio_files.extend(glob.glob(pattern))
-
-    return audio_files
+    return variation_files

@@ -55,6 +55,8 @@ kit/
 └── ...
 ```
 
+A full generated kit is available in the [`examples/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/target) directory, based on the [`examples/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/sources) sources.
+
 ### Original audio samples
 
 Audio samples must be in the root directory of the `source` (no recursion is processed). They are treated alphabetically, so you can order them to feet your needs as they will be [distributed to pre-defined MIDI notes](#midi-keys-repartition).
@@ -87,26 +89,16 @@ The [`samplerate`](#options) of the generated kit (which defaults to `44100`) wi
 
 ### About samples channels
 
-The app will alternately use each original sample "channels" and assign them to the global "channels" of the kit (which defaults to the channels used by distributed [DSR kit](https://drumgizmo.org/wiki/doku.php?id=kits:drskit)):
-
-```
-"AmbL" (main)
-"AmbR" (main)
-"Hihat"
-"Kdrum_back"
-"Kdrum_front"
-"Hihat"
-"OHL" (main)
-"OHR" (main)
-"Ride"
-"Snare_bottom"
-"Snare_top"
-"Tom1"
-"Tom2"
-"Tom3"
-```
+The app will alternately use each original sample "channels" and assign them to the global "channels" of the kit, which defaults to a simple stereo `[ left , right ]` list.
 
 Use the [`channels`](#options) and [`main-channels`](#options) options to set them up to your needs.
+
+For instance, to use the channels defined in distributed [DSR kit](https://drumgizmo.org/wiki/doku.php?id=kits:drskit), you would use:
+
+```
+channels="AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
+main_channels="AmbL,AmbR,OHL,OHR"
+```
 
 ### MIDI keys repartition
 
@@ -130,7 +122,7 @@ We use [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio p
 
 - [Python 3.9](https://www.python.org/downloads/) or higher
 - [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing - Tested with version 14.4.2
-- some other Python dependencies for development only (see the [`requirements-dev.txt`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/requirements-dev.txt) file)
+- some other Python dependencies for development only (see [Development](#development))
 
 ### Installation
 
@@ -154,13 +146,19 @@ python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target --name "Ki
 python create_drumgizmo_kit.py -h
 ```
 
+The following "special" options are in use to manage process output and actions:
+
+-  `-h` / `--help`: read the application documentation
+-  `-v` / `--verbose`: increase process verbosity with some debugging informations
+-  `-x` / `--dry-run`: output the run data (options & audio samples found) but do not actually process the run - this can be used for validation.
+
 #### Options
 
 | Option | Description | Default |
 |----------------------|---------------------|-------------|
 | `-s` / `--source` | The path of your sources directory containing the audio samples - Samples must be in the root directory (no recursion) | *REQUIRED* |
 | `-t` / `--target` | The path of the target directory where the kit will be generated - It will be created if it does not exist - Its contents are **deleted** before each run (you should probably use a temporary directory first) | *REQUIRED* |
-| `-c` / `--config` | Path of a [configuration file](#configuration-file) to use | - |
+| `-c` / `--config` | Path of a [configuration file](#configuration-file) to use | `drumgizmo-kit.ini` |
 | `--author` | The author(s) of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 | `--channels` | Comma-separated list of [audio channels](#about-samples-channels) to use in the kit | *see ["channels"](#about-samples-channels)* |
 | `--description` | The description of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
@@ -181,30 +179,41 @@ python create_drumgizmo_kit.py -h
 
 #### Configuration file
 
-You can specify kit metadata and generation options in a configuration file (e.g., `drumgizmo-kit.ini`).
-All command-line options have equivalent configuration file settings prefixed with `kit_`. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
+You can specify kit metadata and generation options in a configuration file and pass it as `--config` parameter. If a file named `drumgizmo-kit.ini` is found in the sources directory, it will be loaded automatically.
+
+All command-line options have equivalent configuration file settings which must be defined in a `[drumgizmo_kit_generator]` header block. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
 
 ```ini
-# Kit metadata
-kit_name = "My Drum Kit"
-kit_version = "1.0.0"
-kit_description = "An acoustic drum kit"
-kit_notes = "Recorded in a professional studio"
-kit_author = "Your Name"
-kit_license = "CC-BY-SA"
-kit_website = "https://your-site.com"
-kit_samplerate = "44100"
-kit_logo = "logo.png"
-kit_extra_files = "README.txt,LICENSE.txt,photo.jpg"
+[drumgizmo_kit_generator]
+# General kit information
+name = My Custom DrumGizmo Kit
+version = 1.0
+description = A custom drum kit for DrumGizmo
+notes = Recorded with an acoustic drum kit in studio
+author = Your Name
+license = CC-BY-SA 4.0
+website = https://example.com/my-drumgizmo-kit
 
-# Generation options
-kit_velocity_levels=4
-kit_midi_note_min=40
-kit_midi_note_max=100
-kit_midi_note_median=80
-kit_extensions=flac,wav
-kit_channels=AmbL,AmbR,Hihat,Kdrum,OHL,OHR,Ride,Snare,Tom1,Tom2,Tom3
-kit_main_channels=AmbL,AmbR,OHL,OHR
+# Additional files
+logo = logo.png
+extra_files = readme.txt,license.txt,credits.txt
+
+# Audio parameters
+samplerate = 48000
+velocity_levels = 5
+
+# MIDI configuration
+midi_note_min = 35
+midi_note_max = 81
+midi_note_median = 60
+
+# Audio file extensions to process
+extensions = wav,WAV,flac,FLAC
+
+# Audio channels configuration
+channels = Kick,Snare,HiHat,Tom1,Tom2,Tom3,Ride,Crash,OHL,OHR,Room
+main_channels = OHL,OHR,Room
+
 ```
 
 ## Contributing
@@ -235,32 +244,35 @@ make install
 
 #### Code guidelines & standards
 
-To run the `pre-commit` hook locally:
-
-```bash
-make pre-commit-run
-```
-
-It will try to fix your code following some standards, run the linter and tests. It is automatically run by the hooks before each commit and validate that your commit message follows the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/). These steps are run in the CI for validation.
+The `pre-commit` hook will try to fix your code following some standards, run the linter and tests. It is automatically run by the hooks before each commit and validate that your commit message follows the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/). These steps are run in the CI for validation.
 
 #### Local single tasks
 
-To run unit tests locally:
+*   We use [`make`](https://www.gnu.org/software/make/) to run local tasks
+*   We use [`black`](https://black.readthedocs.io/en/stable/) and [`isort`](https://pycqa.github.io/isort/) for codebase formatting
+*   We use [`pylint`](https://pylint.readthedocs.io/en/latest/) to lint the codebase
+*   We use [`pytest`](https://docs.pytest.org/en/latest/) to run the tests
 
-```bash
-make test
+Last available `make` tasks:
+
 ```
+$ make
 
-To get the coverage levels:
+This file is for development usage only.
+To use this file, run: make <target>
 
-```bash
-make coverage
-```
+  check-env       Verify that required commands are installed in the system
+  clean           Cleanup Python's temporary files, cache and build
+  coverage        Get the coverage analysis with `pytest`
+  format          Format the code following the `.pre-commit-config.yaml` using `black` and `isort`
+  generate        Generate a test kit to `tests/target_test/` from `examples/sources/` and compare it with `examples/target/`
+  install         Install the app's dependencies & git hooks
+  lint            Run the linter with `pylint`
+  test            Run the tests in `tests/` with `pytest`
 
-To check the code with pylint:
+To get a list of all available targets, you can use Make auto-completion: 'make <TAB><TAB>' or read the Makefile file.
 
-```bash
-make lint
+
 ```
 
 ## Project info
@@ -281,3 +293,5 @@ This project is licensed under the [MIT](LICENSE) license.
 
 - This software is generated by [Claude 3.7 Sonnet](https://claude.ai/) guided by myself ^^
 - "myself" is **[@e-Picas](https://github.com/e-picas)**
+
+**NOTE** - The `.cascade-config` file is a config file to load to Claude.AI to prepare its work.

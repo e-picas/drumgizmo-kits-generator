@@ -32,18 +32,18 @@ repos:
     hooks:
       - id: lint
         name: run linter
-        entry: make lint
+        entry: make lint-ci
         language: system
         pass_filenames: false
         always_run: true
-        stages: [pre-commit, manual]
+        stages: [pre-commit]
       - id: tests
         name: run tests
-        entry: make test
+        entry: make test-ci
         language: system
         pass_filenames: false
         always_run: true
-        stages: [pre-commit, manual]
+        stages: [pre-commit]
 
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v3.18.0

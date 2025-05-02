@@ -1,4 +1,9 @@
 __pycache__/
-.coverage
+.pytest_cache/
+build/
 .venv/
+.coverage
 coverage.xml
+*.pyc
+tests/target_test/
+*.egg-info/

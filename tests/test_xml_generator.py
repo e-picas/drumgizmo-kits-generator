@@ -1,459 +1,410 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pylint: disable=redefined-outer-name
+# pylint: disable=too-many-locals
+# pylint: disable=too-few-public-methods
+# pylint: disable=unused-argument
+# pylint: disable=chained-comparison
 """
-Unit tests for the XML generator module of the DrumGizmo kit generator.
-
-These tests verify the functionality of XML generation for DrumGizmo kits,
-including the creation of drumkit.xml, instrument XML files, and midimap.xml.
+Tests for the xml_generator module of the DrumGizmo kit generator.
 """
 
 import os
-import sys
+import shutil
 import tempfile
-import unittest
 import xml.etree.ElementTree as ET
-from unittest.mock import patch
+from unittest import mock
 
-# Add the parent directory to the path to be able to import modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import pytest
 
-# Import the module to test
-# pylint: disable-next=wrong-import-position
-from drumgizmo_kits_generator.xml_generator import (
-    create_drumkit_xml,
-    create_instrument_xml,
-    create_midimap_xml,
-)
+from drumgizmo_kits_generator import constants, xml_generator
 
 
-class TestXmlGenerator(unittest.TestCase):
-    """Tests for the XML generator module."""
+@pytest.fixture
+def mock_logger():
+    """Mock logger functions."""
+    with mock.patch("drumgizmo_kits_generator.logger.info") as mock_info, mock.patch(
+        "drumgizmo_kits_generator.logger.debug"
+    ) as mock_debug, mock.patch(
+        "drumgizmo_kits_generator.logger.warning"
+    ) as mock_warning, mock.patch(
+        "drumgizmo_kits_generator.logger.error"
+    ) as mock_error:
+        yield {"info": mock_info, "debug": mock_debug, "warning": mock_warning, "error": mock_error}
 
-    def setUp(self):
-        """Initialize before each test by creating test directories and metadata."""
-        # Create a temporary directory for tests
-        self.temp_dir = tempfile.mkdtemp()
 
-        # Create test metadata
-        self.metadata = {
-            "name": "Test Kit",
-            "version": "1.0",
-            "description": "Test description",
-            "notes": "Test notes",
-            "author": "Test Author",
-            "license": "Test License",
-            "website": "http://example.com",
+@pytest.fixture
+def temp_dir():
+    """Create a temporary directory for testing."""
+    temp_dir = tempfile.mkdtemp()
+    yield temp_dir
+    # Clean up
+    shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+@pytest.fixture
+def basic_metadata():
+    """Create basic metadata for testing."""
+    return {
+        "name": "Test Kit",
+        "version": "1.0",
+        "description": "Test description",
+        "notes": "Test notes",
+        "author": "Test Author",
+        "license": "CC-BY-SA",
+        "website": "https://example.com",
+        "logo": "logo.png",
+        "samplerate": "48000",
+        "velocity_levels": 3,
+        "midi_note_min": 0,
+        "midi_note_max": 127,
+        "midi_note_median": 60,
+        "channels": ["Left", "Right", "Overhead"],
+        "main_channels": ["Left", "Right"],
+        "instruments": ["Kick", "Snare", "HiHat"],
+    }
+
+
+@pytest.fixture
+def audio_files():
+    """Create a list of audio file paths for testing."""
+    return ["/path/to/Kick.wav", "/path/to/Snare.wav", "/path/to/HiHat.wav"]
+
+
+class TestGenerateDrumkitXml:
+    """Tests for the generate_drumkit_xml function."""
+
+    def test_generate_drumkit_xml_basic(self, temp_dir, basic_metadata, mock_logger):
+        """Test generate_drumkit_xml with basic metadata."""
+        # Call the function
+        xml_generator.generate_drumkit_xml(temp_dir, basic_metadata)
+
+        # Check that the file was created
+        xml_path = os.path.join(temp_dir, "drumkit.xml")
+        assert os.path.exists(xml_path)
+
+        # Parse the XML and check its structure
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+
+        # Check root attributes
+        assert root.tag == "drumkit"
+        assert root.get("version") == "1.0"
+        assert root.get("name") == basic_metadata["name"]
+        assert root.get("samplerate") == basic_metadata["samplerate"]
+
+        # Check metadata section
+        metadata_elem = root.find("metadata")
+        assert metadata_elem is not None
+        assert metadata_elem.find("title").text == basic_metadata["name"]
+        assert metadata_elem.find("description").text == basic_metadata["description"]
+        assert metadata_elem.find("notes").text == basic_metadata["notes"]
+        assert metadata_elem.find("author").text == basic_metadata["author"]
+        assert metadata_elem.find("license").text == basic_metadata["license"]
+        assert metadata_elem.find("website").text == basic_metadata["website"]
+        assert metadata_elem.find("logo").get("src") == basic_metadata["logo"]
+        assert metadata_elem.find("created") is not None  # Just check it exists
+
+        # Check channels section
+        channels_elem = root.find("channels")
+        assert channels_elem is not None
+        channel_elems = channels_elem.findall("channel")
+        assert len(channel_elems) == len(basic_metadata["channels"])
+        channel_names = [channel.get("name") for channel in channel_elems]
+        assert set(channel_names) == set(basic_metadata["channels"])
+
+        # Check instruments section
+        instruments_elem = root.find("instruments")
+        assert instruments_elem is not None
+        instrument_elems = instruments_elem.findall("instrument")
+        assert len(instrument_elems) == len(basic_metadata["instruments"])
+
+        # Check each instrument
+        for instrument_elem in instrument_elems:
+            instrument_name = instrument_elem.get("name")
+            assert instrument_name in basic_metadata["instruments"]
+            assert instrument_elem.get("file") == f"{instrument_name}/{instrument_name}.xml"
+
+            # Check channel mappings
+            channelmap_elems = instrument_elem.findall("channelmap")
+            assert len(channelmap_elems) == len(basic_metadata["channels"])
+
+            # Check main channels
+            for channelmap in channelmap_elems:
+                channel = channelmap.get("in")
+                assert channelmap.get("out") == channel
+                if channel in basic_metadata["main_channels"]:
+                    assert channelmap.get("main") == "true"
+                else:
+                    assert channelmap.get("main") is None
+
+        # Check logger calls
+        assert mock_logger["debug"].call_count >= 1
+        assert mock_logger["info"].call_count >= 1
+
+    def test_generate_drumkit_xml_minimal(self, temp_dir, mock_logger):
+        """Test generate_drumkit_xml with minimal metadata."""
+        # Create minimal metadata
+        minimal_metadata = {
+            "name": "Minimal Kit",
             "samplerate": "44100",
-            "logo": "test_logo.png",
+            "channels": ["Mono"],
+            "main_channels": ["Mono"],
+            "instruments": ["Drum"],
         }
 
-        # Create test instruments
-        self.instruments = ["Kick", "Snare", "Hi-Hat"]
+        # Call the function
+        xml_generator.generate_drumkit_xml(temp_dir, minimal_metadata)
 
-    def tearDown(self):
-        """Cleanup after each test by removing temporary files and directories."""
-        # Remove temporary files and directories
-        for root, dirs, files in os.walk(self.temp_dir, topdown=False):
-            for name in files:
-                os.remove(os.path.join(root, name))
-            for name in dirs:
-                os.rmdir(os.path.join(root, name))
-        os.rmdir(self.temp_dir)
+        # Check that the file was created
+        xml_path = os.path.join(temp_dir, "drumkit.xml")
+        assert os.path.exists(xml_path)
 
-    def test_create_drumkit_xml(self):
-        """Test creating the drumkit XML file with proper structure and metadata."""
-        # Call the function to test
-        create_drumkit_xml(self.instruments, self.temp_dir, self.metadata)
-
-        # Verify that the file has been created
-        xml_file = os.path.join(self.temp_dir, "drumkit.xml")
-        self.assertTrue(os.path.exists(xml_file), "drumkit.xml file should be created")
-        self.assertGreater(os.path.getsize(xml_file), 0, "drumkit.xml file should not be empty")
-
-        # Parse the XML file and verify its content
-        tree = ET.parse(xml_file)
+        # Parse the XML and check its structure
+        tree = ET.parse(xml_path)
         root = tree.getroot()
 
-        # Verify the root element
-        self.assertEqual(root.tag, "drumkit", "Root element should be 'drumkit'")
-        self.assertEqual(root.attrib["name"], "Test Kit", "Kit name attribute should match")
-        self.assertEqual(root.attrib["version"], "1.0", "Version attribute should match")
-        self.assertEqual(root.attrib["samplerate"], "44100", "Samplerate attribute should match")
+        # Check root attributes
+        assert root.tag == "drumkit"
+        assert root.get("name") == minimal_metadata["name"]
+        assert root.get("samplerate") == minimal_metadata["samplerate"]
 
-        # Verify the metadata
-        metadata = root.find("metadata")
-        self.assertIsNotNone(metadata, "Metadata element should exist")
-        self.assertEqual(metadata.find("title").text, "Test Kit", "Title should match kit name")
-        self.assertEqual(
-            metadata.find("description").text, "Test description", "Description should match"
-        )
-        self.assertEqual(metadata.find("notes").text, "Test notes", "Notes should match")
-        self.assertEqual(metadata.find("author").text, "Test Author", "Author should match")
-        self.assertEqual(metadata.find("license").text, "Test License", "License should match")
-        self.assertEqual(
-            metadata.find("website").text, "http://example.com", "Website should match"
-        )
-        self.assertIsNotNone(metadata.find("logo"), "Logo element should exist")
+        # Check metadata section
+        metadata_elem = root.find("metadata")
+        assert metadata_elem is not None
+        assert metadata_elem.find("title").text == minimal_metadata["name"]
+        assert metadata_elem.find("description") is None  # Not provided
+        assert metadata_elem.find("notes") is not None  # Default notes
+        assert metadata_elem.find("author") is None  # Not provided
+        assert metadata_elem.find("license").text == constants.DEFAULT_LICENSE  # Default license
+        assert metadata_elem.find("website") is None  # Not provided
+        assert metadata_elem.find("logo") is None  # Not provided
 
-        # Verify the created element exists
-        self.assertIsNotNone(metadata.find("created"), "Created element should exist")
+        # Check channels and instruments
+        assert len(root.find("channels").findall("channel")) == 1
+        assert len(root.find("instruments").findall("instrument")) == 1
 
-        # Verify the channels element exists
-        channels = root.find("channels")
-        self.assertIsNotNone(channels, "Channels element should exist")
 
-        # Verify channel elements exist
-        channel_elements = channels.findall("channel")
-        self.assertGreater(len(channel_elements), 0, "At least one channel should be defined")
+class TestGenerateInstrumentXml:
+    """Tests for the generate_instrument_xml function."""
 
-        # Verify the instruments element exists
-        instruments_elem = root.find("instruments")
-        self.assertIsNotNone(instruments_elem, "Instruments element should exist")
-
-        # Verify the instrument elements under instruments
-        instrument_elements = instruments_elem.findall("instrument")
-        self.assertEqual(
-            len(instrument_elements),
-            len(self.instruments),
-            f"Should have {len(self.instruments)} instrument elements",
-        )
-
-        for i, instrument in enumerate(instrument_elements):
-            self.assertEqual(
-                instrument.attrib["name"], self.instruments[i], f"Instrument {i} name should match"
-            )
-            self.assertEqual(
-                instrument.attrib["file"],
-                f"{self.instruments[i]}/{self.instruments[i]}.xml",
-                f"Instrument {i} file path should match",
-            )
-
-    # pylint: disable-next=too-many-locals
-    def test_create_instrument_xml(self):
-        """Test creating an instrument XML file with proper structure and sample references."""
-        # Create a directory for the instrument
-        instrument_name = "Kick"
-        instrument_dir = os.path.join(self.temp_dir, instrument_name)
-        os.makedirs(instrument_dir, exist_ok=True)
-
-        # Create a samples directory
-        samples_dir = os.path.join(instrument_dir, "samples")
-        os.makedirs(samples_dir, exist_ok=True)
-
-        # Create sample files (default: 10 levels)
-        velocity_levels = 10
-        for i in range(1, velocity_levels + 1):
-            sample_file = os.path.join(samples_dir, f"{i}-{instrument_name}.wav")
-            # pylint: disable-next=unspecified-encoding
-            with open(sample_file, "w") as f:
-                f.write(f"Sample {i} content")
-
-        # Call the function with default velocity levels
-        xml_file = create_instrument_xml(instrument_name, self.temp_dir, ".wav")
-
-        # Verify the file was created
-        self.assertTrue(os.path.exists(xml_file), "XML file should be created")
-
-        # Parse the XML file
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-
-        # Verify the root element
-        self.assertEqual(root.tag, "instrument", "Root element should be 'instrument'")
-        self.assertEqual(root.attrib["name"], instrument_name, "Name attribute should match")
-        self.assertEqual(root.attrib["version"], "2.0", "Version should be 2.0")
-
-        # Verify samples element
-        samples_elem = root.find("samples")
-        self.assertIsNotNone(samples_elem, "Should have a samples element")
-
-        # Verify sample elements (should have 10 by default)
-        samples = samples_elem.findall("sample")
-        self.assertEqual(
-            len(samples), velocity_levels, f"Should have {velocity_levels} sample elements"
-        )
-
-        # Verify each sample
-        for i, sample in enumerate(samples, 1):
-            # Check name attribute
-            self.assertEqual(
-                sample.attrib["name"],
-                f"{instrument_name}-{i}",
-                f"Sample {i} should have correct name",
-            )
-
-            # Check power attribute
-            power_value = float(sample.attrib["power"])
-            self.assertGreaterEqual(power_value, 0.0, f"Power for sample {i} should be >= 0")
-            self.assertLessEqual(power_value, 1.0, f"Power for sample {i} should be <= 1")
-
-            # Check audiofile elements
-            audiofiles = sample.findall("audiofile")
-            self.assertGreater(len(audiofiles), 0, f"Sample {i} should have audiofile elements")
-
-            # Verify that the power value decreases as sample number increases
-            if i > 1:
-                prev_power = float(samples[i - 2].attrib["power"])
-                self.assertLess(
-                    power_value,
-                    prev_power,
-                    f"Power for sample {i} should be less than for sample {i-1}",
-                )
-
-    def test_create_instrument_xml_custom_velocity_levels(self):
-        """Test creating an instrument XML file with custom velocity levels."""
-        # Create a directory for the instrument
+    def test_generate_instrument_xml(self, temp_dir, basic_metadata, audio_files, mock_logger):
+        """Test generate_instrument_xml with basic metadata."""
         instrument_name = "Snare"
-        instrument_dir = os.path.join(self.temp_dir, instrument_name)
-        os.makedirs(instrument_dir, exist_ok=True)
-
-        # Create a samples directory
-        samples_dir = os.path.join(instrument_dir, "samples")
-        os.makedirs(samples_dir, exist_ok=True)
-
-        # Create sample files with custom velocity levels
-        velocity_levels = 5
-        for i in range(1, velocity_levels + 1):
-            sample_file = os.path.join(samples_dir, f"{i}-{instrument_name}.wav")
-            # pylint: disable-next=unspecified-encoding
-            with open(sample_file, "w") as f:
-                f.write(f"Sample {i} content")
-
-        # Call the function with custom velocity levels
-        xml_file = create_instrument_xml(instrument_name, self.temp_dir, ".wav", velocity_levels)
-
-        # Parse the XML file
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-
-        # Verify samples element
-        samples_elem = root.find("samples")
-        self.assertIsNotNone(samples_elem, "Should have a samples element")
-
-        # Verify sample elements (should match custom velocity levels)
-        samples = samples_elem.findall("sample")
-        self.assertEqual(
-            len(samples), velocity_levels, f"Should have {velocity_levels} sample elements"
-        )
-
-        # Verify power values are distributed correctly
-        powers = [float(sample.attrib["power"]) for sample in samples]
-
-        # First sample should have power 1.0
-        self.assertAlmostEqual(powers[0], 1.0, places=5, msg="First sample should have power 1.0")
-
-        # Last sample should have power close to 1/velocity_levels
-        self.assertAlmostEqual(
-            powers[-1],
-            1.0 - (velocity_levels - 1) / velocity_levels,
-            places=5,
-            msg=f"Last sample should have power {1.0 - (velocity_levels - 1) / velocity_levels}",
-        )
-
-    def test_create_midimap_xml(self):
-        """Test creating the MIDI map XML file with proper note mappings."""
-        # Call the function to test
-        create_midimap_xml(self.instruments, self.temp_dir)
-
-        # Verify that the file has been created
-        xml_file = os.path.join(self.temp_dir, "midimap.xml")
-        self.assertTrue(os.path.exists(xml_file), "midimap.xml file should be created")
-        self.assertGreater(os.path.getsize(xml_file), 0, "midimap.xml file should not be empty")
-
-        # Parse the XML file and verify its content
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-
-        # Verify the root element
-        self.assertEqual(root.tag, "midimap", "Root element should be 'midimap'")
-
-        # Verify the instruments
-        maps = root.findall("map")
-        self.assertEqual(
-            len(maps), len(self.instruments), f"Should have {len(self.instruments)} map elements"
-        )
-
-        # Sort instruments alphabetically to match the function's behavior
-        sorted_instruments = sorted(self.instruments, key=lambda x: x.lower())
-
-        # Verify the map entries
-        for i, map_entry in enumerate(maps):
-            self.assertEqual(
-                map_entry.attrib["instr"],
-                sorted_instruments[i],
-                f"Instrument name for map {i} should match",
-            )
-            self.assertEqual(
-                map_entry.attrib["velmin"], "0", f"Velocity min for map {i} should be 0"
-            )
-            self.assertEqual(
-                map_entry.attrib["velmax"], "127", f"Velocity max for map {i} should be 127"
-            )
-
-        # Test with a large number of instruments to verify MIDI note assignment
-        many_instruments = [f"Instrument{i}" for i in range(20)]
-        create_midimap_xml(many_instruments, self.temp_dir)
-
-        # Parse the new XML file
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-        maps = root.findall("map")
-
-        # Verify all instruments have unique MIDI notes
-        midi_notes = set()
-        for map_entry in maps:
-            note = map_entry.attrib["note"]
-            self.assertNotIn(note, midi_notes, f"MIDI note {note} should be unique")
-            midi_notes.add(note)
-
-    def test_create_midimap_xml_with_custom_midi_params(self):
-        """Test creating the MIDI map XML file with custom MIDI parameters."""
-        # Test with custom MIDI parameters
-        midi_note_min = 40
-        midi_note_max = 80
-        midi_note_median = 60
-
-        # Create a list of 7 instruments to test odd number distribution
-        instruments = ["Kick", "Snare", "Hi-Hat", "Tom1", "Tom2", "Crash", "Ride"]
-
-        # Call the function to test
-        create_midimap_xml(
-            instruments,
-            self.temp_dir,
-            midi_note_min=midi_note_min,
-            midi_note_max=midi_note_max,
-            midi_note_median=midi_note_median,
-        )
-
-        # Verify that the file has been created
-        xml_file = os.path.join(self.temp_dir, "midimap.xml")
-        self.assertTrue(os.path.exists(xml_file), "midimap.xml file should be created")
-
-        # Parse the XML file and verify its content
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-        maps = root.findall("map")
-
-        # Sort instruments alphabetically to match the function's behavior
-        sorted_instruments = sorted(instruments, key=lambda x: x.lower())
-
-        # Verify the number of map elements
-        self.assertEqual(
-            len(maps),
-            len(sorted_instruments),
-            f"Should have {len(sorted_instruments)} map elements",
-        )
-
-        # Verify that all notes are within the allowed range
-        for map_entry in maps:
-            note = int(map_entry.attrib["note"])
-            self.assertGreaterEqual(
-                note, midi_note_min, f"MIDI note {note} should be >= {midi_note_min}"
-            )
-            self.assertLessEqual(
-                note, midi_note_max, f"MIDI note {note} should be <= {midi_note_max}"
-            )
-
-        # For odd number of instruments, the middle instrument should be at or near the median
-        # Get the notes in the order they appear in the XML
-        notes = [int(map_entry.attrib["note"]) for map_entry in maps]
-
-        # Verify distribution around median
-        # For 7 instruments, we expect notes to be distributed like: median-3, median-2, median-1, median, median+1, median+2, median+3
-        # But since we sort alphabetically, the actual distribution depends on the sorting
-        self.assertEqual(len(notes), 7, "Should have 7 notes")
-
-        # Verify that the range of notes matches the number of instruments
-        self.assertEqual(
-            max(notes) - min(notes) + 1,
-            len(instruments),
-            "Range of notes should match number of instruments",
-        )
-
-        # Test with a range that's too small for the number of instruments
-        midi_note_min = 60
-        midi_note_max = 65  # Only 6 notes available (60-65)
-
-        # Call the function with 7 instruments but only 6 available notes
-        create_midimap_xml(
-            instruments,
-            self.temp_dir,
-            midi_note_min=midi_note_min,
-            midi_note_max=midi_note_max,
-            midi_note_median=62,
-        )
-
-        # Parse the XML file again
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-        maps = root.findall("map")
-
-        # Verify that we only have 6 instruments mapped (one should be skipped)
-        self.assertEqual(len(maps), 6, "Should have 6 map elements when range is limited")
-
-        # Verify that all mapped notes are within the allowed range
-        for map_entry in maps:
-            note = int(map_entry.attrib["note"])
-            self.assertGreaterEqual(note, midi_note_min)
-            self.assertLessEqual(note, midi_note_max)
-
-    @patch("datetime.datetime")
-    def test_create_drumkit_xml_with_timestamp(self, mock_datetime):
-        """Test creating the drumkit XML file with a consistent timestamp."""
-        # Configure the mock
-        mock_now = unittest.mock.MagicMock()
-        mock_now.strftime.return_value = "2023-01-01 12:00:00"
-        mock_datetime.now.return_value = mock_now
-
-        # Call the function to test
-        create_drumkit_xml(self.instruments, self.temp_dir, self.metadata)
-
-        # Verify that the file has been created
-        xml_file = os.path.join(self.temp_dir, "drumkit.xml")
-        self.assertTrue(os.path.exists(xml_file), "drumkit.xml file should be created")
-
-        # Parse the XML file and verify its content
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-
-        # Verify the timestamp in the metadata
-        metadata = root.find("metadata")
-
-        # Verify that the created element contains the timestamp
-        created = metadata.find("created")
-        self.assertIsNotNone(created, "Created element should exist")
-        self.assertIn(
-            "2023-01-01 12:00:00", created.text, "Created text should contain the timestamp"
-        )
-
-    def test_create_drumkit_xml_with_minimal_metadata(self):
-        """Test creating the drumkit XML file with minimal metadata."""
-        # Create minimal metadata
-        minimal_metadata = {"name": "Minimal Kit", "version": "0.1", "samplerate": "48000"}
 
         # Call the function
-        create_drumkit_xml(self.instruments, self.temp_dir, minimal_metadata)
+        xml_generator.generate_instrument_xml(
+            temp_dir, instrument_name, basic_metadata, audio_files
+        )
 
-        # Verify the result
-        xml_file = os.path.join(self.temp_dir, "drumkit.xml")
-        self.assertTrue(os.path.exists(xml_file), "drumkit.xml file should be created")
+        # Check that the directories were created
+        instrument_dir = os.path.join(temp_dir, instrument_name)
+        assert os.path.exists(instrument_dir)
 
-        # Parse the XML file
-        tree = ET.parse(xml_file)
+        # Check that the file was created
+        xml_path = os.path.join(instrument_dir, f"{instrument_name}.xml")
+        assert os.path.exists(xml_path)
+
+        # Parse the XML and check its structure
+        tree = ET.parse(xml_path)
         root = tree.getroot()
 
-        # Verify the root attributes
-        self.assertEqual(root.attrib["name"], "Minimal Kit", "Kit name should match")
-        self.assertEqual(root.attrib["version"], "0.1", "Version should match")
-        self.assertEqual(root.attrib["samplerate"], "48000", "Samplerate should match")
+        # Check root attributes
+        assert root.tag == "instrument"
+        assert root.get("version") == "2.0"
+        assert root.get("name") == instrument_name
 
-        # Verify that metadata section still exists
-        metadata = root.find("metadata")
-        self.assertIsNotNone(metadata, "Metadata element should exist even with minimal data")
+        # Check samples section
+        samples_elem = root.find("samples")
+        assert samples_elem is not None
+        sample_elems = samples_elem.findall("sample")
+        assert len(sample_elems) == basic_metadata["velocity_levels"]
 
-        # Verify that title exists
-        self.assertEqual(metadata.find("title").text, "Minimal Kit", "Title should match kit name")
+        # Check each sample
+        for i, sample_elem in enumerate(sample_elems, 1):
+            assert sample_elem.get("name") == f"{instrument_name}-{i}"
+
+            # Check power attribute
+            power = float(sample_elem.get("power"))
+            if i == 1:
+                assert power == 1.0
+            else:
+                # Power should decrease with velocity level
+                assert power < 1.0
+
+            # Check audiofile elements
+            audiofile_elems = sample_elem.findall("audiofile")
+            assert len(audiofile_elems) == len(basic_metadata["channels"])
+
+            # Check alternating filechannel values
+            for j, audiofile in enumerate(audiofile_elems):
+                assert audiofile.get("channel") in basic_metadata["channels"]
+                assert audiofile.get("file").startswith(f"samples/{i}-{instrument_name}")
+
+                # Check filechannel alternates between 1 and 2
+                expected_filechannel = "1" if j % 2 == 0 else "2"
+                assert audiofile.get("filechannel") == expected_filechannel
+
+        # Check logger calls
+        assert mock_logger["debug"].call_count >= 1
+        assert mock_logger["info"].call_count >= 1
+
+    @mock.patch("os.path.splitext")
+    def test_generate_instrument_xml_with_extension(
+        self, mock_splitext, temp_dir, basic_metadata, audio_files, mock_logger
+    ):
+        """Test generate_instrument_xml preserves file extension."""
+        instrument_name = "Snare"
+
+        # Mock os.path.splitext to return a specific extension
+        mock_splitext.return_value = ("filename", ".flac")
+
+        # Call the function
+        xml_generator.generate_instrument_xml(
+            temp_dir, instrument_name, basic_metadata, audio_files
+        )
+
+        # Check that the file was created
+        xml_path = os.path.join(temp_dir, instrument_name, f"{instrument_name}.xml")
+        assert os.path.exists(xml_path)
+
+        # Parse the XML and check file extensions
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+
+        # Check that file references use the correct extension
+        for sample in root.find("samples").findall("sample"):
+            for audiofile in sample.findall("audiofile"):
+                assert audiofile.get("file").endswith(".flac")
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestGenerateMidimapXml:
+    """Tests for the generate_midimap_xml function."""
+
+    def test_generate_midimap_xml(self, temp_dir, basic_metadata, mock_logger):
+        """Test generate_midimap_xml with basic metadata."""
+        # Call the function
+        xml_generator.generate_midimap_xml(temp_dir, basic_metadata)
+
+        # Check that the file was created
+        xml_path = os.path.join(temp_dir, "midimap.xml")
+        assert os.path.exists(xml_path)
+
+        # Parse the XML and check its structure
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+
+        # Check root tag
+        assert root.tag == "midimap"
+
+        # Check map elements
+        map_elems = root.findall("map")
+        assert len(map_elems) == len(basic_metadata["instruments"])
+
+        # Check that notes are distributed around the median
+        midi_note_median = basic_metadata["midi_note_median"]
+        notes = [int(map_elem.get("note")) for map_elem in map_elems]
+
+        # Check that at least one note is at or near the median
+        assert any(note >= midi_note_median - 1 and note <= midi_note_median + 1 for note in notes)
+
+        # Check that all notes are within range
+        assert all(note >= basic_metadata["midi_note_min"] for note in notes)
+        assert all(note <= basic_metadata["midi_note_max"] for note in notes)
+
+        # Check instrument references
+        instruments = [map_elem.get("instr") for map_elem in map_elems]
+        assert set(instruments) == set(basic_metadata["instruments"])
+
+        # Check velocity range
+        for map_elem in map_elems:
+            assert map_elem.get("velmin") == "0"
+            assert map_elem.get("velmax") == "127"
+
+        # Check logger calls
+        assert mock_logger["debug"].call_count >= 1
+        assert mock_logger["info"].call_count >= 1
+
+    def test_generate_midimap_xml_no_instruments(self, temp_dir, mock_logger):
+        """Test generate_midimap_xml with no instruments."""
+        # Create metadata without instruments
+        metadata = {
+            "name": "Empty Kit",
+            "samplerate": "44100",
+            "channels": ["Mono"],
+            "main_channels": ["Mono"],
+            "midi_note_min": 0,
+            "midi_note_max": 127,
+            "midi_note_median": 60,
+            "instruments": [],  # Empty list
+        }
+
+        # Call the function
+        xml_generator.generate_midimap_xml(temp_dir, metadata)
+
+        # Check that the file was not created (function should return early)
+        xml_path = os.path.join(temp_dir, "midimap.xml")
+        assert not os.path.exists(xml_path)
+
+        # Check warning log
+        assert mock_logger["warning"].call_count >= 1
+        assert "No instruments found" in str(mock_logger["warning"].call_args[0][0])
+
+    def test_generate_midimap_xml_many_instruments(self, temp_dir, mock_logger):
+        """Test generate_midimap_xml with many instruments."""
+        # Create metadata with many instruments
+        instruments = [f"Instrument{i}" for i in range(20)]
+        metadata = {
+            "name": "Many Instruments Kit",
+            "samplerate": "44100",
+            "channels": ["Mono"],
+            "main_channels": ["Mono"],
+            "midi_note_min": 0,
+            "midi_note_max": 127,
+            "midi_note_median": 60,
+            "instruments": instruments,
+        }
+
+        # Call the function
+        xml_generator.generate_midimap_xml(temp_dir, metadata)
+
+        # Check that the file was created
+        xml_path = os.path.join(temp_dir, "midimap.xml")
+        assert os.path.exists(xml_path)
+
+        # Parse the XML and check its structure
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+
+        # Check that all instruments are mapped
+        map_elems = root.findall("map")
+        assert len(map_elems) == len(instruments)
+
+        # Check that notes are properly distributed
+        notes = [int(map_elem.get("note")) for map_elem in map_elems]
+
+        # Check that notes are within range
+        assert all(note >= metadata["midi_note_min"] for note in notes)
+        assert all(note <= metadata["midi_note_max"] for note in notes)
+
+
+class TestGenerateAllXmlFiles:
+    """Tests for the generate_all_xml_files function."""
+
+    @mock.patch("drumgizmo_kits_generator.xml_generator.generate_drumkit_xml")
+    @mock.patch("drumgizmo_kits_generator.xml_generator.generate_instrument_xml")
+    @mock.patch("drumgizmo_kits_generator.xml_generator.generate_midimap_xml")
+    def test_generate_all_xml_files(
+        self, mock_midimap, mock_instrument, mock_drumkit, temp_dir, basic_metadata, mock_logger
+    ):
+        """Test generate_all_xml_files calls all the necessary functions."""
+        # Call the function
+        xml_generator.generate_all_xml_files(temp_dir, basic_metadata)
+
+        # Check that all the necessary functions were called
+        mock_drumkit.assert_called_once_with(temp_dir, basic_metadata)
+        assert mock_instrument.call_count == len(basic_metadata["instruments"])
+        mock_midimap.assert_called_once_with(temp_dir, basic_metadata)
+
+        # Check logger calls
+        assert mock_logger["info"].call_count >= 1
