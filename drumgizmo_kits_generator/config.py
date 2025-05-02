@@ -129,6 +129,12 @@ def _process_channel_list(
         # Using custom channels
         logger.debug(f"Using custom {channel_type} from metadata: {channel_list}")
         return channel_list
+
+    # Special case for main_channels: allow empty list
+    if channel_type == "main channels" and not default_channels:
+        logger.debug(f"Empty {channel_type} list, using empty list")
+        return ""
+
     # Using default channels
     logger.debug(f"Empty {channel_type} list, using default: {default_channels}")
     return default_channels

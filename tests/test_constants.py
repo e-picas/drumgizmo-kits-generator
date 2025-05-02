@@ -92,6 +92,10 @@ def test_pyproject_path_exists():
 
 def test_main_channels_subset_of_channels():
     """Test that DEFAULT_MAIN_CHANNELS is a subset of DEFAULT_CHANNELS."""
+    # Skip test if DEFAULT_MAIN_CHANNELS is empty
+    if not constants.DEFAULT_MAIN_CHANNELS:
+        return
+
     main_channels = constants.DEFAULT_MAIN_CHANNELS.split(",")
     all_channels = constants.DEFAULT_CHANNELS.split(",")
 

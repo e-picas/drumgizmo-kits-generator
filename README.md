@@ -89,26 +89,16 @@ The [`samplerate`](#options) of the generated kit (which defaults to `44100`) wi
 
 ### About samples channels
 
-The app will alternately use each original sample "channels" and assign them to the global "channels" of the kit (which defaults to the channels used by distributed [DSR kit](https://drumgizmo.org/wiki/doku.php?id=kits:drskit)):
-
-```
-"AmbL" (main)
-"AmbR" (main)
-"Hihat"
-"Kdrum_back"
-"Kdrum_front"
-"Hihat"
-"OHL" (main)
-"OHR" (main)
-"Ride"
-"Snare_bottom"
-"Snare_top"
-"Tom1"
-"Tom2"
-"Tom3"
-```
+The app will alternately use each original sample "channels" and assign them to the global "channels" of the kit, which defaults to a simple stereo `[ left , right ]` list.
 
 Use the [`channels`](#options) and [`main-channels`](#options) options to set them up to your needs.
+
+For instance, to use the channels defined in distributed [DSR kit](https://drumgizmo.org/wiki/doku.php?id=kits:drskit), you would use:
+
+```
+channels="AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
+main_channels="AmbL,AmbR,OHL,OHR"
+```
 
 ### MIDI keys repartition
 
