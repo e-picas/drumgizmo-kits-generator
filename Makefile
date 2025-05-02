@@ -48,10 +48,10 @@ test:
 coverage:
 	python -m pytest --cov=drumgizmo_kits_generator --cov-report=term-missing
 
-## Generate a test kit to `tests/target_test/` from `models/sources/` and compare it with `models/target/`
+## Generate a test kit to `tests/target_test/` from `examples/sources/` and compare it with `examples/target/`
 generate:
-	python create_drumgizmo_kit.py -s models/sources/ -t tests/target_test/
-	diff -r tests/target_test/ models/target/ || true
+	python create_drumgizmo_kit.py -s examples/sources/ -t tests/target_test/
+	diff -r tests/target_test/ examples/target/ || true
 
 ## Cleanup Python's temporary files, cache and build
 clean:

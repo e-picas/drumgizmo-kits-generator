@@ -37,6 +37,7 @@ def process_sample(file_path: str, target_dir: str, metadata: Dict[str, Any]) ->
     instrument_dir = os.path.join(target_dir, instrument_name)
     samples_dir = os.path.join(instrument_dir, "samples")
     os.makedirs(samples_dir, exist_ok=True)
+    logger.info(f"Creating directory for instrument: {instrument_name}")
 
     # Convert sample rate if needed
     temp_dirs = []  # Track temporary directories to clean up later
@@ -56,7 +57,7 @@ def process_sample(file_path: str, target_dir: str, metadata: Dict[str, Any]) ->
         )
 
         # Log success
-        logger.info(f"Processed {file_name} with {velocity_levels} velocity levels")
+        logger.info(f"Processed {file_name} with {velocity_levels} volume variations")
 
         return variation_files
     finally:

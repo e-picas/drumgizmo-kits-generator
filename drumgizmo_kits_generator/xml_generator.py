@@ -250,7 +250,7 @@ def _calculate_midi_note(
 
 def _add_midimap_elements(
     root: ET.Element, instruments: List[str], midi_params: Dict[str, int]
-) -> None:
+) -> Dict[str, int]:
     """
     Add mapping elements to the midimap XML.
 
@@ -258,12 +258,15 @@ def _add_midimap_elements(
         root: The root XML element
         instruments: List of instrument names
         midi_params: Dictionary with MIDI parameters (min, max, median)
+    Returns:
+        A dictionary with the MIDI mapping
     """
     # Calculate how many instruments we have on each side of the median
     instruments_count = len(instruments)
     left_count = instruments_count // 2
 
     # Generate notes for each instrument
+    midi_mapping = {}
     for i, instrument_name in enumerate(instruments):
         # Calculate note based on position
         note = _calculate_midi_note(
@@ -276,6 +279,11 @@ def _add_midimap_elements(
         map_elem.set("instr", instrument_name)
         map_elem.set("velmin", "0")
         map_elem.set("velmax", "127")
+
+        # Store MIDI mapping
+        midi_mapping[instrument_name] = note
+
+    return midi_mapping
 
 
 def generate_midimap_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
@@ -306,7 +314,7 @@ def generate_midimap_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
         return
 
     # Add mapping elements
-    _add_midimap_elements(root, instruments, midi_params)
+    midi_mapping = _add_midimap_elements(root, instruments, midi_params)
 
     # Write the XML to a file
     xml_path = os.path.join(target_dir, "midimap.xml")
@@ -319,6 +327,11 @@ def generate_midimap_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
         f.write(pretty_xml)
 
     logger.info(f"Generated midimap.xml at {xml_path}")
+
+    # Display MIDI mapping
+    logger.debug("MIDI mapping (alphabetical order):")
+    for instrument, note in sorted(midi_mapping.items(), key=lambda x: x[0]):
+        logger.debug(f"  MIDI Note {note}: {instrument}")
 
 
 def generate_all_xml_files(target_dir: str, metadata: Dict[str, Any]) -> None:

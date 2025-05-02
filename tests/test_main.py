@@ -673,7 +673,7 @@ class TestPrintFunctions:
         main.print_metadata(metadata)
 
         # Verify that section and info were called with appropriate arguments
-        mock_logger["section"].assert_called_with("Metadata")
+        mock_logger["section"].assert_called_with("Kit Metadata")
         assert mock_logger["info"].call_count >= 10  # Should call info for each metadata item
 
     def test_print_samples_info(self, mock_logger):
@@ -793,7 +793,7 @@ class TestMain:
         mock_print_samples.assert_called_once_with(audio_files, metadata)
         mock_prepare_target.assert_called_once_with(args.target)
         mock_process_audio.assert_called_once_with(audio_files, args.target, metadata)
-        mock_generate_xml.assert_called_once_with(processed_files, args.target, metadata)
+        mock_generate_xml.assert_called_once_with(audio_files, args.target, metadata)
         mock_copy.assert_called_once_with(args.source, args.target, metadata)
 
     @mock.patch("drumgizmo_kits_generator.main.parse_arguments")
@@ -844,7 +844,7 @@ class TestMain:
         main.main()
 
         # Check that dry run message was displayed
-        mock_logger["message"].assert_called_with("Dry run mode enabled, stopping here")
+        mock_logger["message"].assert_called_with("\nDry run mode enabled, stopping here")
 
         # Check that file processing functions were not called
         assert not hasattr(mock_logger, "prepare_target_directory")

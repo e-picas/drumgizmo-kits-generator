@@ -142,6 +142,55 @@ def compare_directories(dir1, dir2, ignore_patterns=None):
     return len(differences) == 0, differences
 
 
+def compare_output(output, reference_file, temp_dir=None, reference_dir=None):
+    """
+    Compare the output of the generation with a reference file.
+
+    Args:
+        output: The output string from the generation process
+        reference_file: Path to the reference output file
+        temp_dir: Temporary directory path used in the output (to be replaced)
+        reference_dir: Reference directory path to replace temp_dir in the output
+
+    Returns:
+        tuple: (success, differences) where differences is a list of differences found
+    """
+    # Read the reference output
+    with open(reference_file, "r", encoding="utf-8") as f:
+        reference_output = f.read()
+
+    # Replace paths if needed
+    if temp_dir and reference_dir:
+        output = output.replace(temp_dir, reference_dir)
+
+    # Replace any date/time references which will differ between runs
+    date_pattern = r"Generated with create_drumgizmo_kit\.py at [\d-]+ [\d:]+(?:\.\d+)?"
+    output = re.sub(date_pattern, "Generated with create_drumgizmo_kit.py at DATE_TIME", output)
+    reference_output = re.sub(
+        date_pattern, "Generated with create_drumgizmo_kit.py at DATE_TIME", reference_output
+    )
+
+    # Compare the outputs line by line, ignoring empty lines and whitespace
+    output_lines = [line.strip() for line in output.split("\n") if line.strip()]
+    reference_lines = [line.strip() for line in reference_output.split("\n") if line.strip()]
+
+    # Check if the outputs are the same length
+    if len(output_lines) != len(reference_lines):
+        return False, [
+            f"Output has {len(output_lines)} lines, reference has {len(reference_lines)} lines"
+        ]
+
+    # Compare each line
+    differences = []
+    for i, (output_line, reference_line) in enumerate(zip(output_lines, reference_lines)):
+        if output_line != reference_line:
+            differences.append(
+                f"Line {i+1} differs:\nOutput: {output_line}\nReference: {reference_line}"
+            )
+
+    return len(differences) == 0, differences
+
+
 class TestIntegration:
     """Integration tests for the DrumGizmo kit generator."""
 

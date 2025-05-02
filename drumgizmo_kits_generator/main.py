@@ -256,10 +256,10 @@ def print_metadata(metadata: Dict[str, Any]) -> None:
     Args:
         metadata: Metadata to print
     """
-    logger.section("Metadata")
+    logger.section("Kit Metadata")
 
-    logger.info(f"Kit name: {metadata['name']}")
-    logger.info(f"Kit version: {metadata['version']}")
+    logger.info(f"Name: {metadata['name']}")
+    logger.info(f"Version: {metadata['version']}")
 
     if metadata["description"]:
         logger.info(f"Description: {metadata['description']}")
@@ -300,7 +300,7 @@ def print_samples_info(audio_files: List[str], metadata: Dict[str, Any]) -> None
     """
     logger.section("Source Audio Samples")
 
-    logger.info(f"Found {len(audio_files)} audio files")
+    logger.info(f"Found {len(audio_files)} audio files:")
 
     # Check if the number of files exceeds the MIDI note range
     midi_range = metadata["midi_note_max"] - metadata["midi_note_min"] + 1
@@ -332,12 +332,12 @@ def process_audio_files(
     logger.section("Processing Audio Files")
 
     # Process each audio file
-    processed_files = []
+    processed_files = {}
     for file in audio_files:
         logger.info(f"Processing {os.path.basename(file)}")
         # process_sample now returns a list of generated files
         variation_files = audio.process_sample(file, target_dir, metadata)
-        processed_files.extend(variation_files)
+        processed_files[os.path.basename(file)] = variation_files
 
     return processed_files
 
@@ -467,6 +467,63 @@ def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, 
                 logger.warning(f"Extra file not found: {extra_file_path}")
 
 
+def print_summary(
+    target_dir: str,
+    metadata: Dict[str, Any],
+    processed_audio_files: Dict[str, List[str]],
+    audio_files: List[str],
+) -> None:
+    """
+    Print a summary of the generated kit.
+
+    Args:
+        target_dir: The target directory where the kit was generated
+        metadata: The metadata of the kit
+        processed_audio_files: The processed audio files
+        audio_files: The original audio files
+    """
+    logger.section("Summary")
+
+    logger.info(f"Processing complete. DrumGizmo kit successfully created in: {target_dir}")
+    logger.info(f"Number of instruments created: {len(processed_audio_files)}")
+    logger.info("Main files:")
+    logger.info(f"- {os.path.join(target_dir, 'drumkit.xml')}")
+    logger.info(f"- {os.path.join(target_dir, 'midimap.xml')}")
+
+    logger.info("\nKit metadata summary:")
+    logger.info(f"Name: {metadata.get('name', '')}")
+    logger.info(f"Version: {metadata.get('version', '')}")
+    logger.info(f"Description: {metadata.get('description', '')}")
+    logger.info(f"Notes: {metadata.get('notes', '')}")
+    logger.info(f"Author: {metadata.get('author', '')}")
+    logger.info(f"License: {metadata.get('license', '')}")
+    logger.info(f"Sample rate: {metadata.get('samplerate', '')} Hz")
+    logger.info(f"Website: {metadata.get('website', '')}")
+    logger.info(f"Logo: {metadata.get('logo', '')}")
+
+    logger.info("\nInstrument to sample mapping:")
+    if isinstance(processed_audio_files, dict):
+        # If processed_audio_files is a dictionary (new format)
+        for instrument, audio_file in zip(processed_audio_files.keys(), audio_files):
+            logger.info(f"  {instrument}: {os.path.basename(audio_file)}")
+    else:
+        # If processed_audio_files is a list (old format used in tests)
+        for audio_file in audio_files:
+            instrument_name = os.path.basename(audio_file)
+            logger.info(f"  {instrument_name}: {instrument_name}")
+
+    extra_files = []
+    if metadata.get("logo"):
+        extra_files.append(metadata["logo"])
+    if metadata.get("extra_files"):
+        extra_files.extend(metadata["extra_files"])
+
+    if extra_files:
+        logger.info("\nExtra files copied:")
+        for extra_file in extra_files:
+            logger.info(f"  {extra_file}")
+
+
 def main() -> None:
     """
     Main function for DrumGizmo kit generation.
@@ -476,6 +533,9 @@ def main() -> None:
 
     # Set verbose mode
     logger.set_verbose(args.verbose)
+
+    # Display application information in verbose mode
+    logger.debug(f"{constants.APP_NAME} v{constants.APP_VERSION} - {constants.APP_LINK}")
 
     # Validate directories
     utils.validate_directories(args.source, args.target, args.config)
@@ -506,7 +566,7 @@ def main() -> None:
 
     # Stop here if dry run mode is enabled
     if args.dry_run:
-        logger.message("Dry run mode enabled, stopping here")
+        logger.message("\nDry run mode enabled, stopping here")
         return
 
     # Prepare target directory
@@ -516,13 +576,15 @@ def main() -> None:
     processed_audio_files = process_audio_files(audio_files, args.target, metadata)
 
     # Generate XML files
-    generate_xml_files(processed_audio_files, args.target, metadata)
+    generate_xml_files(audio_files, args.target, metadata)
 
     # Copy additional files
     copy_additional_files(args.source, args.target, metadata)
 
-    logger.section("Kit Generation Complete")
-    logger.message(f"DrumGizmo kit generated successfully in {args.target}")
+    # Print summary
+    print_summary(args.target, metadata, processed_audio_files, audio_files)
+
+    logger.message("\nKit generation completed successfully!")
 
 
 if __name__ == "__main__":

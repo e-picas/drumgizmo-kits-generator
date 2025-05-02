@@ -134,7 +134,7 @@ def scan_source_files(source_dir: str, extensions: List[str]) -> List[str]:
         extensions: List of file extensions to include
 
     Returns:
-        List[str]: List of audio file paths
+        List[str]: List of audio file paths, sorted alphabetically
     """
     audio_files = []
     for root, _, files in os.walk(source_dir):
@@ -142,6 +142,9 @@ def scan_source_files(source_dir: str, extensions: List[str]) -> List[str]:
             file_ext = os.path.splitext(file)[1].lower().lstrip(".")
             if file_ext in [ext.lower() for ext in extensions]:
                 audio_files.append(os.path.join(root, file))
+
+    # Sort audio files alphabetically by filename
+    audio_files.sort(key=lambda x: os.path.basename(x).lower())
 
     return audio_files
 

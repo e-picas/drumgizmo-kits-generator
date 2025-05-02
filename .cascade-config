@@ -38,7 +38,7 @@ The DrumGizmo Kit Generator is a Python tool that generates kits for [DrumGizmo]
 ## Reference models
 A reference kit has been generated in the `examples/target/` directory from the source `examples/sources/` directory.
 The command was `python create_drumgizmo_kit.py -s examples/sources/ -t examples/target/`.
-The output of that generation is stored in `examples/generate-target-output.txt`.
+The output of that generation is stored in `examples/target-generation-output.txt`.
 The kit, source and output must be used as models.
 
 ## Modules
