@@ -32,7 +32,7 @@ repos:
     hooks:
       - id: lint
         name: run linter
-        entry: make lint
+        entry: make lint-ci
         language: system
         pass_filenames: false
         always_run: true
