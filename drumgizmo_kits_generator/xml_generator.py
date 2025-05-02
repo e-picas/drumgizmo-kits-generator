@@ -150,12 +150,9 @@ def _add_instrument_samples(
         sample_elem = ET.SubElement(samples_elem, "sample")
         sample_elem.set("name", f"{instrument_name}-{i}")
 
-        # Calculate power based on velocity level
-        if i == 1:
-            power = 1.0  # 100% power
-        else:
-            # Linear decrease from 1.0 to 0.25 for velocity levels
-            power = 1.0 - ((i - 1) / (velocity_levels - 1)) * 0.75
+        # Calculate power based on velocity level using cartesian division
+        # First sample (i=1) gets power=1.0, then decreases
+        power = (velocity_levels - i + 1) / velocity_levels
 
         sample_elem.set("power", f"{power:.6f}")
 
