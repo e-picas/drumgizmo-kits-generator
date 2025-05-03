@@ -14,11 +14,11 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 ## Features (and table of contents)
 
 - 🚀 **Generate [DrumGizmo kits from a set of audio samples](#generated-kit-structure)**
-- 🎙️ **Support for [multiple audio formats](#note-about-audio-files-formats) (WAV, FLAC, OGG)**
-- ⚡ **Automatic creation of [volume variations](#audio-samples-treatments) to manage velocity levels (10 by default)**
+- 🎙️ **Support for [multiple audio formats](#note-about-audio-files-formats)**
+- ⚡ **Automatic creation of [volume variations](#audio-samples-treatments) to manage velocity levels**
 - 🧮 **[Alphabetical sorting of instruments](#original-audio-samples) and [assignment of consecutive MIDI notes](#midi-keys-repartition)**
-- ⚙️ **[Read metadata](#kit-metadata) and options from a [configuration file](#configuration-file)**
-- 📥 **Copy additional files to the final kit (see [options](#options))**
+- ⚙️ **[Read metadata](#kit-metadata) and [options](#options) from a [configuration file](#configuration-file)**
+- 📥 **Copy additional files to the final kit**
 - ⬛ **Complete [command-line interface](#command-line)**
 
 ## Generated kit structure
@@ -59,11 +59,15 @@ A full generated kit is available in the [`examples/target/`](https://github.com
 
 ### Original audio samples
 
-Audio samples must be in the root directory of the `source` (no recursion is processed). They are treated alphabetically, so you can order them to feet your needs as they will be [distributed to pre-defined MIDI notes](#midi-keys-repartition).
+Audio samples must be in the root directory of the [`source` option](#options) (no recursion is processed). They are treated alphabetically, so you can order them to feet your needs as they will be [distributed to pre-defined MIDI notes](#midi-keys-repartition).
+
+### Target directory of the generated kit
+
+The new kit is generated in the [`target` option](#options) directory. It will be created if it does not exist. Its contents are **deleted** before each run (you should probably use a temporary directory first).
 
 ### Kit metadata
 
-Based on yout options or configuration, the kit metadata will be something like the following:
+Based on your [options](#options) or [configuration](#configuration-file), the kit metadata will be something like the following:
 
 ```xml
   <metadata>
@@ -81,7 +85,7 @@ Based on yout options or configuration, the kit metadata will be something like 
 
 ### Audio samples treatments
 
-Each original audio sample is duplicated X times to finally get the [`velocity-levels`](#options) number of volumes variations, assigned to corresponding "velocity" variations by setting the `power` entry of each sample on a cartesian formula based on 1 (`(1 / velocity_levels) * sample_index`).
+Each original audio sample is duplicated X times to finally get the [`velocity-levels`](#options) number of volumes variations, assigned to corresponding "velocity" variations by setting the `power` entry of each sample on a linear basis (from 1 to near 0).
 
 ### Samplerate
 
@@ -93,24 +97,24 @@ The app will alternately use each original sample "channels" and assign them to 
 
 Use the [`channels`](#options) and [`main-channels`](#options) options to set them up to your needs.
 
-For instance, to use the channels defined in distributed [DSR kit](https://drumgizmo.org/wiki/doku.php?id=kits:drskit), you would use:
-
-```
-channels = "AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
-main_channels = "AmbL,AmbR,OHL,OHR"
-```
+>   For example, to use the channels defined in distributed [DSR kit](https://drumgizmo.org/wiki/doku.php?id=kits:drskit), you would use:
+>   ```
+>   channels = "AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
+>   main_channels = "AmbL,AmbR,OHL,OHR"
+>   ```
 
 ### MIDI keys repartition
 
 The samples will all be attached to consecutive MIDI notes around the [`midi-note-median`](#options) with some limits set by the [`midi-note-min`](#options) and [`midi-note-max`](#options) options. An error will be triggered if your project have more samples than the allowed MIDI notes.
 
-For example, with a set of 3 audio samples and the default value `midi-note-median=60`, the final `midimap.xml` file would be:
+The notes are defined in a global `[0,127]` range and the default `midi-note-median` is set to `60`, which is the *C4* key of a MIDI keyboard.
 
-```xml
-  <map note="59" instr="Sample1" velmin="0" velmax="127"/>
-  <map note="60" instr="Sample2" velmin="0" velmax="127"/>
-  <map note="61" instr="Sample3" velmin="0" velmax="127"/>
-```
+>   For example, with a set of 3 audio samples and the default value `midi-note-median=60`, the final `midimap.xml` file would be:
+>   ```xml
+>     <map note="59" instr="Sample1" />
+>     <map note="60" instr="Sample2" />
+>     <map note="61" instr="Sample3" />
+>   ```
 
 ### Note about audio files formats
 
@@ -149,7 +153,7 @@ python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target --name "Ki
 python create_drumgizmo_kit.py -h
 ```
 
-The following "special" options are in use to manage process output and actions:
+The following "special" options can be used to manage process output and run:
 
 -  `-h` / `--help`: read the application documentation
 -  `-v` / `--verbose`: increase process verbosity with some debugging informations
@@ -159,24 +163,24 @@ The following "special" options are in use to manage process output and actions:
 
 | Option | Description | Default |
 |----------------------|---------------------|-------------|
-| `-s` / `--source` | The path of your sources directory containing the audio samples - Samples must be in the root directory (no recursion) | *REQUIRED* |
-| `-t` / `--target` | The path of the target directory where the kit will be generated - It will be created if it does not exist - Its contents are **deleted** before each run (you should probably use a temporary directory first) | *REQUIRED* |
+| `-s` / `--source` | The path of your [sources directory](#original-audio-samples) containing the audio samples | *REQUIRED* |
+| `-t` / `--target` | The path of the [target directory](#target-directory-of-the-generated-kit) where the kit will be generated | *REQUIRED* |
 | `-c` / `--config` | Path of a [configuration file](#configuration-file) to use | `drumgizmo-kit.ini` |
 | `--author` | The author(s) of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
-| `--channels` | Comma-separated list of [audio channels](#about-samples-channels) to use in the kit | *see ["channels"](#about-samples-channels)* |
+| `--channels` | Comma-separated list of [audio channels](#about-samples-channels) to use in the kit | `Left,Right` |
 | `--description` | The description of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 | `--extensions` | Comma-separated list of [audio file extensions](#note-about-audio-files-formats) to process | `wav,WAV,flac,FLAC,ogg,OGG` |
 | `--extra-files` | Comma-separated list of additional files to copy to the target directory - Local paths from the `source` directory | - |
 | `--license` | The license of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | `Private license` |
 | `--logo` | Path of the kit logo filename - Local path from the `source` directory - [`drumkit.xml`](#kit-metadata) metadata | - |
-| `--main-channels` | Comma-separated list of [**main** audio channels](#about-samples-channels) to use in the kit | *see ["channels"](#about-samples-channels)* |
-| `--midi-note-max` | Maximum MIDI note allowed - [`midimap.xml`](#midi-keys-repartition) generation | `127` (<=127) |
-| `--midi-note-median` | Median MIDI note for distributing instruments around - [`midimap.xml`](#midi-keys-repartition) generation | `60` (*C4* key) |
-| `--midi-note-min` | Minimum MIDI note allowed - [`midimap.xml`](#midi-keys-repartition) generation | `1` (>=1) |
+| `--main-channels` | Comma-separated list of [**main** audio channels](#about-samples-channels) to use in the kit | - |
+| `--midi-note-max` | Maximum [MIDI note](#midi-keys-repartition) allowed - [`midimap.xml`](#midi-keys-repartition) generation | `127` |
+| `--midi-note-median` | Median [MIDI note](#midi-keys-repartition) for distributing instruments around - [`midimap.xml`](#midi-keys-repartition) generation | `60` |
+| `--midi-note-min` | Minimum [MIDI note](#midi-keys-repartition) allowed - [`midimap.xml`](#midi-keys-repartition) generation | `0` |
 | `--name` | The name of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | `DrumGizmo Kit` |
 | `--notes` | Additional notes about the kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 | `--samplerate` | [Sample rate](#samplerate) of the kit's samples (in *Hz*) - All generated samples will be changed to this rate including original - [`drumkit.xml`](#kit-metadata) metadata | `44100` |
-| `--velocity-levels` | Total number of [velocity levels](#audio-samples-treatments) to generate in the target (the original sample + `velocity_levels - 1` automatically generated) | `10` |
+| `--velocity-levels` | Total number of [velocity levels](#audio-samples-treatments) to generate in the target (including original sample) | `10` |
 | `--version` | The version of the generated kit - You may use it to manage your kit's versions over the time - [`drumkit.xml`](#kit-metadata) metadata | `1.0` |
 | `--website` | The website of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 
@@ -185,6 +189,8 @@ The following "special" options are in use to manage process output and actions:
 You can specify kit metadata and generation options in a configuration file and pass it as a `--config` parameter. If a file named `drumgizmo-kit.ini` is found in the sources directory, it will be loaded automatically.
 
 All command-line options have equivalent configuration file settings which must be defined in a `[drumgizmo_kit_generator]` header block. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
+
+>   **HINT** - The configuration entries uses *underscores* instead of *dashes* for variable names.
 
 ```ini
 [drumgizmo_kit_generator]
@@ -228,6 +234,8 @@ If you find a bug or want to request a new feature, just [open an issue](https:/
 To fix a bug or make a proposal in this app, you may commit to a personal branch, push it to the repo and then
 [make a pull request](https://github.com/e-picas/drumgizmo-kits-generator/compare) explaining your modification.
 
+We use [`make`](https://www.gnu.org/software/make/) to run local tasks.
+
 #### Get the sources
 
 Clone this repository:
@@ -249,14 +257,13 @@ make install
 
 The `pre-commit` hook will try to fix your code following some standards, run the linter and tests. It is automatically run by the hooks before each commit and validate that your commit message follows the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/). These steps are run in the CI for validation.
 
-#### Local single tasks
-
-*   We use [`make`](https://www.gnu.org/software/make/) to run local tasks
 *   We use [`black`](https://black.readthedocs.io/en/stable/) and [`isort`](https://pycqa.github.io/isort/) for codebase formatting
 *   We use [`pylint`](https://pylint.readthedocs.io/en/latest/) to lint the codebase
 *   We use [`pytest`](https://docs.pytest.org/en/latest/) to run the tests
 
-Last available `make` tasks:
+#### Local single tasks
+
+Latest available `make` tasks:
 
 ```
 $ make
