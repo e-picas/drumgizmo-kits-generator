@@ -25,35 +25,32 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 
 The kit will follow the [DrumGizmo file format documentation](https://drumgizmo.org/wiki/doku.php?id=documentation:file_formats).
 
-For example, based on the following sources of audio samples:
-
-```
-sources/
-├── Instrument1.wav
-├── Instrument2.wav
-└── ...
-```
-
-The generated kit will have the following structure:
-
-```
-kit/
-├── drumkit.xml
-├── midimap.xml
-├── Instrument1/
-│   ├── instrument.xml
-│   └── samples/
-│       ├── 1-Instrument1.wav
-│       ├── 2-Instrument1.wav
-│       └── ...
-├── Instrument2/
-│   ├── instrument.xml
-│   └── samples/
-│       ├── 1-Instrument2.wav
-│       ├── 2-Instrument2.wav
-│       └── ...
-└── ...
-```
+>   For example, based on the following sources of audio samples:
+>   ```
+>   sources/
+>   ├── Instrument1.wav
+>   ├── Instrument2.wav
+>   └── ...
+>   ```
+>   The generated kit will have the following structure:
+>   ```
+>   kit/
+>   ├── drumkit.xml
+>   ├── midimap.xml
+>   ├── Instrument1/
+>   │   ├── instrument.xml
+>   │   └── samples/
+>   │       ├── 1-Instrument1.wav
+>   │       ├── 2-Instrument1.wav
+>   │       └── ...
+>   ├── Instrument2/
+>   │   ├── instrument.xml
+>   │   └── samples/
+>   │       ├── 1-Instrument2.wav
+>   │       ├── 2-Instrument2.wav
+>   │       └── ...
+>   └── ...
+>   ```
 
 A full generated kit is available in the [`examples/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/target) directory, based on the [`examples/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/sources) sources.
 
