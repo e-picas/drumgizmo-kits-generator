@@ -199,3 +199,106 @@ def prepare_target_directory(target_dir: str) -> None:
                 shutil.rmtree(item_path)
             else:
                 os.remove(item_path)
+
+
+def is_instrument_file(base_name: str, instrument_name: str) -> bool:
+    """
+    Check if a file belongs to a specific instrument.
+
+    Args:
+        base_name: Base name of the file
+        instrument_name: Name of the instrument
+
+    Returns:
+        bool: True if the file belongs to the instrument, False otherwise
+    """
+    # Check for common audio file extensions
+    for ext in [".wav", ".flac", ".ogg"]:
+        # Check for direct instrument match
+        if base_name.endswith(f"{instrument_name}{ext}"):
+            return True
+        # Check for converted instrument match
+        if base_name.endswith(f"{instrument_name}_converted{ext}"):
+            return True
+    return False
+
+
+def extract_instrument_names(audio_files: List[str]) -> List[str]:
+    """
+    Extract instrument names from audio files.
+
+    Args:
+        audio_files: List of audio file paths
+
+    Returns:
+        List[str]: List of instrument names sorted alphabetically
+    """
+    instrument_names = set()
+    for file_path in audio_files:
+        file_name = os.path.basename(file_path)
+        # Extract the base instrument name without velocity prefix
+        if file_name.startswith(tuple(f"{i}-" for i in range(1, 10))):
+            # Remove the velocity prefix (e.g., "1-", "2-")
+            parts = file_name.split("-", 1)
+            if len(parts) > 1:
+                instrument_name = parts[1].split(".")[0]  # Remove extension
+                # Remove any "_converted" suffixes
+                instrument_name = instrument_name.replace("_converted", "")
+                instrument_names.add(instrument_name)
+        else:
+            # No velocity prefix
+            file_base, _ = os.path.splitext(file_name)
+            # Remove any "_converted" suffixes
+            file_base = file_base.replace("_converted", "")
+            instrument_names.add(file_base)
+
+    # Convert to list for consistent ordering
+    return sorted(list(instrument_names))
+
+
+def calculate_midi_mapping(instruments: List[str], midi_params: Dict[str, int]) -> Dict[str, int]:
+    """
+    Calculate MIDI note mapping for a list of instruments.
+
+    Args:
+        instruments: List of instrument names
+        midi_params: Dictionary with MIDI parameters (min, max, median)
+
+    Returns:
+        Dict[str, int]: Dictionary mapping instrument names to MIDI notes
+    """
+    # Use default values if parameters are None
+    min_note = midi_params.get("min")
+    if min_note is None:
+        min_note = constants.DEFAULT_MIDI_NOTE_MIN
+
+    max_note = midi_params.get("max")
+    if max_note is None:
+        max_note = constants.DEFAULT_MIDI_NOTE_MAX
+
+    median_note = midi_params.get("median")
+    if median_note is None:
+        median_note = constants.DEFAULT_MIDI_NOTE_MEDIAN
+
+    # Calculate how many instruments we have on each side of the median
+    instruments_count = len(instruments)
+    left_count = instruments_count // 2
+
+    # Generate notes for each instrument
+    midi_mapping = {}
+    for i, instrument_name in enumerate(instruments):
+        # Calculate note based on position
+        if i < left_count:
+            # Instruments to the left of median
+            offset = left_count - i
+            note = median_note - offset
+        else:
+            # Instruments to the right of median (including the middle one)
+            offset = i - left_count
+            note = median_note + offset
+
+        # Ensure note is within the allowed range
+        note = max(min_note, min(note, max_note))
+        midi_mapping[instrument_name] = note
+
+    return midi_mapping

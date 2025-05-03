@@ -298,9 +298,9 @@ def generate_midimap_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
 
     # Get MIDI note range
     midi_params = {
-        "min": metadata.get("midi_note_min", constants.DEFAULT_MIDI_NOTE_MIN),
-        "max": metadata.get("midi_note_max", constants.DEFAULT_MIDI_NOTE_MAX),
-        "median": metadata.get("midi_note_median", constants.DEFAULT_MIDI_NOTE_MEDIAN),
+        "min": metadata.get("midi_note_min"),
+        "max": metadata.get("midi_note_max"),
+        "median": metadata.get("midi_note_median"),
     }
 
     # Get instruments

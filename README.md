@@ -107,7 +107,7 @@ Use the [`channels`](#options) and [`main-channels`](#options) options to set th
 >   channels = "AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
 >   main_channels = "AmbL,AmbR,OHL,OHR"
 >   ```
->   And some `instrument` XML blocks like:
+>   Which will result in the following `instrument` XML blocks:
 >   ```xml
 >        <instrument name="Sample" file="Sample/Sample.xml">
 >         <channelmap in="AmbL" out="AmbL" main="true"/>
