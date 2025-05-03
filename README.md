@@ -86,7 +86,7 @@ Each original audio sample is duplicated X times to finally get the [`velocity-l
 
 ### Samplerate
 
-The [`samplerate`](#options) of the generated kit (which defaults to `44100`) will be used for all samples and variations to assure the kit uniformity.
+The [`samplerate`](#options) of the generated kit (which defaults to `44100`), defined in *Hz*, will be used for all samples and variations to assure the kit uniformity.
 
 ### About samples channels
 
@@ -176,7 +176,7 @@ The following "special" options can be used to manage process output and run:
 | `--midi-note-min` | Minimum [MIDI note](#midi-keys-repartition) allowed - [`midimap.xml`](#midi-keys-repartition) generation | `0` |
 | `--name` | The name of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | `DrumGizmo Kit` |
 | `--notes` | Additional notes about the kit - [`drumkit.xml`](#kit-metadata) metadata | - |
-| `--samplerate` | [Sample rate](#samplerate) of the kit's samples (in *Hz*) - All generated samples will be changed to this rate including original - [`drumkit.xml`](#kit-metadata) metadata | `44100` |
+| `--samplerate` | [Sample rate](#samplerate) of the kit's samples (in *Hz*) - [`drumkit.xml`](#kit-metadata) metadata | `44100` |
 | `--velocity-levels` | Total number of [velocity levels](#audio-samples-treatments) to generate in the target (including original sample) | `10` |
 | `--version` | The version of the generated kit - You may use it to manage your kit's versions over the time - [`drumkit.xml`](#kit-metadata) metadata | `1.0` |
 | `--website` | The website of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
