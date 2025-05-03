@@ -1,6 +1,6 @@
 #
 # To create a Python virtual environment, run:
-#		python -m venv .venv;
+#		python3 -m venv .venv;
 #		source .venv/bin/activate;
 #
 SHELL := /bin/bash
@@ -11,18 +11,22 @@ install-ci:
 	pip install .[dev]
 
 test-ci:
-	python -m pytest
+	python3 -m pytest
 
 coverage-ci:
-	python -m pytest --cov=drumgizmo_kits_generator --cov-report=xml
+	python3 -m pytest --cov=drumgizmo_kits_generator --cov-report=xml
 
 lint-ci: lint
+
+lines-count:
+	find drumgizmo_kits_generator/ -name "*.py" -exec wc -l {} \;
+	find tests/ -name "*.py" -exec wc -l {} \;
 
 ## Verify that required commands are installed in the system
 check-env:
 	@${CHECK_CMD}; \
 	check_command git; \
-	check_command python; \
+	check_command python3; \
 	check_command pip; \
 	check_command sox; \
 	check_command diff;
@@ -42,15 +46,15 @@ lint:
 
 ## Run the tests in `tests/` with `pytest`
 test:
-	python -m pytest -v
+	python3 -m pytest -v
 
 ## Get the coverage analysis with `pytest`
 coverage:
-	python -m pytest --cov=drumgizmo_kits_generator --cov-report=term-missing
+	python3 -m pytest --cov=drumgizmo_kits_generator --cov-report=term-missing
 
 ## Generate a test kit to `tests/target_test/` from `examples/sources/` and compare it with `examples/target/`
 generate:
-	python create_drumgizmo_kit.py -s examples/sources/ -t tests/target_test/
+	python3 create_drumgizmo_kit.py -s examples/sources/ -t tests/target_test/
 	diff -r tests/target_test/ examples/target/ || true
 
 ## Cleanup Python's temporary files, cache and build
@@ -64,6 +68,9 @@ clean:
 		-o -name "build" \
 	\) -exec rm -rf {} \;
 	rm -rf tests/target_test
+
+## Run all checks: `format`, `lint`, `test`, `coverage` and `generate`
+all: format lint test coverage generate
 
 # This generates a 'help' string with the list of available tasks & variables
 # in your Makefile(s) with their description if it is prefixed by two dashes:

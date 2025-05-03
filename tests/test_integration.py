@@ -46,6 +46,13 @@ def normalize_xml_for_comparison(xml_content):
         r"Generated at \d{4}-\d{2}-\d{2} \d{2}:\d{2}", "Generated at DATE_TIME", xml_content
     )
 
+    # Normalize version strings
+    xml_content = re.sub(
+        r"with drumgizmo-kits-generator v\d+\.\d+\.\d+",
+        "with drumgizmo-kits-generator vX.Y.Z",
+        xml_content,
+    )
+
     # Remove any other variable content that might change between runs
     # For example, absolute paths, temporary directory names, etc.
 

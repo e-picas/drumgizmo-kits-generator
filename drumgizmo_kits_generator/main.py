@@ -280,7 +280,7 @@ def print_metadata(metadata: Dict[str, Any]) -> None:
 
     logger.info(f"Sample rate: {metadata['samplerate']} Hz")
     logger.info(f"Velocity levels: {metadata['velocity_levels']}")
-    logger.info(f"MIDI note range: {metadata['midi_note_min']} - {metadata['midi_note_max']}")
+    logger.info(f"MIDI note range: [{metadata['midi_note_min']}, {metadata['midi_note_max']}]")
     logger.info(f"MIDI note median: {metadata['midi_note_median']}")
     logger.info(f"Audio extensions: {metadata['extensions']}")
     logger.info(f"Audio channels: {metadata['channels']}")
@@ -317,51 +317,88 @@ def print_samples_info(audio_files: List[str], metadata: Dict[str, Any]) -> None
 
 def process_audio_files(
     audio_files: List[str], target_dir: str, metadata: Dict[str, Any]
-) -> List[str]:
+) -> Dict[str, List[str]]:
     """
-    Process audio files: convert to target samplerate and create velocity variations.
+    Process audio files by creating velocity variations.
 
     Args:
         audio_files: List of audio file paths
         target_dir: Path to the target directory
-        metadata: Metadata with processing parameters
+        metadata: Metadata for audio processing
 
     Returns:
-        List[str]: List of processed audio file paths
+        Dict[str, List[str]]: Dictionary mapping instrument names to processed audio files
     """
     logger.section("Processing Audio Files")
 
-    # Process each audio file
-    processed_files = {}
-    for file in audio_files:
-        logger.info(f"Processing {os.path.basename(file)}")
-        # process_sample now returns a list of generated files
-        variation_files = audio.process_sample(file, target_dir, metadata)
-        processed_files[os.path.basename(file)] = variation_files
+    processed_audio_files = {}
+    velocity_levels = metadata.get("velocity_levels", constants.DEFAULT_VELOCITY_LEVELS)
 
-    return processed_files
+    for file_path in audio_files:
+        file_name = os.path.basename(file_path)
+        logger.info(f"Processing {file_name}")
+
+        # Get base name without extension
+        # pylint: disable-next=unused-variable
+        file_base, file_ext = os.path.splitext(file_name)
+
+        # Clean up the instrument name
+        instrument_name = utils.clean_instrument_name(file_base)
+
+        # Create directory for the instrument
+        instrument_dir = os.path.join(target_dir, instrument_name)
+        samples_dir = os.path.join(instrument_dir, "samples")
+
+        if not os.path.exists(instrument_dir):
+            logger.info(f"Creating directory for instrument: {instrument_name}")
+            os.makedirs(instrument_dir)
+            os.makedirs(samples_dir)
+
+        # Create velocity variations
+        processed_files = audio.create_velocity_variations(
+            file_path, samples_dir, velocity_levels, instrument_name
+        )
+
+        # Store processed files for this instrument
+        processed_audio_files[instrument_name] = processed_files
+
+        logger.info(f"Processed {file_name} with {velocity_levels} volume variations")
+
+    return processed_audio_files
 
 
-def _is_instrument_file(base_name: str, instrument_name: str) -> bool:
+def preview_midi_mapping(audio_files: List[str], metadata: Dict[str, Any]) -> None:
     """
-    Check if a file belongs to a specific instrument.
+    Preview MIDI mapping without generating files.
+    For dry-run mode only.
 
     Args:
-        base_name: Base name of the file
-        instrument_name: Name of the instrument
-
-    Returns:
-        bool: True if the file belongs to the instrument, False otherwise
+        audio_files: List of audio file paths
+        metadata: Metadata for MIDI mapping
     """
-    # Check for common audio file extensions
-    for ext in [".wav", ".flac", ".ogg"]:
-        # Check for direct instrument match
-        if base_name.endswith(f"{instrument_name}{ext}"):
-            return True
-        # Check for converted instrument match
-        if base_name.endswith(f"{instrument_name}_converted{ext}"):
-            return True
-    return False
+    logger.section("MIDI Mapping Preview")
+
+    # Extract instrument names from audio files
+    instrument_names = utils.extract_instrument_names(audio_files)
+
+    # Get MIDI note range
+    midi_params = {
+        "min": metadata.get("midi_note_min"),
+        "max": metadata.get("midi_note_max"),
+        "median": metadata.get("midi_note_median"),
+    }
+
+    if not instrument_names:
+        logger.warning("No instruments found for MIDI mapping preview")
+        return
+
+    # Calculate MIDI mapping
+    midi_mapping = utils.calculate_midi_mapping(instrument_names, midi_params)
+
+    # Display MIDI mapping
+    logger.info("MIDI mapping preview (alphabetical order):")
+    for instrument, note in sorted(midi_mapping.items(), key=lambda x: x[0]):
+        logger.info(f"  MIDI Note {note}: {instrument}")
 
 
 def generate_xml_files(audio_files: List[str], target_dir: str, metadata: Dict[str, Any]) -> None:
@@ -376,49 +413,23 @@ def generate_xml_files(audio_files: List[str], target_dir: str, metadata: Dict[s
     logger.section("Generating XML Files")
 
     # Extract instrument names from audio files
-    instrument_names = set()
-    for file_path in audio_files:
-        file_name = os.path.basename(file_path)
-        # Extract the base instrument name without velocity prefix
-        if file_name.startswith(tuple(f"{i}-" for i in range(1, 10))):
-            # Remove the velocity prefix (e.g., "1-", "2-")
-            parts = file_name.split("-", 1)
-            if len(parts) > 1:
-                instrument_name = parts[1].split(".")[0]  # Remove extension
-                # Remove any "_converted" suffixes
-                instrument_name = instrument_name.replace("_converted", "")
-                instrument_names.add(instrument_name)
-        else:
-            # No velocity prefix
-            file_base, _ = os.path.splitext(file_name)
-            # Remove any "_converted" suffixes
-            file_base = file_base.replace("_converted", "")
-            instrument_names.add(file_base)
+    instrument_names = utils.extract_instrument_names(audio_files)
 
-    # Convert to list for consistent ordering
-    instrument_names = sorted(list(instrument_names))
-
-    # Add instruments to metadata
+    # Add instrument names to metadata
     metadata["instruments"] = instrument_names
 
-    # Generate drumkit.xml
     logger.info("Generating drumkit.xml")
     xml_generator.generate_drumkit_xml(target_dir, metadata)
 
-    # Generate instrument XML files
     logger.info("Generating instrument XML files")
     for instrument_name in instrument_names:
-        # Find all files for this instrument (with any velocity prefix)
-        # We need to handle both original files and files with "_converted" suffix
         instrument_files = []
-
         for f in audio_files:
             base_name = os.path.basename(f)
-            # Check if this file belongs to this instrument
             # It could be with or without velocity prefix, and with or without "_converted" suffix
-            if _is_instrument_file(base_name, instrument_name) or any(
+            if utils.is_instrument_file(base_name, instrument_name) or any(
                 base_name.startswith(f"{i}-")
-                and _is_instrument_file(base_name[len(f"{i}-") :], instrument_name)
+                and utils.is_instrument_file(base_name[len(f"{i}-") :], instrument_name)
                 for i in range(1, 10)
             ):
                 instrument_files.append(f)
@@ -504,8 +515,24 @@ def print_summary(
     logger.info("\nInstrument to sample mapping:")
     if isinstance(processed_audio_files, dict):
         # If processed_audio_files is a dictionary (new format)
+
+        # Get MIDI parameters
+        midi_params = {
+            "min": metadata.get("midi_note_min", constants.DEFAULT_MIDI_NOTE_MIN),
+            "max": metadata.get("midi_note_max", constants.DEFAULT_MIDI_NOTE_MAX),
+            "median": metadata.get("midi_note_median", constants.DEFAULT_MIDI_NOTE_MEDIAN),
+        }
+
+        # Get instrument names
+        instruments = list(processed_audio_files.keys())
+
+        # Calculate MIDI mapping
+        midi_mapping = utils.calculate_midi_mapping(instruments, midi_params)
+
+        # Display mapping with MIDI notes
         for instrument, audio_file in zip(processed_audio_files.keys(), audio_files):
-            logger.info(f"  {instrument}: {os.path.basename(audio_file)}")
+            midi_note = midi_mapping.get(instrument, "N/A")
+            logger.info(f"  (MIDI Note {midi_note}) {instrument}: {os.path.basename(audio_file)}")
     else:
         # If processed_audio_files is a list (old format used in tests)
         for audio_file in audio_files:
@@ -564,8 +591,9 @@ def main() -> None:
     # Print samples information
     print_samples_info(audio_files, metadata)
 
-    # Stop here if dry run mode is enabled
+    # Preview MIDI mapping in dry run mode
     if args.dry_run:
+        preview_midi_mapping(audio_files, metadata)
         logger.message("\nDry run mode enabled, stopping here")
         return
 
