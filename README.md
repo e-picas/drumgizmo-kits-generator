@@ -25,6 +25,8 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 
 The kit will follow the [DrumGizmo file format documentation](https://drumgizmo.org/wiki/doku.php?id=documentation:file_formats).
 
+A full generated kit is available in the [`examples/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/target) directory, based on the [`examples/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/sources) sources.
+
 >   For example, based on the following sources of audio samples:
 >   ```
 >   sources/
@@ -51,8 +53,6 @@ The kit will follow the [DrumGizmo file format documentation](https://drumgizmo.
 >   │       └── ...
 >   └── ...
 >   ```
-
-A full generated kit is available in the [`examples/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/target) directory, based on the [`examples/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/sources) sources.
 
 ### Original audio samples
 
@@ -84,6 +84,14 @@ Based on your [options](#options) or [configuration](#configuration-file), the k
 
 Each original audio sample is duplicated X times to finally get the [`velocity-levels`](#options) number of volumes variations, assigned to corresponding "velocity" variations by setting the `power` entry of each sample on a linear basis (from 1 to near 0).
 
+>   For example, for a value of `velocity_levels=4`, we will have:
+>   ```xml
+>       <sample name="Sample-Original" power="1.000000">
+>       <sample name="Sample-Volume-0.75" power="0.750000">
+>       <sample name="Sample-Volume-0.5" power="0.500000">
+>       <sample name="Sample-Volume-0.25" power="0.250000">
+>   ```
+
 ### Samplerate
 
 The [`samplerate`](#options) of the generated kit (which defaults to `44100`), defined in *Hz*, will be used for all samples and variations to assure the kit uniformity.
@@ -99,18 +107,36 @@ Use the [`channels`](#options) and [`main-channels`](#options) options to set th
 >   channels = "AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"
 >   main_channels = "AmbL,AmbR,OHL,OHR"
 >   ```
+>   And some `instrument` XML blocks like:
+>   ```xml
+>        <instrument name="Sample" file="Sample/Sample.xml">
+>         <channelmap in="AmbL" out="AmbL" main="true"/>
+>         <channelmap in="AmbR" out="AmbR" main="true"/>
+>         <channelmap in="Hihat" out="Hihat"/>
+>         <channelmap in="Kdrum_back" out="Kdrum_back"/>
+>         <channelmap in="Kdrum_front" out="Kdrum_front"/>
+>         <channelmap in="OHL" out="OHL" main="true"/>
+>         <channelmap in="OHR" out="OHR" main="true"/>
+>         <channelmap in="Ride" out="Ride"/>
+>         <channelmap in="Snare_bottom" out="Snare_bottom"/>
+>         <channelmap in="Snare_top" out="Snare_top"/>
+>         <channelmap in="Tom1" out="Tom1"/>
+>         <channelmap in="Tom2" out="Tom2"/>
+>         <channelmap in="Tom3" out="Tom3"/>
+>       </instrument>
+> ```
 
 ### MIDI keys repartition
 
-The samples will all be attached to consecutive MIDI notes around the [`midi-note-median`](#options) with some limits set by the [`midi-note-min`](#options) and [`midi-note-max`](#options) options. An error will be triggered if your project have more samples than the allowed MIDI notes.
+The samples will all be attached to consecutive MIDI notes around the [`midi-note-median`](#options) with some limits set by the [`midi-note-min`](#options) and [`midi-note-max`](#options) options. A warning will be printed if your project have more samples than the allowed MIDI notes.
 
 The notes are defined in a global `[0,127]` range and the default `midi-note-median` is set to `60`, which is the *C4* key of a MIDI keyboard.
 
 >   For example, with a set of 3 audio samples and the default value `midi-note-median=60`, the final `midimap.xml` file would be:
 >   ```xml
->     <map note="59" instr="Sample1" />
->     <map note="60" instr="Sample2" />
->     <map note="61" instr="Sample3" />
+>     <map note="59" instr="Sample-1" />
+>     <map note="60" instr="Sample-2" />
+>     <map note="61" instr="Sample-3" />
 >   ```
 
 ### Note about audio files formats
@@ -185,42 +211,9 @@ The following "special" options can be used to manage process output and run:
 
 You can specify kit metadata and generation options in a configuration file and pass it as a `--config` parameter. If a file named `drumgizmo-kit.ini` is found in the sources directory, it will be loaded automatically.
 
-All command-line options have equivalent configuration file settings which must be defined in a `[drumgizmo_kit_generator]` header block. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
+All command-line options have equivalent configuration file settings which must be defined in a `[drumgizmo_kit_generator]` header block replacig *dashes* by *underscores*. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
 
->   **HINT** - The configuration entries uses *underscores* instead of *dashes* for variable names.
-
-```ini
-[drumgizmo_kit_generator]
-# General kit information
-name = My Custom DrumGizmo Kit
-version = 1.0
-description = A custom drum kit for DrumGizmo
-notes = Recorded with an acoustic drum kit in studio
-author = Your Name
-license = CC-BY-SA 4.0
-website = https://example.com/my-drumgizmo-kit
-
-# Additional files
-logo = logo.png
-extra_files = readme.txt,license.txt,credits.txt
-
-# Audio parameters
-samplerate = 48000
-velocity_levels = 5
-
-# MIDI configuration
-midi_note_min = 35
-midi_note_max = 81
-midi_note_median = 60
-
-# Audio file extensions to process
-extensions = wav,WAV,flac,FLAC
-
-# Audio channels configuration
-channels = Kick,Snare,HiHat,Tom1,Tom2,Tom3,Ride,Crash,OHL,OHR,Room
-main_channels = OHL,OHR,Room
-
-```
+>   For a full example, please see the [`examples/drumgizmo-kit.sample.ini`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/examples/drumgizmo-kit.sample.ini) file.
 
 ## Contributing
 
