@@ -97,6 +97,7 @@ class TestGenerateDrumkitXml:
         metadata_elem = root.find("metadata")
         assert metadata_elem is not None
         assert metadata_elem.find("title").text == basic_metadata["name"]
+        assert metadata_elem.find("version").text == basic_metadata["version"]
         assert metadata_elem.find("description").text == basic_metadata["description"]
         assert metadata_elem.find("notes").text == basic_metadata["notes"]
         assert metadata_elem.find("author").text == basic_metadata["author"]

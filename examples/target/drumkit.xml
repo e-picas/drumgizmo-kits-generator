@@ -2,6 +2,7 @@
 <drumkit version="1.0" name="Test Kit" samplerate="48000">
   <metadata>
     <title>Test Kit</title>
+    <version>1.0</version>
     <description>This is a description</description>
     <notes>DrumGizmo kit generated for testing purpose</notes>
     <author>Piero</author>
@@ -9,7 +10,7 @@
     <samplerate>48000</samplerate>
     <website>https://picas.fr/</website>
     <logo src="pngtree-music-notes-png-image_8660757.png"/>
-    <created>Generated on 2025-05-01 15:44:17 with drumgizmo-kits-generator v1.4.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
+    <created>Generated on 2025-05-04 11:09:05 with drumgizmo-kits-generator v1.5.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
   </metadata>
   <channels>
     <channel name="AmbL"/>
