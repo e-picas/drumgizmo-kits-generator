@@ -1,6 +1,41 @@
 # CHANGELOG
 
 
+## v1.6.0 (2025-05-04)
+
+### Documentation
+
+- Rollback README.md [skip ci]
+  ([`56ac244`](https://github.com/e-picas/drumgizmo-kits-generator/commit/56ac244149e9eb686b73cfc30680a7d6daca1787))
+
+- Update README.md [skip ci]
+  ([`8372c0d`](https://github.com/e-picas/drumgizmo-kits-generator/commit/8372c0d7f248b745562585f295a5c2bf48b97d19))
+
+- Update README.md [skip ci]
+  ([`68fdbd0`](https://github.com/e-picas/drumgizmo-kits-generator/commit/68fdbd06491c6dc6674e6d02f13937f881504c4e))
+
+- Update README.md [skip ci]
+  ([`c37fc78`](https://github.com/e-picas/drumgizmo-kits-generator/commit/c37fc781fbacb9934391d24b342c25e79b430e82))
+
+- Update README.md [skip ci]
+  ([`8cfbbf6`](https://github.com/e-picas/drumgizmo-kits-generator/commit/8cfbbf6480a3fe75ccfaeb4d50cd38a5db8e2116))
+
+- Update README.md [skip ci]
+  ([`7719f31`](https://github.com/e-picas/drumgizmo-kits-generator/commit/7719f31c4d2ce1c1d5b1320487f1fbeef2d2525d))
+
+- Update README.md [skip ci]
+  ([`b5d98d0`](https://github.com/e-picas/drumgizmo-kits-generator/commit/b5d98d014e3a207140ce9f50c96c0a289a9901db))
+
+### Features
+
+- Midi note info ([#24](https://github.com/e-picas/drumgizmo-kits-generator/pull/24),
+  [`6215ca5`](https://github.com/e-picas/drumgizmo-kits-generator/commit/6215ca5b15e6c8107db6f403538226f13116a14b))
+
+* feat: add the midi repartition info in dry-run mode and summary
+
+* feat: review MIDI notes info
+
+
 ## v1.5.0 (2025-05-02)
 
 ### Bug Fixes
