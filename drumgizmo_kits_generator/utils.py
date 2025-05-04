@@ -12,6 +12,27 @@ import tempfile
 from typing import Any, Dict, List
 
 from drumgizmo_kits_generator import constants, logger
+from drumgizmo_kits_generator.exceptions import (
+    AudioProcessingError,
+    DependencyError,
+    DirectoryError,
+)
+
+
+def check_dependency(command: str, error_message: str = None) -> None:
+    """
+    Check if a command is available in the system.
+
+    Args:
+        command: Command to check
+        error_message: Custom error message (optional)
+
+    Raises:
+        DependencyError: If the command is not found
+    """
+    if not shutil.which(command):
+        msg = error_message or f"Required dependency '{command}' not found in the system"
+        raise DependencyError(msg)
 
 
 def convert_sample_rate(file_path: str, target_sample_rate: str) -> str:
@@ -24,34 +45,46 @@ def convert_sample_rate(file_path: str, target_sample_rate: str) -> str:
 
     Returns:
         str: Path to the converted file
+
+    Raises:
+        DependencyError: If SoX is not found
+        AudioProcessingError: If sample rate conversion fails
     """
     logger.debug(f"Converting {file_path} to {target_sample_rate} Hz")
 
-    # Create a temporary directory for the converted audio
-    temp_dir = tempfile.mkdtemp(prefix="drumgizmo_")
+    # Check if SoX is available
+    if not shutil.which("sox"):
+        error_msg = "SoX not found in the system, can not generate samples"
+        raise DependencyError(error_msg)
 
     # Get file name and extension
     file_name = os.path.basename(file_path)
     file_base, file_ext = os.path.splitext(file_name)
 
-    # Create the converted file path in the temporary directory
-    # Keep the original extension
+    # Create a temporary directory for the converted audio
+    temp_dir = tempfile.mkdtemp(prefix="drumgizmo_")
     converted_file = os.path.join(temp_dir, f"{file_base}{file_ext}")
 
-    # Use SoX to convert the sample rate
     try:
-        if shutil.which("sox"):
-            cmd = ["sox", file_path, "-r", str(target_sample_rate), converted_file]
-            subprocess.run(cmd, check=True, capture_output=True)
-            logger.debug(f"Converted sample rate to {target_sample_rate} Hz")
-            return converted_file
-        logger.error("SoX not found in the system, can not generate samples")
-        return file_path
+        # Use SoX to convert the sample rate
+        cmd = ["sox", file_path, "-r", str(target_sample_rate), converted_file]
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
+
+        # Log success
+        logger.debug(f"Successfully converted sample rate to {target_sample_rate} Hz")
+        return converted_file
     except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to convert sample rate: {e}")
+        error_msg = f"Failed to convert sample rate: {e}"
+        if hasattr(e, "stderr") and e.stderr:
+            error_msg += f" (stderr: {e.stderr.strip()})"
         # Clean up the temporary directory in case of error
         shutil.rmtree(temp_dir, ignore_errors=True)
-        return file_path
+        raise AudioProcessingError(error_msg) from e
+    except Exception as e:
+        error_msg = f"Unexpected error during sample rate conversion: {e}"
+        # Clean up the temporary directory in case of error
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise AudioProcessingError(error_msg) from e
 
 
 def get_audio_info(file_path: str) -> Dict[str, Any]:
@@ -63,41 +96,64 @@ def get_audio_info(file_path: str) -> Dict[str, Any]:
 
     Returns:
         Dict[str, Any]: Dictionary with audio information
+
+    Raises:
+        DependencyError: If SoX (soxi) is not found
+        AudioProcessingError: If getting audio information fails
     """
+    logger.debug(f"Getting audio information for {file_path}")
+
+    # Check if the file exists
+    if not os.path.isfile(file_path):
+        raise AudioProcessingError(f"Audio file not found: {file_path}")
+
+    # Check if soxi is available
+    soxi_path = shutil.which("soxi")
+    if not soxi_path:
+        error_msg = "SoX (soxi) not found in the system, cannot get audio information"
+        raise DependencyError(error_msg)
+
+    # Initialize default info
     info = {
-        "channels": 2,  # Default to stereo
-        "samplerate": 44100,  # Default to 44.1 kHz
-        "bits": 16,  # Default to 16-bit
-        "duration": 0,  # Default to 0 seconds
+        "channels": None,
+        "samplerate": None,
+        "bits": None,
+        "duration": None,
     }
 
     try:
-        if shutil.which("soxi"):
-            # Get number of channels
-            cmd = ["soxi", "-c", file_path]
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-            info["channels"] = int(result.stdout.strip())
+        # Get number of channels
+        cmd = [soxi_path, "-c", file_path]
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        info["channels"] = int(result.stdout.strip())
 
-            # Get sample rate
-            cmd = ["soxi", "-r", file_path]
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-            info["samplerate"] = int(result.stdout.strip())
+        # Get sample rate
+        cmd = [soxi_path, "-r", file_path]
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        info["samplerate"] = int(result.stdout.strip())
 
-            # Get bit depth
-            cmd = ["soxi", "-b", file_path]
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-            info["bits"] = int(result.stdout.strip())
+        # Get bit depth
+        cmd = [soxi_path, "-b", file_path]
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        info["bits"] = int(result.stdout.strip())
 
-            # Get duration in seconds
-            cmd = ["soxi", "-D", file_path]
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-            info["duration"] = float(result.stdout.strip())
+        # Get duration in seconds
+        cmd = [soxi_path, "-D", file_path]
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        info["duration"] = float(result.stdout.strip())
 
-            logger.debug(f"Audio info for {file_path}: {info}")
-        else:
-            logger.warning("soxi not found, using default audio information")
+        logger.debug(f"Audio info for {file_path}: {info}")
     except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to get audio information: {e}")
+        error_msg = f"Failed to get audio information: {e}"
+        if hasattr(e, "stderr") and e.stderr:
+            error_msg += f" (stderr: {e.stderr.strip()})"
+        raise AudioProcessingError(error_msg) from e
+    except ValueError as e:
+        error_msg = f"Failed to parse audio information: {e}"
+        raise AudioProcessingError(error_msg) from e
+    except Exception as e:
+        error_msg = f"Unexpected error while getting audio information: {e}"
+        raise AudioProcessingError(error_msg) from e
 
     return info
 
@@ -159,21 +215,21 @@ def validate_directories(source_dir: str, target_dir: str, config_file: str = No
         config_file: Path to the configuration file (optional)
 
     Raises:
-        SystemExit: If validation fails
+        DirectoryError: If validation fails
     """
     # Validate source directory
     if not os.path.isdir(source_dir):
-        logger.error(f"Source directory does not exist: {source_dir}")
+        raise DirectoryError(f"Source directory does not exist: {source_dir}")
 
     # Validate target directory
     target_parent = os.path.dirname(os.path.abspath(target_dir))
     if not os.path.exists(target_dir) and not os.path.isdir(target_parent):
-        logger.error(f"Parent directory of target does not exist: {target_parent}")
+        raise DirectoryError(f"Parent directory of target does not exist: {target_parent}")
 
     # Validate config file if specified
     if config_file and config_file != constants.DEFAULT_CONFIG_FILE:
         if not os.path.isfile(config_file):
-            logger.error(f"Configuration file does not exist: {config_file}")
+            raise DirectoryError(f"Configuration file does not exist: {config_file}")
 
 
 def prepare_target_directory(target_dir: str) -> None:

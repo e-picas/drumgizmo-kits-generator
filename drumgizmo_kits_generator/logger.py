@@ -6,6 +6,7 @@ Contains functions to manage the logging: `info`, `debug` (to output only in ver
 """
 
 import sys
+import traceback
 
 # ANSI color codes
 RED = "\033[91m"
@@ -65,14 +66,15 @@ class Logger:
 
     def error(self, msg: str) -> None:
         """
-        Print an error message to stderr in red color and exit the program with status code 127.
+        Print an error message to stderr in red color.
 
         Args:
             msg: The error message to print
         """
         print(f"{RED}ERROR: {msg}{RESET}", file=sys.stderr)
+        if self.verbose_mode:
+            traceback.print_exc(file=sys.stderr)
         sys.stderr.flush()
-        sys.exit(127)
 
     def section(self, title: str) -> None:
         """
@@ -94,6 +96,15 @@ class Logger:
         print(f"{GREEN}{msg}{RESET}", end=end, file=sys.stdout)
         sys.stdout.flush()
 
+    def is_verbose(self) -> bool:
+        """
+        Check if verbose mode is enabled.
+
+        Returns:
+            bool: True if verbose mode is enabled, False otherwise
+        """
+        return self.verbose_mode
+
 
 # Create a singleton instance of the Logger
 _logger = Logger()
@@ -106,3 +117,4 @@ warning = _logger.warning
 error = _logger.error
 section = _logger.section
 message = _logger.message
+is_verbose = _logger.is_verbose

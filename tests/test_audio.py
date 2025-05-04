@@ -68,7 +68,7 @@ class TestCreateVelocityVariations:
     @mock.patch("os.path.exists")
     @mock.patch("shutil.copy2")
     def test_create_velocity_variations_with_sox(
-        self, mock_copy2, mock_exists, mock_run, mock_which, tmp_dir, sample_file, mock_logger
+        self, mock_copy2, mock_exists, mock_run, mock_which, tmp_dir, sample_file
     ):
         """Test create_velocity_variations with SoX available."""
         # Setup mocks
@@ -86,77 +86,53 @@ class TestCreateVelocityVariations:
         )
         assert mock_run.call_count == 3
         assert mock_copy2.call_count == 0
-        assert mock_logger["debug"].call_count >= 3  # At least one debug log per velocity level
 
     @mock.patch("shutil.which")
-    @mock.patch("subprocess.run")
     @mock.patch("os.path.exists")
-    @mock.patch("shutil.copy2")
     def test_create_velocity_variations_without_sox(
-        self, mock_copy2, mock_exists, mock_run, mock_which, tmp_dir, sample_file, mock_logger
+        self, mock_exists, mock_which, tmp_dir, sample_file
     ):
         """Test create_velocity_variations without SoX available."""
         # Setup mocks
         mock_which.return_value = None  # SoX is not available
         mock_exists.return_value = True
 
-        # Call the function
-        result = audio.create_velocity_variations(sample_file, tmp_dir, 3, "test_instrument")
+        # Call the function and expect a DependencyError
+        with pytest.raises(audio.DependencyError) as excinfo:
+            audio.create_velocity_variations(sample_file, tmp_dir, 3, "test_instrument")
 
-        # Assertions
-        assert len(result) == 3
-        assert all(
-            os.path.basename(f).startswith(f"{i}-test_instrument") for i, f in enumerate(result, 1)
-        )
-        assert mock_run.call_count == 0
-        assert mock_copy2.call_count == 3
-        assert mock_logger["warning"].call_count >= 1  # Warning about SoX not found
+        # Verify the error message
+        assert "SoX not found" in str(excinfo.value)
 
-    @mock.patch("shutil.which")
-    @mock.patch("subprocess.run")
     @mock.patch("os.path.exists")
-    @mock.patch("shutil.copy2")
-    def test_create_velocity_variations_file_not_found(
-        self, mock_copy2, mock_exists, mock_run, mock_which, tmp_dir, sample_file, mock_logger
-    ):
+    def test_create_velocity_variations_file_not_found(self, mock_exists, tmp_dir, sample_file):
         """Test create_velocity_variations with file not found."""
         # Setup mocks
-        mock_which.return_value = "/usr/bin/sox"  # SoX is available
         mock_exists.return_value = False
 
-        # Call the function
-        result = audio.create_velocity_variations(sample_file, tmp_dir, 3, "test_instrument")
+        # Call the function and expect an AudioProcessingError
+        with pytest.raises(audio.AudioProcessingError) as excinfo:
+            audio.create_velocity_variations(sample_file, tmp_dir, 3, "test_instrument")
 
-        # Assertions
-        assert len(result) == 0
-        assert mock_run.call_count == 0
-        assert mock_copy2.call_count == 0
-        assert mock_logger["error"].call_count >= 1  # Error about file not found
+        # Verify the error message
+        assert "Source file not found" in str(excinfo.value)
 
-    @mock.patch("shutil.which")
     @mock.patch("subprocess.run")
     @mock.patch("os.path.exists")
-    @mock.patch("shutil.copy2")
     def test_create_velocity_variations_sox_error(
-        self, mock_copy2, mock_exists, mock_run, mock_which, tmp_dir, sample_file, mock_logger
+        self, mock_exists, mock_run, tmp_dir, sample_file
     ):
         """Test create_velocity_variations with SoX error."""
         # Setup mocks
-        mock_which.return_value = "/usr/bin/sox"  # SoX is available
         mock_exists.return_value = True
         mock_run.side_effect = subprocess.CalledProcessError(1, "sox")
 
-        # Call the function
-        result = audio.create_velocity_variations(sample_file, tmp_dir, 3, "test_instrument")
+        # Call the function and expect an AudioProcessingError
+        with pytest.raises(audio.AudioProcessingError) as excinfo:
+            audio.create_velocity_variations(sample_file, tmp_dir, 3, "test_instrument")
 
-        # Assertions
-        assert len(result) == 3
-        assert all(
-            os.path.basename(f).startswith(f"{i}-test_instrument") for i, f in enumerate(result, 1)
-        )
-        assert mock_run.call_count == 3  # SoX is called for each velocity level
-        assert mock_copy2.call_count == 3  # Fallback to copy for each velocity level
-        assert mock_logger["error"].call_count >= 3  # Error log for each velocity level
+        # Verify the error message
+        assert "Failed to create velocity variation" in str(excinfo.value)
 
 
 class TestProcessSample:

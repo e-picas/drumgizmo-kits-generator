@@ -15,7 +15,7 @@ from unittest import mock
 
 import pytest
 
-from drumgizmo_kits_generator import constants, utils
+from drumgizmo_kits_generator import constants, exceptions, utils
 
 
 @pytest.fixture
@@ -58,12 +58,15 @@ class TestConvertSampleRate:
         # Setup mocks
         mock_which.return_value = None  # SoX is not available
 
-        # Call the function
-        result = utils.convert_sample_rate(sample_file_fixture, "48000")
+        # Call the function and expect a DependencyError
+        with pytest.raises(exceptions.DependencyError) as excinfo:
+            utils.convert_sample_rate(sample_file_fixture, "48000")
 
-        # Assertions
-        assert result == sample_file_fixture  # Should return the original file
-        assert mock_logger_fixture["error"].call_count >= 1  # Error about SoX not found
+        # Verify the error message
+        assert "SoX not found" in str(excinfo.value)
+
+        # No need to verify logger.error call as it's now handled in main.py
+        # mock_logger_fixture["error"].assert_called_once()
 
     @mock.patch("shutil.which")
     @mock.patch("subprocess.run")
@@ -87,16 +90,16 @@ class TestConvertSampleRate:
         assert mock_logger_fixture["debug"].call_count >= 1  # Log about conversion
         mock_run.assert_called_once()  # SoX command should be called
 
-    @mock.patch("shutil.which")
-    @mock.patch("subprocess.run")
-    @mock.patch("tempfile.mkdtemp")
     @mock.patch("shutil.rmtree")
+    @mock.patch("tempfile.mkdtemp")
+    @mock.patch("subprocess.run")
+    @mock.patch("shutil.which")
     def test_convert_sample_rate_with_error(
         self,
-        mock_rmtree,
-        mock_mkdtemp,
-        mock_run,
         mock_which,
+        mock_run,
+        mock_mkdtemp,
+        mock_rmtree,
         sample_file_fixture,
         mock_logger_fixture,
     ):
@@ -107,15 +110,78 @@ class TestConvertSampleRate:
         temp_dir = "/tmp/drumgizmo_temp"
         mock_mkdtemp.return_value = temp_dir
 
-        # Call the function
-        result = utils.convert_sample_rate(sample_file_fixture, "48000")
+        # Call the function - it should raise AudioProcessingError
+        with pytest.raises(utils.AudioProcessingError) as excinfo:
+            utils.convert_sample_rate(sample_file_fixture, "48000")
 
-        # Assertions
-        assert result == sample_file_fixture  # Should return the original file on error
-        assert mock_logger_fixture["error"].call_count >= 1  # Error about SoX failure
-        mock_rmtree.assert_called_once_with(
-            temp_dir, ignore_errors=True
-        )  # Temp dir should be cleaned up
+        # Verify the error message
+        assert "Failed to convert sample rate" in str(excinfo.value)
+
+        # Verify that temp dir is cleaned up
+        mock_rmtree.assert_called_once_with(temp_dir, ignore_errors=True)
+
+    @mock.patch("shutil.rmtree")
+    @mock.patch("tempfile.mkdtemp")
+    @mock.patch("subprocess.run")
+    @mock.patch("shutil.which")
+    def test_convert_sample_rate_with_error_and_stderr(
+        self,
+        mock_which,
+        mock_run,
+        mock_mkdtemp,
+        mock_rmtree,
+        sample_file_fixture,
+        mock_logger_fixture,
+    ):
+        """Test convert_sample_rate with SoX error that includes stderr output."""
+        # Setup mocks
+        mock_which.return_value = "/usr/bin/sox"  # SoX is available
+        error = subprocess.CalledProcessError(1, "sox")
+        error.stderr = "SoX ERROR: Failed to open input file"
+        mock_run.side_effect = error
+        temp_dir = "/tmp/drumgizmo_temp"
+        mock_mkdtemp.return_value = temp_dir
+
+        # Call the function - it should raise AudioProcessingError
+        with pytest.raises(utils.AudioProcessingError) as excinfo:
+            utils.convert_sample_rate(sample_file_fixture, "48000")
+
+        # Verify the error message includes stderr content
+        assert "Failed to convert sample rate" in str(excinfo.value)
+        assert "SoX ERROR: Failed to open input file" in str(excinfo.value)
+
+        # Verify that the temporary directory is cleaned up
+        mock_rmtree.assert_called_once_with(temp_dir, ignore_errors=True)
+
+    @mock.patch("shutil.rmtree")
+    @mock.patch("tempfile.mkdtemp")
+    @mock.patch("subprocess.run")
+    @mock.patch("shutil.which")
+    def test_convert_sample_rate_with_generic_exception(
+        self,
+        mock_which,
+        mock_run,
+        mock_mkdtemp,
+        mock_rmtree,
+        sample_file_fixture,
+        mock_logger_fixture,
+    ):
+        """Test convert_sample_rate with a generic exception."""
+        # Setup mocks
+        mock_which.return_value = "/usr/bin/sox"  # SoX is available
+        mock_run.side_effect = Exception("Unexpected error")
+        temp_dir = "/tmp/drumgizmo_temp"
+        mock_mkdtemp.return_value = temp_dir
+
+        # Call the function - it should raise AudioProcessingError
+        with pytest.raises(utils.AudioProcessingError) as excinfo:
+            utils.convert_sample_rate(sample_file_fixture, "48000")
+
+        # Verify the error message
+        assert "Unexpected error during sample rate conversion" in str(excinfo.value)
+
+        # Verify that the temporary directory is cleaned up
+        mock_rmtree.assert_called_once_with(temp_dir, ignore_errors=True)
 
 
 class TestGetAudioInfo:
@@ -127,15 +193,15 @@ class TestGetAudioInfo:
         # Setup mocks
         mock_which.return_value = None  # soxi is not available
 
-        # Call the function
-        result = utils.get_audio_info(sample_file_fixture)
+        # Call the function and expect a DependencyError
+        with pytest.raises(exceptions.DependencyError) as excinfo:
+            utils.get_audio_info(sample_file_fixture)
 
-        # Assertions
-        assert result["channels"] == 2  # Default values
-        assert result["samplerate"] == 44100
-        assert result["bits"] == 16
-        assert result["duration"] == 0
-        assert mock_logger_fixture["warning"].call_count >= 1  # Warning about soxi not found
+        # Verify the error message
+        assert "SoX (soxi) not found" in str(excinfo.value)
+
+        # No need to verify logger.error call as it's now handled in main.py
+        # mock_logger_fixture["error"].assert_called_once()
 
     @mock.patch("shutil.which")
     @mock.patch("subprocess.run")
@@ -174,25 +240,93 @@ class TestGetAudioInfo:
         assert result["duration"] == 2.5
         assert mock_logger_fixture["debug"].call_count >= 1  # Debug log about audio info
 
-    @mock.patch("shutil.which")
     @mock.patch("subprocess.run")
+    @mock.patch("shutil.which")
     def test_get_audio_info_with_error(
-        self, mock_run, mock_which, sample_file_fixture, mock_logger_fixture
+        self, mock_which, mock_run, sample_file_fixture, mock_logger_fixture
     ):
         """Test get_audio_info with soxi error."""
         # Setup mocks
         mock_which.return_value = "/usr/bin/soxi"  # soxi is available
         mock_run.side_effect = subprocess.CalledProcessError(1, "soxi")
 
-        # Call the function
-        result = utils.get_audio_info(sample_file_fixture)
+        # Call the function - it should raise AudioProcessingError
+        with pytest.raises(utils.AudioProcessingError) as excinfo:
+            utils.get_audio_info(sample_file_fixture)
 
-        # Assertions
-        assert result["channels"] == 2  # Default values
-        assert result["samplerate"] == 44100
-        assert result["bits"] == 16
-        assert result["duration"] == 0
-        assert mock_logger_fixture["error"].call_count >= 1  # Error about soxi failure
+        # Verify the error message
+        assert "Failed to get audio information" in str(excinfo.value)
+
+    @mock.patch("subprocess.run")
+    @mock.patch("shutil.which")
+    def test_get_audio_info_with_error_and_stderr(
+        self, mock_which, mock_run, sample_file_fixture, mock_logger_fixture
+    ):
+        """Test get_audio_info with soxi error that includes stderr output."""
+        # Setup mocks
+        mock_which.return_value = "/usr/bin/soxi"  # soxi is available
+        error = subprocess.CalledProcessError(1, "soxi")
+        error.stderr = "soxi ERROR: Failed to open input file"
+        mock_run.side_effect = error
+
+        # Call the function - it should raise AudioProcessingError
+        with pytest.raises(utils.AudioProcessingError) as excinfo:
+            utils.get_audio_info(sample_file_fixture)
+
+        # Verify the error message includes stderr content
+        assert "Failed to get audio information" in str(excinfo.value)
+        assert "soxi ERROR: Failed to open input file" in str(excinfo.value)
+
+    @mock.patch("subprocess.run")
+    @mock.patch("shutil.which")
+    def test_get_audio_info_with_value_error(
+        self, mock_which, mock_run, sample_file_fixture, mock_logger_fixture
+    ):
+        """Test get_audio_info with a ValueError during parsing."""
+        # Setup mocks
+        mock_which.return_value = "/usr/bin/soxi"  # soxi is available
+
+        # Return non-numeric value for channels to trigger ValueError
+        def mock_subprocess_run(cmd, **kwargs):
+            result = mock.MagicMock()
+            result.returncode = 0
+
+            if "-c" in cmd:  # Channels - return non-numeric value
+                result.stdout = "stereo\n"  # This should cause a ValueError
+            elif "-r" in cmd:  # Sample rate
+                result.stdout = "44100\n"
+            elif "-b" in cmd:  # Bit depth
+                result.stdout = "24\n"
+            elif "-D" in cmd:  # Duration
+                result.stdout = "2.5\n"
+
+            return result
+
+        mock_run.side_effect = mock_subprocess_run
+
+        # Call the function - it should raise AudioProcessingError
+        with pytest.raises(utils.AudioProcessingError) as excinfo:
+            utils.get_audio_info(sample_file_fixture)
+
+        # Verify the error message
+        assert "Failed to parse audio information" in str(excinfo.value)
+
+    @mock.patch("os.path.isfile")
+    @mock.patch("shutil.which")
+    def test_get_audio_info_file_not_found(
+        self, mock_which, mock_isfile, sample_file_fixture, mock_logger_fixture
+    ):
+        """Test get_audio_info with a file that doesn't exist."""
+        # Setup mocks
+        mock_which.return_value = "/usr/bin/soxi"  # soxi is available
+        mock_isfile.return_value = False  # File doesn't exist
+
+        # Call the function - it should raise AudioProcessingError
+        with pytest.raises(utils.AudioProcessingError) as excinfo:
+            utils.get_audio_info(sample_file_fixture)
+
+        # Verify the error message
+        assert "Audio file not found" in str(excinfo.value)
 
 
 class TestCleanInstrumentName:
@@ -312,45 +446,38 @@ class TestValidateDirectories:
 
     @mock.patch("os.path.isdir")
     @mock.patch("os.path.isfile")
-    @mock.patch("os.path.dirname")
-    @mock.patch("os.path.abspath")
-    def test_validate_directories_all_valid(
-        self, mock_abspath, mock_dirname, mock_isfile, mock_isdir
-    ):
+    def test_validate_directories_all_valid(self, mock_isfile, mock_isdir, mock_logger_fixture):
         """Test validate_directories with all valid paths."""
         # Setup mocks
         mock_isdir.return_value = True
         mock_isfile.return_value = True
-        mock_dirname.return_value = "/path/to/parent"
-        mock_abspath.return_value = "/path/to/target"
-
-        # Call the function
-        utils.validate_directories("/path/to/source", "/path/to/target", "/path/to/config.ini")
-
-        # Assertions
-        mock_isdir.assert_called()
-        mock_isfile.assert_called_once_with("/path/to/config.ini")
-
-    @mock.patch("os.path.isdir")
-    @mock.patch("os.path.dirname")
-    @mock.patch("os.path.abspath")
-    def test_validate_directories_invalid_source(
-        self, mock_abspath, mock_dirname, mock_isdir, mock_logger_fixture
-    ):
-        """Test validate_directories with invalid source directory."""
-        # Setup mocks
-        mock_isdir.side_effect = lambda path: path != "/path/to/source"
-        mock_dirname.return_value = "/path/to/parent"
-        mock_abspath.return_value = "/path/to/target"
 
         # Call the function
         utils.validate_directories("/path/to/source", "/path/to/target")
 
-        # Assertions
-        assert mock_logger_fixture["error"].call_count >= 1
-        assert "Source directory does not exist" in str(
-            mock_logger_fixture["error"].call_args[0][0]
+        # Test with config file
+        utils.validate_directories(
+            "/path/to/source", "/path/to/target", constants.DEFAULT_CONFIG_FILE
         )
+
+        # Assertions
+        mock_isdir.assert_called()
+
+    @mock.patch("os.path.isdir")
+    def test_validate_directories_invalid_source(self, mock_isdir, mock_logger_fixture):
+        """Test validate_directories with invalid source directory."""
+        # Setup mocks
+        mock_isdir.side_effect = lambda path: path != "/invalid/source"
+
+        # Call the function and expect a DirectoryError
+        with pytest.raises(utils.DirectoryError) as excinfo:
+            utils.validate_directories("/invalid/source", "/valid/target")
+
+        # Verify the error message
+        assert "Source directory does not exist" in str(excinfo.value)
+
+        # No need to verify logger.error call as it's now handled in main.py
+        # mock_logger_fixture["error"].assert_called_once()
 
     @mock.patch("os.path.isdir")
     @mock.patch("os.path.exists")
@@ -361,43 +488,43 @@ class TestValidateDirectories:
     ):
         """Test validate_directories with invalid target parent directory."""
         # Setup mocks
-        mock_isdir.return_value = True
-        mock_exists.return_value = False
-        mock_dirname.return_value = "/path/to/parent"
-        mock_abspath.return_value = "/path/to/target"
-        mock_isdir.side_effect = lambda path: path != "/path/to/parent"
+        mock_isdir.return_value = True  # Source directory exists
+        mock_exists.return_value = False  # Target doesn't exist
+        mock_abspath.return_value = "/invalid/target"
+        mock_dirname.return_value = "/invalid"
+        mock_isdir.side_effect = lambda path: path != "/invalid"  # Parent directory doesn't exist
 
-        # Call the function
-        utils.validate_directories("/path/to/source", "/path/to/target")
+        # Call the function and expect a DirectoryError
+        with pytest.raises(utils.DirectoryError) as excinfo:
+            utils.validate_directories("/valid/source", "/invalid/target")
 
-        # Assertions
-        assert mock_logger_fixture["error"].call_count >= 1
-        assert "Parent directory of target does not exist" in str(
-            mock_logger_fixture["error"].call_args[0][0]
-        )
+        # Verify the error message
+        assert "Parent directory of target does not exist" in str(excinfo.value)
+
+        # No need to verify logger.error call as it's now handled in main.py
+        # mock_logger_fixture["error"].assert_called_once()
 
     @mock.patch("os.path.isdir")
     @mock.patch("os.path.isfile")
-    @mock.patch("os.path.dirname")
-    @mock.patch("os.path.abspath")
+    @mock.patch("os.path.exists")
     def test_validate_directories_invalid_config(
-        self, mock_abspath, mock_dirname, mock_isfile, mock_isdir, mock_logger_fixture
+        self, mock_exists, mock_isfile, mock_isdir, mock_logger_fixture
     ):
         """Test validate_directories with invalid config file."""
         # Setup mocks
-        mock_isdir.return_value = True
-        mock_isfile.return_value = False
-        mock_dirname.return_value = "/path/to/parent"
-        mock_abspath.return_value = "/path/to/target"
+        mock_isdir.return_value = True  # Source and target directories exist
+        mock_exists.return_value = True  # Target exists
+        mock_isfile.return_value = False  # Config file doesn't exist
 
-        # Call the function
-        utils.validate_directories("/path/to/source", "/path/to/target", "/path/to/config.ini")
+        # Call the function and expect a DirectoryError
+        with pytest.raises(utils.DirectoryError) as excinfo:
+            utils.validate_directories("/valid/source", "/valid/target", "/invalid/config.ini")
 
-        # Assertions
-        assert mock_logger_fixture["error"].call_count >= 1
-        assert "Configuration file does not exist" in str(
-            mock_logger_fixture["error"].call_args[0][0]
-        )
+        # Verify the error message
+        assert "Configuration file does not exist" in str(excinfo.value)
+
+        # No need to verify logger.error call as it's now handled in main.py
+        # mock_logger_fixture["error"].assert_called_once()
 
     @mock.patch("os.path.isdir")
     @mock.patch("os.path.isfile")
@@ -488,3 +615,53 @@ class TestPrepareTargetDirectory:
         assert mock_remove.call_count == 2
         mock_remove.assert_any_call("/path/to/target/file1.txt")
         mock_remove.assert_any_call("/path/to/target/file2.txt")
+
+
+class TestCheckDependency:
+    """Tests for the check_dependency function."""
+
+    @mock.patch("shutil.which")
+    def test_check_dependency_found(self, mock_which, mock_logger_fixture):
+        """Test check_dependency with a command that is found."""
+        # Setup mocks
+        mock_which.return_value = "/usr/bin/test_command"
+
+        # Call the function - should not raise an exception
+        utils.check_dependency("test_command")
+
+        # Verify that logger.error was not called
+        mock_logger_fixture["error"].assert_not_called()
+
+    @mock.patch("shutil.which")
+    def test_check_dependency_not_found(self, mock_which, mock_logger_fixture):
+        """Test check_dependency with dependency not found."""
+        # Setup mocks
+        mock_which.return_value = None
+
+        # Call the function and expect a DependencyError
+        with pytest.raises(exceptions.DependencyError) as excinfo:
+            utils.check_dependency("test_command")
+
+        # Verify the error message contains the command name
+        assert "test_command" in str(excinfo.value)
+        assert "not found" in str(excinfo.value)
+
+        # No need to verify logger.error call as it's now handled in main.py
+        # mock_logger_fixture["error"].assert_called_once()
+
+    @mock.patch("shutil.which")
+    def test_check_dependency_custom_message(self, mock_which, mock_logger_fixture):
+        """Test check_dependency with a custom error message."""
+        # Setup mocks
+        mock_which.return_value = None
+        custom_message = "Custom error message for test_command"
+
+        # Call the function and expect a DependencyError
+        with pytest.raises(exceptions.DependencyError) as excinfo:
+            utils.check_dependency("test_command", custom_message)
+
+        # Verify the error message
+        assert custom_message == str(excinfo.value)
+
+        # No need to verify logger.error call as it's now handled in main.py
+        # mock_logger_fixture["error"].assert_called_once()
