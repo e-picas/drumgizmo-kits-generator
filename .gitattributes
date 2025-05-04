@@ -7,3 +7,4 @@ requirements-dev.txt   export-ignore
 sonar-project.properties   export-ignore
 .cascade-config   export-ignore
 examples/   export-ignore
+CONTRIBUTING.md   export-ignore

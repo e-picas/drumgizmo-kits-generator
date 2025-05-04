@@ -1,22 +1,26 @@
 ---
-name: Feature
-about: Create a feature pull-request
+name: Pull request
+about: Create a feature or bugfix pull-request
 title: ''
 labels: ''
 assignees: ''
 
 ---
-## Description of the feature
+## Description of the feature or bug and its fix
 
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+Please include a summary of the changes and the related issue. Please also include relevant motivation and context. List any dependencies that are required for this change.
 
-## Describe the solution you'd like
+Fixes # (issue)
 
-A clear and concise description of what you want to happen.
+## Minimal configuration & run output illustrating the original issue
 
-## Describe alternatives you've considered
+Audio files metadata, specific conditions etc...
 
-A clear and concise description of any alternative solutions or features you've considered.
+Paste the output of the run.
+
+## What did you expect?
+
+Paste a public job url.
 
 ## Host information
 
