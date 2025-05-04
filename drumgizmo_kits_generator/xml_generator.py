@@ -24,6 +24,10 @@ def _add_metadata_elements(metadata_elem: ET.Element, metadata: Dict[str, Any]) 
     title_elem = ET.SubElement(metadata_elem, "title")
     title_elem.text = metadata["name"]
 
+    # Add version
+    version_elem = ET.SubElement(metadata_elem, "version")
+    version_elem.text = metadata.get("version", constants.DEFAULT_VERSION)
+
     # Add description
     if metadata.get("description"):
         description_elem = ET.SubElement(metadata_elem, "description")
