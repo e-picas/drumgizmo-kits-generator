@@ -204,6 +204,21 @@ def test_validate_main_channels():
     with pytest.raises(ValidationError):
         validators.validate_main_channels(["kick", "invalid"], {"channels": ["kick", "snare"]})
 
+    # Test when config["channels"] doesn't exist
+    assert validators.validate_main_channels(["kick", "snare"], {}) == ["kick", "snare"]
+
+    # Test when config["channels"] is empty
+    assert validators.validate_main_channels(["kick", "snare"], {"channels": []}) == [
+        "kick",
+        "snare",
+    ]
+
+    # Test when config["channels"] is None
+    assert validators.validate_main_channels(["kick", "snare"], {"channels": None}) == [
+        "kick",
+        "snare",
+    ]
+
 
 def test_validate_logo(tmp_path):
     """Test validate_logo function."""
@@ -222,6 +237,18 @@ def test_validate_logo(tmp_path):
 
     # Test with None
     assert validators.validate_logo(None, {}) is None
+
+    # Test with empty string
+    assert validators.validate_logo("", {}) is None
+
+    # Test when config["source"] doesn't exist
+    assert validators.validate_logo("logo.png", {}) == "logo.png"
+
+    # Test when config["source"] is empty
+    assert validators.validate_logo("logo.png", {"source": ""}) == "logo.png"
+
+    # Test when config["source"] is None
+    assert validators.validate_logo("logo.png", {"source": None}) == "logo.png"
 
 
 def test_validate_website():
@@ -268,6 +295,24 @@ def test_validate_extra_files(tmp_path):
     # Test with None
     assert validators.validate_extra_files(None, {}) == []
 
+    # Test when config["source"] doesn't exist
+    assert validators.validate_extra_files(["file1.txt", "file2.txt"], {}) == [
+        "file1.txt",
+        "file2.txt",
+    ]
+
+    # Test when config["source"] is empty
+    assert validators.validate_extra_files(["file1.txt", "file2.txt"], {"source": ""}) == [
+        "file1.txt",
+        "file2.txt",
+    ]
+
+    # Test when config["source"] is None
+    assert validators.validate_extra_files(["file1.txt", "file2.txt"], {"source": None}) == [
+        "file1.txt",
+        "file2.txt",
+    ]
+
 
 def test_validate_version():
     """Test validate_version function."""
@@ -292,6 +337,19 @@ def test_validate_description():
     # Test with empty string
     assert validators.validate_description("", {}) == ""
 
+    # Test with whitespace-only string
+    assert validators.validate_description("   ", {}) == "   "
+
+    # Test with special characters
+    assert (
+        validators.validate_description("Test description with special chars: !@#$%^&*()", {})
+        == "Test description with special chars: !@#$%^&*()"
+    )
+
+    # Test with very long description
+    long_description = "A" * 1000
+    assert validators.validate_description(long_description, {}) == long_description
+
 
 def test_validate_notes():
     """Test validate_notes function."""
@@ -303,6 +361,19 @@ def test_validate_notes():
 
     # Test with empty string
     assert validators.validate_notes("", {}) == ""
+
+    # Test with whitespace-only string
+    assert validators.validate_notes("   ", {}) == "   "
+
+    # Test with multiline notes
+    multiline_notes = "Line 1\nLine 2\nLine 3"
+    assert validators.validate_notes(multiline_notes, {}) == multiline_notes
+
+    # Test with special characters
+    assert (
+        validators.validate_notes("Test notes with special chars: !@#$%^&*()", {})
+        == "Test notes with special chars: !@#$%^&*()"
+    )
 
 
 def test_validate_author():
@@ -316,6 +387,15 @@ def test_validate_author():
     # Test with empty string
     assert validators.validate_author("", {}) == ""
 
+    # Test with whitespace-only string
+    assert validators.validate_author("   ", {}) == "   "
+
+    # Test with special characters
+    assert (
+        validators.validate_author("Test Author with special chars: !@#$%^&*()", {})
+        == "Test Author with special chars: !@#$%^&*()"
+    )
+
 
 def test_validate_license():
     """Test validate_license function."""
@@ -327,3 +407,17 @@ def test_validate_license():
 
     # Test with empty string
     assert validators.validate_license("", {}) == constants.DEFAULT_LICENSE
+
+    # Test with whitespace-only string
+    assert validators.validate_license("   ", {}) == "   " or constants.DEFAULT_LICENSE
+
+    # Test with special characters
+    assert (
+        validators.validate_license("License with special chars: !@#$%^&*()", {})
+        == "License with special chars: !@#$%^&*()"
+    )
+
+    # Test with common license names
+    assert validators.validate_license("GPL-3.0", {}) == "GPL-3.0"
+    assert validators.validate_license("Apache-2.0", {}) == "Apache-2.0"
+    assert validators.validate_license("BSD-3-Clause", {}) == "BSD-3-Clause"
