@@ -52,23 +52,23 @@ The kit will follow the [DrumGizmo file format documentation](https://drumgizmo.
 >   └── ...
 >   ```
 
->   **Tips&Tricks** - A full generated kit is available in the [`examples/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/target) directory, based on the [`examples/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/sources) sources.
+>   **NOTE** - A full generated kit is available in the [`examples/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/target) directory, based on the [`examples/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/sources) sources.
 
 ### Original audio samples
 
-Audio samples must be in the root directory of the [`source` option](#options) (no recursion is processed). They are treated alphabetically, so you can order them to feet your needs as they will be [distributed to pre-defined MIDI notes](#midi-keys-repartition).
+Audio samples must be in the root directory of the [`source` option](#options) (no recursion is processed). They are treated alphabetically, so you can order them to fit your needs as they will be [distributed to pre-defined MIDI notes](#midi-keys-repartition).
 
 ### Target directory of the generated kit
 
 The new kit is generated in the [`target` option](#options) directory. It will be created if it does not exist. Its contents are **deleted** before each run.
 
->   **Tips&Tricks** - You should probably use a temporary directory first or use the [`dry-run` mode](#command-line) to validate your kit data before actually generating it.
+>   **NOTE** - You should probably use a temporary directory first or use the [`dry-run` mode](#command-line) to validate your kit data before actually generating it.
 
 ### Kit metadata
 
-You may use the following [`metadata` options](#options) or [configuration](#configuration-file) to feet your needs: `name`, `version`, `license`, `description`, `logo`, `notes`, `author` and `website`.
+You may use the following [`metadata` options](#options) or [configuration](#configuration-file) to fit your needs: `name`, `version`, `license`, `description`, `logo`, `notes`, `author` and `website`.
 
->   The kit metadata block of the `drumkit.xml` file have the following structure:
+>   The kit metadata block of the `drumkit.xml` file has the following structure:
 >   ```xml
 >   <drumkit version="2.4" name="Test Kit" samplerate="44100">
 >     <metadata>
@@ -87,7 +87,7 @@ You may use the following [`metadata` options](#options) or [configuration](#con
 
 ### Audio samples treatments
 
-Each original audio sample is duplicated X times to finally get the [`velocity-levels`](#options) number of volumes variations, assigned to corresponding "velocity" variations by setting the `power` entry of each sample on a linear basis (from 1 to near 0).
+Each original audio sample is duplicated X times to finally get the [`velocity-levels`](#options) number of volume variations, assigned to corresponding "velocity" variations by setting the `power` entry of each sample on a linear basis (from 1 to near 0).
 
 >   For example, for a value of `velocity_levels=4`, we will have:
 >   ```xml
@@ -99,7 +99,7 @@ Each original audio sample is duplicated X times to finally get the [`velocity-l
 
 ### Samplerate
 
-The [`samplerate`](#options) of the generated kit (which defaults to `44100`), defined in *Hz*, will be used for all samples and variations to assure the kit uniformity.
+The [`samplerate`](#options) of the generated kit (which defaults to `44100`), defined in *Hz*, will be used for all samples and variations to ensure the kit uniformity.
 
 ### About samples channels
 
@@ -133,7 +133,7 @@ Use the [`channels`](#options) and [`main-channels`](#options) options to set th
 
 ### MIDI keys repartition
 
-The samples will all be attached to consecutive MIDI notes around the [`midi-note-median`](#options) with some limits set by the [`midi-note-min`](#options) and [`midi-note-max`](#options) options. A warning will be printed if your project have more samples than the allowed MIDI notes.
+The samples will all be attached to consecutive MIDI notes around the [`midi-note-median`](#options) with some limits set by the [`midi-note-min`](#options) and [`midi-note-max`](#options) options. A warning will be printed if your project has more samples than the allowed MIDI notes.
 
 The notes are defined in a global `[0,127]` range and the default `midi-note-median` is set to `60`, which is the *C4* key of a MIDI keyboard.
 
@@ -146,11 +146,11 @@ The notes are defined in a global `[0,127]` range and the default `midi-note-med
 
 ### Extra files
 
-You can use the [`extra-files` option](#options) to setup a list of files to copy "as is" in the final kit (i.e. for a LICENSE file or a manual).
+You can use the [`extra-files` option](#options) to set up a list of files to copy "as is" in the final kit (i.e. for a LICENSE file or a manual).
 
 ### Note about audio files formats
 
-We use [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing, which may not handle every audio file formats natively. You may need to install some third-party drivers in your system for particular needs (i.e. "mp3" format). You can manage the audio files extensions with the [`extensions` option](#options).
+We use [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing, which may not handle every audio files formats natively. You may need to install some third-party drivers in your system for particular needs (i.e. "mp3"). You can manage the audio files extensions with the [`extensions` option](#options).
 
 ## Installation & usage
 
@@ -158,7 +158,7 @@ We use [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio p
 
 - [Python 3.9](https://www.python.org/downloads/) or higher
 - [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing - Tested with version 14.4.2
-- some other Python dependencies installed with [`pip`](https://pip.pypa.io/en/stable/installation/)
+- Some other Python dependencies installed with [`pip`](https://pip.pypa.io/en/stable/installation/)
 
 ### Installation
 
@@ -191,8 +191,8 @@ python create_drumgizmo_kit.py -h
 The following "special" options can be used to manage process output and run:
 
 -  `-h` / `--help`: read the application documentation
--  `-v` / `--verbose`: increase process verbosity with some debugging informations
--  `-x` / `--dry-run`: output the run data (options & audio samples found) but do not actually process the run - this can be used for validation.
+-  `-v` / `--verbose`: increase process verbosity with some debugging information
+-  `-x` / `--dry-run`: output the run data (options & audio samples found) but do not actually process the run - this can be used for validation
 -  `-V` / `--app-version`: show the application version number and exit
 
 #### Options
@@ -217,16 +217,16 @@ The following "special" options can be used to manage process output and run:
 | `--notes` | Additional notes about the kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 | `--samplerate` | [Sample rate](#samplerate) of the kit's samples (in *Hz*) - [`drumkit.xml`](#kit-metadata) metadata | `44100` |
 | `--velocity-levels` | Total number of [velocity levels](#audio-samples-treatments) to generate in the target (including original sample) | `10` |
-| `--version` | The version of the generated kit - You may use it to manage your kit's versions over the time - [`drumkit.xml`](#kit-metadata) metadata | `1.0` |
+| `--version` | The version of the generated kit - You may use it to manage your kit's versions over time - [`drumkit.xml`](#kit-metadata) metadata | `1.0` |
 | `--website` | The website of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 
 #### Configuration file
 
 You can specify kit metadata and generation options in a configuration file, in [*INI* format](https://en.wikipedia.org/wiki/INI_file), and pass it as a `--config` parameter. If a file named `drumgizmo-kit.ini` is found in the sources directory, it will be loaded automatically.
 
-All command-line options have equivalent configuration file settings which must be defined in a `[drumgizmo_kit_generator]` header block replacig *dashes* by *underscores*. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
+All command-line options have equivalent configuration file settings which must be defined in a `[drumgizmo_kit_generator]` header block replacing *dashes* by *underscores*. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
 
->   **Tips&Tricks** - For a full example, please see the [`examples/drumgizmo-kit.sample.ini`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/examples/drumgizmo-kit.sample.ini) file.
+>   **NOTE** - For a full example, please see the [`examples/drumgizmo-kit.sample.ini`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/examples/drumgizmo-kit.sample.ini) file.
 
 ## Contributing
 

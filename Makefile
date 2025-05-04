@@ -1,4 +1,6 @@
 #
+# This file is for development usage only
+#
 # To create a Python virtual environment, run:
 #		python3 -m venv .venv;
 #		source .venv/bin/activate;
@@ -18,10 +20,6 @@ coverage-ci:
 
 lint-ci: lint
 
-lines-count:
-	find drumgizmo_kits_generator/ -name "*.py" -exec wc -l {} \;
-	find tests/ -name "*.py" -exec wc -l {} \;
-
 ## Verify that required commands are installed in the system
 check-env:
 	@${CHECK_CMD}; \
@@ -32,7 +30,7 @@ check-env:
 	check_command diff;
 
 ## Install the app's dependencies & git hooks
-install: install-ci
+install: check-env install-ci
 	pre-commit install
 	pre-commit install --hook-type commit-msg
 
@@ -52,7 +50,7 @@ test:
 coverage:
 	python3 -m pytest --cov=drumgizmo_kits_generator --cov-report=term-missing
 
-## Generate a test kit to `tests/target_test/` from `examples/sources/` and compare it with `examples/target/`
+## Generate a test kit to `tests/target_test/` (excluded from VCS) from `examples/sources/` and compare it with `examples/target/`
 generate:
 	python3 create_drumgizmo_kit.py -s examples/sources/ -t tests/target_test/
 	diff -r tests/target_test/ examples/target/ || true
@@ -69,21 +67,22 @@ clean:
 	\) -exec rm -rf {} \;
 	rm -rf tests/target_test
 
+## Get the app's current version
+version:
+	@python3 create_drumgizmo_kit.py --app-version
+
 ## Run all checks: `format`, `lint`, `test`, `coverage` and `generate`
 all: format lint test coverage generate
 
-# This generates a 'help' string with the list of available tasks & variables
-# in your Makefile(s) with their description if it is prefixed by two dashes:
-#
-#	## This is a variable
-#	MY_VAR ?= my value
+# This generates a 'help' string with the list of available tasks
+# with their description if it is prefixed by two dashes:
 #
 #   ## This is a task comment
 #   task_name: ...
 #
 # largely inspired by <https://docs.cloudposse.com/reference/best-practices/make-best-practices/>
 help:
-	@printf "This file is for development usage only.\n"
+	@printf "This file is for development usage only\n"
 	@printf "To use this file, run: make <target>\n"
 	@printf "\n"
 	@awk '/^[a-zA-Z0-9\-\\_\\]+:/ { \
@@ -97,8 +96,6 @@ help:
 		} \
 	} \
 	{ lastLine = $$0 }' $(MAKEFILE_LIST) | sort -u
-	@printf "\n"
-	@printf "To get a list of all available targets, you can use Make auto-completion: 'make <TAB><TAB>' or read the Makefile file.\n"
 
 RED = \033[0;31m
 GREEN = \033[0;32m
