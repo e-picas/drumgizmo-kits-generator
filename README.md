@@ -70,11 +70,13 @@ You may use the following [`metadata` options](#options) or [configuration](#con
 
 >   The kit metadata block of the `drumkit.xml` file have the following structure:
 >   ```xml
+>   <drumkit version="2.4" name="Test Kit" samplerate="44100">
 >     <metadata>
 >       <title>Test Kit</title>
 >       <description>This is a description</description>
 >       <notes>DrumGizmo kit generated for testing purpose</notes>
 >       <author>My name</author>
+>       <version>2.4</version>
 >       <license>Private license</license>
 >       <samplerate>44100</samplerate>
 >       <website>https://me.com/</website>
@@ -89,10 +91,10 @@ Each original audio sample is duplicated X times to finally get the [`velocity-l
 
 >   For example, for a value of `velocity_levels=4`, we will have:
 >   ```xml
->       <sample name="Sample-Original" power="1.000000">
->       <sample name="Sample-Volume-0.75" power="0.750000">
->       <sample name="Sample-Volume-0.5" power="0.500000">
->       <sample name="Sample-Volume-0.25" power="0.250000">
+>       <sample name="Sample-Original" power="1.000000" />
+>       <sample name="Sample-Volume-0.75" power="0.750000" />
+>       <sample name="Sample-Volume-0.5" power="0.500000" />
+>       <sample name="Sample-Volume-0.25" power="0.250000" />
 >   ```
 
 ### Samplerate
@@ -142,6 +144,10 @@ The notes are defined in a global `[0,127]` range and the default `midi-note-med
 >     <map note="61" instr="Sample-3" />
 >   ```
 
+### Extra files
+
+You can use the [`extra-files` option](#options) to setup a list of files to copy "as is" in the final kit (i.e. for a LICENSE file or a manual).
+
 ### Note about audio files formats
 
 We use [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing, which may not handle every audio file formats natively. You may need to install some third-party drivers in your system for particular needs (i.e. "mp3" format). You can manage the audio files extensions with the [`extensions` option](#options).
@@ -152,7 +158,7 @@ We use [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio p
 
 - [Python 3.9](https://www.python.org/downloads/) or higher
 - [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing - Tested with version 14.4.2
-- some other Python dependencies
+- some other Python dependencies installed with [`pip`](https://pip.pypa.io/en/stable/installation/)
 
 ### Installation
 
