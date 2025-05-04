@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v1.6.0 (2025-05-04)
+
+### Features
+
+- Midi note info ([#24](https://github.com/e-picas/drumgizmo-kits-generator/pull/24),
+  [`6215ca5`](https://github.com/e-picas/drumgizmo-kits-generator/commit/6215ca5b15e6c8107db6f403538226f13116a14b))
+
+* feat: add the midi repartition info in dry-run mode and summary
+
+* feat: review MIDI notes info
+
+
 ## v1.5.0 (2025-05-02)
 
 ### Bug Fixes
@@ -14,32 +26,6 @@
 - Makefile review with an help string
   ([#20](https://github.com/e-picas/drumgizmo-kits-generator/pull/20),
   [`9168093`](https://github.com/e-picas/drumgizmo-kits-generator/commit/91680932e71849381401cd4b2cab2eb35596e374))
-
-### Documentation
-
-- Auto-generated config file for Claude 3.7 Sonnet [skip ci]
-  ([`e1bea78`](https://github.com/e-picas/drumgizmo-kits-generator/commit/e1bea78dd726e5554ba79fe7e68709bf327f9443))
-
-- Ini variables lowercase (for readability)
-  ([`0d3a621`](https://github.com/e-picas/drumgizmo-kits-generator/commit/0d3a621269e7a466b782589d63fdaafb20e07244))
-
-- New GitHub templates for issues & PRs [skip ci]
-  ([`52b34ed`](https://github.com/e-picas/drumgizmo-kits-generator/commit/52b34ed1b01074a177e9ab77e81e98c4e0dbd34f))
-
-- Update README.md [skip ci]
-  ([`675a240`](https://github.com/e-picas/drumgizmo-kits-generator/commit/675a24042c29ae7e75ab2649239f3a893cdbc58b))
-
-- Update README.md [skip ci]
-  ([`d42617b`](https://github.com/e-picas/drumgizmo-kits-generator/commit/d42617b62dbc2b233535360ab09c89a1de72e9ce))
-
-- Update README.md [skip ci]
-  ([`5933ef6`](https://github.com/e-picas/drumgizmo-kits-generator/commit/5933ef6ae756e15279ffa3e8d64770308e61351c))
-
-- Update README.md [skip ci]
-  ([`4bd8aa5`](https://github.com/e-picas/drumgizmo-kits-generator/commit/4bd8aa52e9ceed28573332f795cf67218ab6bb55))
-
-- Upgrade minimal Python version to 3.9
-  ([`f436bf1`](https://github.com/e-picas/drumgizmo-kits-generator/commit/f436bf1d15176514284f2bcc4b90dcd344358a5e))
 
 ### Features
 
@@ -68,18 +54,6 @@
 * fix: force uniform samplerate of samples
 
 * fix: add some unit tests
-
-### Documentation
-
-- Review the README [skip ci] ([#15](https://github.com/e-picas/drumgizmo-kits-generator/pull/15),
-  [`86a475a`](https://github.com/e-picas/drumgizmo-kits-generator/commit/86a475afe96a9109e5d0d6155c4215f71a1ca403))
-
-* docs: review the README [skip ci]
-
-* docs: Update README.md [skip ci]
-
-- Update README.md [skip ci]
-  ([`97b7f9c`](https://github.com/e-picas/drumgizmo-kits-generator/commit/97b7f9c1eb86e027bdda9605ec9e634f427b6f5a))
 
 ### Features
 
@@ -153,11 +127,6 @@
 - **ci**: Add a release step in CI
   ([#5](https://github.com/e-picas/drumgizmo-kits-generator/pull/5),
   [`fd21033`](https://github.com/e-picas/drumgizmo-kits-generator/commit/fd21033de4e7a598903ea77f491f064d6853e3b5))
-
-### Documentation
-
-- Review the README + new issues templates
-  ([`1652261`](https://github.com/e-picas/drumgizmo-kits-generator/commit/1652261170eeb1f739507721d48674c93a05a44e))
 
 ### Features
 
