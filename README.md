@@ -25,8 +25,6 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 
 The kit will follow the [DrumGizmo file format documentation](https://drumgizmo.org/wiki/doku.php?id=documentation:file_formats).
 
-A full generated kit is available in the [`examples/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/target) directory, based on the [`examples/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/sources) sources.
-
 >   For example, based on the following sources of audio samples:
 >   ```
 >   sources/
@@ -54,31 +52,36 @@ A full generated kit is available in the [`examples/target/`](https://github.com
 >   └── ...
 >   ```
 
+>   **Tips&Tricks** - A full generated kit is available in the [`examples/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/target) directory, based on the [`examples/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/sources) sources.
+
 ### Original audio samples
 
 Audio samples must be in the root directory of the [`source` option](#options) (no recursion is processed). They are treated alphabetically, so you can order them to feet your needs as they will be [distributed to pre-defined MIDI notes](#midi-keys-repartition).
 
 ### Target directory of the generated kit
 
-The new kit is generated in the [`target` option](#options) directory. It will be created if it does not exist. Its contents are **deleted** before each run (you should probably use a temporary directory first).
+The new kit is generated in the [`target` option](#options) directory. It will be created if it does not exist. Its contents are **deleted** before each run.
+
+>   **Tips&Tricks** - You should probably use a temporary directory first or use the [`dry-run` mode](#command-line) to validate your kit data before actually generating it.
 
 ### Kit metadata
 
-Based on your [options](#options) or [configuration](#configuration-file), the kit metadata will be something like the following:
+You may use the following [`metadata` options](#options) or [configuration](#configuration-file) to feet your needs: `name`, `version`, `license`, `description`, `logo`, `notes`, `author` and `website`.
 
-```xml
-  <metadata>
-    <title>Test Kit</title>
-    <description>This is a description</description>
-    <notes>DrumGizmo kit generated for testing purpose</notes>
-    <author>My name</author>
-    <license>Private license</license>
-    <samplerate>44100</samplerate>
-    <website>https://me.com/</website>
-    <logo src="my-logo.png"/>
-    <created>Generated on 2025-04-28 23:54:45 with drumgizmo-kits-generator v1.3.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
-  </metadata>
-```
+>   The kit metadata block of the `drumkit.xml` file have the following structure:
+>   ```xml
+>     <metadata>
+>       <title>Test Kit</title>
+>       <description>This is a description</description>
+>       <notes>DrumGizmo kit generated for testing purpose</notes>
+>       <author>My name</author>
+>       <license>Private license</license>
+>       <samplerate>44100</samplerate>
+>       <website>https://me.com/</website>
+>       <logo src="my-logo.png"/>
+>       <created>Generated on 2025-04-28 23:54:45 with drumgizmo-kits-generator v1.3.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
+>     </metadata>
+>   ```
 
 ### Audio samples treatments
 
@@ -149,20 +152,21 @@ We use [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio p
 
 - [Python 3.9](https://www.python.org/downloads/) or higher
 - [SoX (Sound eXchange)](https://sourceforge.net/projects/sox/) for audio processing - Tested with version 14.4.2
-- some other Python dependencies for development only (see [Development](#development))
+- some other Python dependencies
 
 ### Installation
 
-Download and extract [the latest release](https://github.com/e-picas/drumgizmo-kits-generator/releases).
+Download and extract [the latest release](https://github.com/e-picas/drumgizmo-kits-generator/releases), go to the release's directory with a terminal and install its dependencies: 
+
+```cli
+pip install .
+```
 
 ### Usage
 
 #### Command Line
 
 ```cli
-# you may first install dependencies:
-pip install .
-
 # basic usage:
 python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target
 
@@ -209,11 +213,11 @@ The following "special" options can be used to manage process output and run:
 
 #### Configuration file
 
-You can specify kit metadata and generation options in a configuration file and pass it as a `--config` parameter. If a file named `drumgizmo-kit.ini` is found in the sources directory, it will be loaded automatically.
+You can specify kit metadata and generation options in a configuration file, in [*INI* format](https://en.wikipedia.org/wiki/INI_file), and pass it as a `--config` parameter. If a file named `drumgizmo-kit.ini` is found in the sources directory, it will be loaded automatically.
 
 All command-line options have equivalent configuration file settings which must be defined in a `[drumgizmo_kit_generator]` header block replacig *dashes* by *underscores*. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
 
->   For a full example, please see the [`examples/drumgizmo-kit.sample.ini`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/examples/drumgizmo-kit.sample.ini) file.
+>   **Tips&Tricks** - For a full example, please see the [`examples/drumgizmo-kit.sample.ini`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/examples/drumgizmo-kit.sample.ini) file.
 
 ## Contributing
 
@@ -224,7 +228,8 @@ If you find a bug or want to request a new feature, just [open an issue](https:/
 To fix a bug or make a proposal in this app, you may commit to a personal branch, push it to the repo and then
 [make a pull request](https://github.com/e-picas/drumgizmo-kits-generator/compare) explaining your modification.
 
-We use [`make`](https://www.gnu.org/software/make/) to run local tasks.
+*   We use [`make`](https://www.gnu.org/software/make/) to run local tasks
+*   Commit messages must follow the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/)
 
 #### Get the sources
 
@@ -237,7 +242,7 @@ cd drumgizmo-kits-generator
 
 #### Install the project
 
-To install the dependencies and git hooks, run:
+To install the `dev` dependencies and git hooks, run:
 
 ```bash
 make install
@@ -245,7 +250,7 @@ make install
 
 #### Code guidelines & standards
 
-The `pre-commit` hook will try to fix your code following some standards, run the linter and tests. It is automatically run by the hooks before each commit and validate that your commit message follows the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/). These steps are run in the CI for validation.
+The `pre-commit` hook will try to fix your code following some standards, run the linter and tests. It is automatically run by the git hooks before each commit and a validatation of your commit message is done. These steps are run in the CI for validation.
 
 *   We use [`black`](https://black.readthedocs.io/en/stable/) and [`isort`](https://pycqa.github.io/isort/) for codebase formatting
 *   We use [`pylint`](https://pylint.readthedocs.io/en/latest/) to lint the codebase
