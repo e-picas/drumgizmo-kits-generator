@@ -186,11 +186,14 @@ python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target --name "Ki
 python create_drumgizmo_kit.py -h
 ```
 
+#### Execution flags
+
 The following "special" options can be used to manage process output and run:
 
 -  `-h` / `--help`: read the application documentation
 -  `-v` / `--verbose`: increase process verbosity with some debugging informations
 -  `-x` / `--dry-run`: output the run data (options & audio samples found) but do not actually process the run - this can be used for validation.
+-  `-V` / `--app-version`: show the application version number and exit
 
 #### Options
 
