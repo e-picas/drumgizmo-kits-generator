@@ -48,6 +48,41 @@ def test_set_verbose():
     assert not logger._logger.verbose_mode
 
 
+def test_is_verbose():
+    """Test the is_verbose function."""
+    # Create a new Logger instance to avoid affecting other tests
+    test_logger = logger.Logger()
+
+    # By default, verbose mode should be disabled
+    assert test_logger.is_verbose() is False
+
+    # Enable verbose mode
+    test_logger.set_verbose(True)
+    assert test_logger.is_verbose() is True
+
+    # Disable verbose mode
+    test_logger.set_verbose(False)
+    assert test_logger.is_verbose() is False
+
+
+def test_is_verbose_module_function():
+    """Test the is_verbose function at the module level."""
+    # Save the current state
+    original_state = logger.is_verbose()
+
+    try:
+        # Set verbose mode to False
+        logger.set_verbose(False)
+        assert logger.is_verbose() is False
+
+        # Set verbose mode to True
+        logger.set_verbose(True)
+        assert logger.is_verbose() is True
+    finally:
+        # Restore the original state
+        logger.set_verbose(original_state)
+
+
 def test_info(capsys):
     """Test info function."""
     # Test with default end parameter
@@ -107,25 +142,14 @@ def test_warning(capsys):
     assert "WARNING: Test warning message" in captured.err
 
 
-def test_error(capsys, monkeypatch):
+def test_error(capsys):
     """Test error function."""
-    # Mock sys.exit to prevent actual exit
-    exit_calls = []
-
-    def mock_exit(code):
-        exit_calls.append(code)
-
-    monkeypatch.setattr(sys, "exit", mock_exit)
-
     # Call error function
     logger.error("Test error message")
 
     # Output should include ERROR prefix with ANSI color codes
     captured = capsys.readouterr()
     assert "ERROR: Test error message" in captured.err
-
-    # sys.exit should be called with 127
-    assert exit_calls == [127]
 
 
 def test_message(capsys):

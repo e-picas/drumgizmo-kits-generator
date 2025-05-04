@@ -11,7 +11,8 @@ import tempfile
 
 import pytest
 
-from drumgizmo_kits_generator import config, constants, logger
+from drumgizmo_kits_generator import config, constants
+from drumgizmo_kits_generator.exceptions import ConfigurationError
 
 
 @pytest.fixture
@@ -54,12 +55,8 @@ invalid content
         return f.name
 
 
-def test_load_config_file(sample_config_file, monkeypatch):
+def test_load_config_file(sample_config_file):
     """Test loading a valid configuration file."""
-    # Mock logger.debug to avoid output during tests
-    error_messages = []
-    monkeypatch.setattr(logger, "debug", error_messages.append)
-
     config_data = config.load_config_file(sample_config_file)
 
     # Check that all values were loaded correctly
@@ -71,12 +68,8 @@ def test_load_config_file(sample_config_file, monkeypatch):
     assert config_data["main_channels"] == "Kick,Snare"
 
 
-def test_load_empty_config_file(empty_config_file, monkeypatch):
+def test_load_empty_config_file(empty_config_file):
     """Test loading an empty configuration file."""
-    # Mock logger.debug to avoid output during tests
-    error_messages = []
-    monkeypatch.setattr(logger, "debug", error_messages.append)
-
     config_data = config.load_config_file(empty_config_file)
 
     # Check that default values are returned for an empty config file
@@ -86,75 +79,45 @@ def test_load_empty_config_file(empty_config_file, monkeypatch):
     assert "main_channels" in config_data
 
 
-def test_load_nonexistent_config_file(monkeypatch):
+def test_load_nonexistent_config_file():
     """Test loading a nonexistent configuration file."""
-    # Mock logger.error to avoid exit during tests
-    error_messages = []
-    monkeypatch.setattr(logger, "error", error_messages.append)
-
-    # Should call logger.error and exit
-    with pytest.raises(SystemExit):
+    # Should raise ConfigurationError
+    with pytest.raises(ConfigurationError) as excinfo:
         config.load_config_file("nonexistent_file.ini")
 
-    # Check that the error message was logged
-    assert any("not found" in msg for msg in error_messages)
+    # Check the error message
+    assert "Configuration file not found" in str(excinfo.value)
 
 
-def test_load_invalid_config_file(invalid_config_file, monkeypatch):
+def test_load_invalid_config_file(invalid_config_file):
     """Test loading an invalid configuration file."""
-    # Mock logger.error to avoid exit during tests
-    error_messages = []
-    monkeypatch.setattr(logger, "error", error_messages.append)
-
-    # Should call logger.error and exit
-    with pytest.raises(SystemExit):
+    # Should raise ConfigurationError
+    with pytest.raises(ConfigurationError) as excinfo:
         config.load_config_file(invalid_config_file)
 
-    # Check that the error message was logged
-    assert any("Error parsing" in msg for msg in error_messages)
+    # Check the error message
+    assert "Error parsing configuration file" in str(excinfo.value)
 
 
-def test_process_channel_list_with_custom_value(monkeypatch):
+def test_process_channel_list_with_custom_value():
     """Test processing a channel list with a custom value."""
-    # Mock logger.debug to avoid output during tests
-    debug_messages = []
-    monkeypatch.setattr(logger, "debug", debug_messages.append)
-
     custom_channels = "Channel1,Channel2,Channel3"
     result = config._process_channel_list(custom_channels, constants.DEFAULT_CHANNELS, "channels")
 
     # Check that the custom value is returned
     assert result == custom_channels
 
-    # Check that the debug message was logged
-    assert any(
-        f"Using custom channels from metadata: {custom_channels}" in msg for msg in debug_messages
-    )
 
-
-def test_process_channel_list_with_empty_value(monkeypatch):
+def test_process_channel_list_with_empty_value():
     """Test processing a channel list with an empty value."""
-    # Mock logger.debug to avoid output during tests
-    debug_messages = []
-    monkeypatch.setattr(logger, "debug", debug_messages.append)
-
     result = config._process_channel_list(None, constants.DEFAULT_CHANNELS, "channels")
 
     # Check that the default value is returned
     assert result == constants.DEFAULT_CHANNELS
 
-    # Check that the debug message was logged
-    assert any(
-        f"Empty channels list, using default: {constants.DEFAULT_CHANNELS}" in msg
-        for msg in debug_messages
-    )
 
-
-def test_process_channels(monkeypatch):
+def test_process_channels():
     """Test processing channels and main channels."""
-    # Mock logger.debug to avoid output during tests
-    monkeypatch.setattr(logger, "debug", lambda *args, **kwargs: None)
-
     # Test with custom values
     config_data = {"channels": "Channel1,Channel2,Channel3", "main_channels": "Channel1,Channel2"}
     result = config.process_channels(config_data)

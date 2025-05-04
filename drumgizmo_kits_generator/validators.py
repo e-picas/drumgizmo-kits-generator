@@ -11,6 +11,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from drumgizmo_kits_generator import constants, logger
+from drumgizmo_kits_generator.exceptions import ValidationError
 
 
 def validate_name(value: Optional[str], config: Dict[str, Any]) -> str:  # NOSONAR python:S1172
@@ -25,10 +26,10 @@ def validate_name(value: Optional[str], config: Dict[str, Any]) -> str:  # NOSON
         The validated kit name
 
     Raises:
-        SystemExit: If the name is empty
+        ValidationError: If the name is empty
     """
     if not value:
-        logger.error("Kit name cannot be empty")
+        raise ValidationError("Kit name cannot be empty")
     return value
 
 
@@ -46,7 +47,7 @@ def validate_samplerate(
         The validated sample rate
 
     Raises:
-        SystemExit: If the sample rate is not a positive number
+        ValidationError: If the sample rate is not a positive number
     """
     if not value:
         logger.warning(f"Sample rate is empty, using default: {constants.DEFAULT_SAMPLERATE}")
@@ -55,9 +56,9 @@ def validate_samplerate(
     try:
         samplerate = int(value)
         if samplerate <= 0:
-            logger.error(f"Sample rate must be greater than 0, got: {samplerate}")
-    except ValueError:
-        logger.error(f"Sample rate must be a number, got: {value}")
+            raise ValidationError(f"Sample rate must be greater than 0, got: {samplerate}")
+    except ValueError as e:
+        raise ValidationError(f"Sample rate must be a number, got: {value}") from e
 
     return value
 
@@ -76,7 +77,7 @@ def validate_velocity_levels(
         The validated velocity levels
 
     Raises:
-        SystemExit: If the velocity levels is not a positive number
+        ValidationError: If the velocity levels is not a positive number
     """
     if not value:
         logger.warning(
@@ -85,7 +86,7 @@ def validate_velocity_levels(
         return constants.DEFAULT_VELOCITY_LEVELS
 
     if value <= 0:
-        logger.error(f"Velocity levels must be greater than 0, got: {value}")
+        raise ValidationError(f"Velocity levels must be greater than 0, got: {value}")
 
     return value
 
@@ -104,7 +105,7 @@ def validate_midi_note_min(
         The validated minimum MIDI note
 
     Raises:
-        SystemExit: If the minimum MIDI note is not in the valid range
+        ValidationError: If the minimum MIDI note is not in the valid range
     """
     if not value and value != 0:  # Handle case where value is 0
         logger.warning(
@@ -113,19 +114,19 @@ def validate_midi_note_min(
         return constants.DEFAULT_MIDI_NOTE_MIN
 
     if value < 0 or value > 127:
-        logger.error(f"Minimum MIDI note must be between 0 and 127, got: {value}")
+        raise ValidationError(f"Minimum MIDI note must be between 0 and 127, got: {value}")
 
     # Check relationship with midi_note_max if it exists in config
     if "midi_note_max" in config and config["midi_note_max"] is not None:
         if value >= config["midi_note_max"]:
-            logger.error(
+            raise ValidationError(
                 f"Minimum MIDI note ({value}) must be less than maximum MIDI note ({config['midi_note_max']})"
             )
 
     # Check relationship with midi_note_median if it exists in config
     if "midi_note_median" in config and config["midi_note_median"] is not None:
         if value > config["midi_note_median"]:
-            logger.error(
+            raise ValidationError(
                 f"Minimum MIDI note ({value}) must be less than or equal to median MIDI note ({config['midi_note_median']})"
             )
 
@@ -146,7 +147,7 @@ def validate_midi_note_max(
         The validated maximum MIDI note
 
     Raises:
-        SystemExit: If the maximum MIDI note is not in the valid range
+        ValidationError: If the maximum MIDI note is not in the valid range
     """
     if not value:
         logger.warning(
@@ -155,19 +156,19 @@ def validate_midi_note_max(
         return constants.DEFAULT_MIDI_NOTE_MAX
 
     if value < 0 or value > 127:
-        logger.error(f"Maximum MIDI note must be between 0 and 127, got: {value}")
+        raise ValidationError(f"Maximum MIDI note must be between 0 and 127, got: {value}")
 
     # Check relationship with midi_note_min if it exists in config
     if "midi_note_min" in config and config["midi_note_min"] is not None:
         if value <= config["midi_note_min"]:
-            logger.error(
+            raise ValidationError(
                 f"Maximum MIDI note ({value}) must be greater than minimum MIDI note ({config['midi_note_min']})"
             )
 
     # Check relationship with midi_note_median if it exists in config
     if "midi_note_median" in config and config["midi_note_median"] is not None:
         if value < config["midi_note_median"]:
-            logger.error(
+            raise ValidationError(
                 f"Maximum MIDI note ({value}) must be greater than or equal to median MIDI note ({config['midi_note_median']})"
             )
 
@@ -188,7 +189,7 @@ def validate_midi_note_median(
         The validated median MIDI note
 
     Raises:
-        SystemExit: If the median MIDI note is not in the valid range
+        ValidationError: If the median MIDI note is not in the valid range
     """
     if not value:
         logger.warning(
@@ -197,19 +198,19 @@ def validate_midi_note_median(
         return constants.DEFAULT_MIDI_NOTE_MEDIAN
 
     if value < 0 or value > 127:
-        logger.error(f"Median MIDI note must be between 0 and 127, got: {value}")
+        raise ValidationError(f"Median MIDI note must be between 0 and 127, got: {value}")
 
     # Check relationship with midi_note_min if it exists in config
     if "midi_note_min" in config and config["midi_note_min"] is not None:
         if value < config["midi_note_min"]:
-            logger.error(
+            raise ValidationError(
                 f"Median MIDI note ({value}) must be greater than or equal to minimum MIDI note ({config['midi_note_min']})"
             )
 
     # Check relationship with midi_note_max if it exists in config
     if "midi_note_max" in config and config["midi_note_max"] is not None:
         if value > config["midi_note_max"]:
-            logger.error(
+            raise ValidationError(
                 f"Median MIDI note ({value}) must be less than or equal to maximum MIDI note ({config['midi_note_max']})"
             )
 
@@ -230,13 +231,13 @@ def validate_extensions(
         The validated list of extensions
 
     Raises:
-        SystemExit: If the extensions list is empty
+        ValidationError: If the extensions list is empty
     """
     if not value:
-        logger.error("Extensions list cannot be empty")
+        raise ValidationError("Extensions list cannot be empty")
 
     # Ensure all extensions are trimmed
-    return [ext.strip() for ext in value] if value else []
+    return [ext.strip() for ext in value]
 
 
 def validate_channels(
@@ -253,13 +254,13 @@ def validate_channels(
         The validated list of channels
 
     Raises:
-        SystemExit: If the channels list is empty
+        ValidationError: If the channels list is empty
     """
     if not value:
-        logger.error("Channels list cannot be empty")
+        raise ValidationError("Channels list cannot be empty")
 
     # Ensure all channels are trimmed
-    return [channel.strip() for channel in value] if value else []
+    return [channel.strip() for channel in value]
 
 
 def validate_main_channels(
@@ -276,7 +277,7 @@ def validate_main_channels(
         The validated list of main channels
 
     Raises:
-        SystemExit: If any main channel is not in the channels list
+        ValidationError: If any main channel is not in the channels list
     """
     if not value:
         return []
@@ -289,7 +290,7 @@ def validate_main_channels(
         channels = [channel.strip() for channel in config["channels"]]
         for main_channel in trimmed_value:
             if main_channel not in channels:
-                logger.error(
+                raise ValidationError(
                     f"Main channel '{main_channel}' is not in the channels list: {', '.join(channels)}"
                 )
 
@@ -310,7 +311,7 @@ def validate_logo(
         The validated logo file path
 
     Raises:
-        SystemExit: If the logo file does not exist
+        ValidationError: If the logo file does not exist
     """
     if not value:
         return None
@@ -319,7 +320,7 @@ def validate_logo(
     if "source" in config and config["source"]:
         logo_path = os.path.join(config["source"], value)
         if not os.path.isfile(logo_path):
-            logger.error(f"Logo file does not exist: {logo_path}")
+            raise ValidationError(f"Logo file does not exist: {logo_path}")
 
     return value
 
@@ -338,7 +339,7 @@ def validate_extra_files(
         The validated list of extra files
 
     Raises:
-        SystemExit: If any extra file does not exist
+        ValidationError: If any extra file does not exist
     """
     if not value:
         return []
@@ -351,7 +352,7 @@ def validate_extra_files(
         for file_path in trimmed_value:
             full_path = os.path.join(config["source"], file_path)
             if not os.path.isfile(full_path):
-                logger.error(f"Extra file does not exist: {full_path}")
+                raise ValidationError(f"Extra file does not exist: {full_path}")
 
     return trimmed_value
 
@@ -367,9 +368,11 @@ def validate_website(
         config: The complete configuration dictionary
 
     Returns:
-        The validated website URL
+        The validated website URL or None if empty
     """
-    # No specific validation required for website
+    # Return None for empty strings
+    if value == "":
+        return None
     return value
 
 
@@ -383,9 +386,13 @@ def validate_version(value: Optional[str], config: Dict[str, Any]) -> str:  # NO
 
     Returns:
         The validated kit version
+
+    Note:
+        This function does not raise any exceptions as it accepts any string value
+        and defaults to DEFAULT_VERSION if the value is empty.
     """
     # No specific validation required for version
-    return value if value else constants.DEFAULT_VERSION
+    return value or constants.DEFAULT_VERSION
 
 
 def validate_description(
@@ -400,6 +407,9 @@ def validate_description(
 
     Returns:
         The validated kit description
+
+    Note:
+        This function does not raise any exceptions as it accepts any string value.
     """
     # No specific validation required for description
     return value
@@ -417,6 +427,9 @@ def validate_notes(
 
     Returns:
         The validated kit notes
+
+    Note:
+        This function does not raise any exceptions as it accepts any string value.
     """
     # No specific validation required for notes
     return value
@@ -434,6 +447,9 @@ def validate_author(
 
     Returns:
         The validated kit author
+
+    Note:
+        This function does not raise any exceptions as it accepts any string value.
     """
     # No specific validation required for author
     return value
@@ -449,6 +465,10 @@ def validate_license(value: Optional[str], config: Dict[str, Any]) -> str:  # NO
 
     Returns:
         The validated kit license
+
+    Note:
+        This function does not raise any exceptions as it accepts any string value
+        and defaults to DEFAULT_LICENSE if the value is empty.
     """
     # No specific validation required for license
-    return value if value else constants.DEFAULT_LICENSE
+    return value or constants.DEFAULT_LICENSE

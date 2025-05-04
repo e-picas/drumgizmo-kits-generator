@@ -7,10 +7,10 @@ Contains functions for reading and processing configuration files and command li
 
 import configparser
 import os
-import sys
 from typing import Any, Dict, Optional
 
 from drumgizmo_kits_generator import constants, logger
+from drumgizmo_kits_generator.exceptions import ConfigurationError
 
 
 def _strip_quotes(value: str) -> str:
@@ -43,18 +43,16 @@ def load_config_file(config_file_path: str) -> Dict[str, Any]:
         Dict[str, Any]: Configuration data from the file
 
     Raises:
-        SystemExit: If the file does not exist or cannot be parsed
+        ConfigurationError: If the file does not exist or cannot be parsed
     """
     if not os.path.isfile(config_file_path):
-        logger.error(f"Configuration file not found: {config_file_path}")
-        sys.exit(1)
+        raise ConfigurationError(f"Configuration file not found: {config_file_path}")
 
     config_parser = configparser.ConfigParser()
     try:
         config_parser.read(config_file_path)
     except configparser.Error as e:
-        logger.error(f"Error parsing configuration file: {e}")
-        sys.exit(1)
+        raise ConfigurationError(f"Error parsing configuration file: {e}") from e
 
     # Extract configuration data
     config_data = {}

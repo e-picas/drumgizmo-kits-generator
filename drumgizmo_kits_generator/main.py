@@ -9,6 +9,7 @@ import argparse
 import os
 import shutil
 import sys
+import traceback
 from typing import Any, Dict, List
 
 from drumgizmo_kits_generator import (
@@ -20,6 +21,15 @@ from drumgizmo_kits_generator import (
     utils,
     validators,
     xml_generator,
+)
+from drumgizmo_kits_generator.exceptions import (
+    AudioProcessingError,
+    ConfigurationError,
+    DependencyError,
+    DirectoryError,
+    DrumGizmoError,
+    ValidationError,
+    XMLGenerationError,
 )
 
 
@@ -131,6 +141,9 @@ def load_configuration(args: argparse.Namespace) -> Dict[str, Any]:
 
     Returns:
         Dict[str, Any]: Aggregated configuration
+
+    Raises:
+        ConfigurationError: If loading configuration fails
     """
     # Start with default configuration
     config_data = {
@@ -159,18 +172,22 @@ def load_configuration(args: argparse.Namespace) -> Dict[str, Any]:
 
     # Load configuration from file if it exists
     config_file = args.config
-    if os.path.isfile(os.path.join(args.source, config_file)):
-        config_file = os.path.join(args.source, config_file)
-        logger.info(f"Using configuration file: {config_file}")
-        file_config = config.load_config_file(config_file)
-        config_data.update(file_config)
-    elif os.path.isfile(config_file):
-        logger.info(f"Using configuration file: {config_file}")
-        file_config = config.load_config_file(config_file)
-        config_data.update(file_config)
-    elif config_file != constants.DEFAULT_CONFIG_FILE:
-        # Only show warning if a non-default config file was specified but not found
-        logger.warning(f"Configuration file not found: {config_file}")
+    try:
+        if os.path.isfile(os.path.join(args.source, config_file)):
+            config_file = os.path.join(args.source, config_file)
+            logger.info(f"Using configuration file: {config_file}")
+            file_config = config.load_config_file(config_file)
+            config_data.update(file_config)
+        elif os.path.isfile(config_file):
+            logger.info(f"Using configuration file: {config_file}")
+            file_config = config.load_config_file(config_file)
+            config_data.update(file_config)
+        elif config_file != constants.DEFAULT_CONFIG_FILE:
+            # Only show warning if a non-default config file was specified but not found
+            logger.warning(f"Configuration file not found: {config_file}")
+    except Exception as e:
+        error_msg = f"Failed to load configuration file: {e}"
+        raise ConfigurationError(error_msg) from e
 
     # Override with command line arguments
     cli_config = {}
@@ -211,15 +228,22 @@ def transform_configuration(config_data: Dict[str, Any]) -> Dict[str, Any]:
 
     Returns:
         Dict[str, Any]: Transformed configuration data
+
+    Raises:
+        ConfigurationError: If transformation fails
     """
     transformed_config = config_data.copy()
 
-    # Apply transformers for each configuration entry
-    for key in transformed_config:
-        transformer_name = f"transform_{key}"
-        if hasattr(transformers, transformer_name):
-            transformer = getattr(transformers, transformer_name)
-            transformed_config[key] = transformer(transformed_config[key])
+    try:
+        # Apply transformers for each configuration entry
+        for key in transformed_config:
+            transformer_name = f"transform_{key}"
+            if hasattr(transformers, transformer_name):
+                transformer = getattr(transformers, transformer_name)
+                transformed_config[key] = transformer(transformed_config[key])
+    except Exception as e:
+        error_msg = f"Failed to transform configuration: {e}"
+        raise ConfigurationError(error_msg) from e
 
     return transformed_config
 
@@ -232,14 +256,25 @@ def validate_configuration(config_data: Dict[str, Any]) -> None:
         config_data: Configuration data to validate
 
     Raises:
-        SystemExit: If validation fails
+        ValidationError: If validation fails
     """
-    # Apply validators for each configuration entry
-    for key in config_data:
-        validator_name = f"validate_{key}"
-        if hasattr(validators, validator_name):
-            validator = getattr(validators, validator_name)
-            validator(config_data[key], config_data)
+    try:
+        # Apply validators for each configuration entry
+        for key in config_data:
+            validator_name = f"validate_{key}"
+            if hasattr(validators, validator_name):
+                validator = getattr(validators, validator_name)
+                validator(config_data[key], config_data)
+
+        # Additional validation for MIDI note range
+        if config_data["midi_note_min"] > config_data["midi_note_max"]:
+            error_msg = f"MIDI note min ({config_data['midi_note_min']}) is greater than max ({config_data['midi_note_max']})"
+            raise ValidationError(error_msg)
+    except Exception as e:
+        if not isinstance(e, ValidationError):
+            error_msg = f"Failed to validate configuration: {e}"
+            raise ValidationError(error_msg) from e
+        raise
 
 
 def prepare_metadata(config_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -251,26 +286,33 @@ def prepare_metadata(config_data: Dict[str, Any]) -> Dict[str, Any]:
 
     Returns:
         Dict[str, Any]: Metadata for kit generation
+
+    Raises:
+        ConfigurationError: If preparing metadata fails
     """
-    metadata = config_data.copy()
+    try:
+        metadata = config_data.copy()
 
-    # Convert string values to appropriate types
-    if isinstance(metadata["velocity_levels"], str):
-        metadata["velocity_levels"] = int(metadata["velocity_levels"])
+        # Convert string values to appropriate types
+        if isinstance(metadata["velocity_levels"], str):
+            metadata["velocity_levels"] = int(metadata["velocity_levels"])
 
-    if isinstance(metadata["midi_note_min"], str):
-        metadata["midi_note_min"] = int(metadata["midi_note_min"])
+        if isinstance(metadata["midi_note_min"], str):
+            metadata["midi_note_min"] = int(metadata["midi_note_min"])
 
-    if isinstance(metadata["midi_note_max"], str):
-        metadata["midi_note_max"] = int(metadata["midi_note_max"])
+        if isinstance(metadata["midi_note_max"], str):
+            metadata["midi_note_max"] = int(metadata["midi_note_max"])
 
-    if isinstance(metadata["midi_note_median"], str):
-        metadata["midi_note_median"] = int(metadata["midi_note_median"])
+        if isinstance(metadata["midi_note_median"], str):
+            metadata["midi_note_median"] = int(metadata["midi_note_median"])
 
-    if isinstance(metadata["samplerate"], str):
-        metadata["samplerate"] = int(metadata["samplerate"])
+        if isinstance(metadata["samplerate"], str):
+            metadata["samplerate"] = int(metadata["samplerate"])
 
-    return metadata
+        return metadata
+    except Exception as e:
+        error_msg = f"Failed to prepare metadata: {e}"
+        raise ConfigurationError(error_msg) from e
 
 
 def print_metadata(metadata: Dict[str, Any]) -> None:
@@ -352,43 +394,56 @@ def process_audio_files(
 
     Returns:
         Dict[str, List[str]]: Dictionary mapping instrument names to processed audio files
+
+    Raises:
+        AudioProcessingError: If processing audio files fails
+        DependencyError: If SoX is not found
     """
     logger.section("Processing Audio Files")
+
+    # Verify SoX dependency before processing any files
+    utils.check_dependency("sox", "SoX not found in the system, can not generate samples")
 
     processed_audio_files = {}
     velocity_levels = metadata.get("velocity_levels", constants.DEFAULT_VELOCITY_LEVELS)
 
-    for file_path in audio_files:
-        file_name = os.path.basename(file_path)
-        logger.info(f"Processing {file_name}")
+    try:
+        for file_path in audio_files:
+            file_name = os.path.basename(file_path)
+            logger.info(f"Processing {file_name}")
 
-        # Get base name without extension
-        # pylint: disable-next=unused-variable
-        file_base, file_ext = os.path.splitext(file_name)
+            # Get base name without extension
+            # pylint: disable-next=unused-variable
+            file_base, file_ext = os.path.splitext(file_name)
 
-        # Clean up the instrument name
-        instrument_name = utils.clean_instrument_name(file_base)
+            # Clean up the instrument name
+            instrument_name = utils.clean_instrument_name(file_base)
 
-        # Create directory for the instrument
-        instrument_dir = os.path.join(target_dir, instrument_name)
-        samples_dir = os.path.join(instrument_dir, "samples")
+            # Create directory for the instrument
+            instrument_dir = os.path.join(target_dir, instrument_name)
+            samples_dir = os.path.join(instrument_dir, "samples")
 
-        if not os.path.exists(instrument_dir):
-            logger.info(f"Creating directory for instrument: {instrument_name}")
-            os.makedirs(instrument_dir)
-            os.makedirs(samples_dir)
+            if not os.path.exists(instrument_dir):
+                logger.info(f"Creating directory for instrument: {instrument_name}")
+                os.makedirs(instrument_dir)
+                os.makedirs(samples_dir)
 
-        # Create velocity variations
-        processed_files = audio.create_velocity_variations(
-            file_path, samples_dir, velocity_levels, instrument_name
-        )
+            # Create velocity variations
+            processed_files = audio.create_velocity_variations(
+                file_path, samples_dir, velocity_levels, instrument_name
+            )
 
-        # Store processed files for this instrument
-        processed_audio_files[instrument_name] = processed_files
+            # Store processed files for this instrument
+            processed_audio_files[instrument_name] = processed_files
 
-        logger.info(f"Processed {file_name} with {velocity_levels} volume variations")
+            logger.info(f"Processed {file_name} with {velocity_levels} volume variations")
 
-    return processed_audio_files
+        return processed_audio_files
+    except Exception as e:
+        error_msg = f"Failed to process audio files: {e}"
+        if not isinstance(e, (AudioProcessingError, DependencyError)):
+            raise AudioProcessingError(error_msg) from e
+        raise
 
 
 def preview_midi_mapping(audio_files: List[str], metadata: Dict[str, Any]) -> None:
@@ -433,37 +488,44 @@ def generate_xml_files(audio_files: List[str], target_dir: str, metadata: Dict[s
         audio_files: List of audio file paths
         target_dir: Path to the target directory
         metadata: Metadata for XML generation
+
+    Raises:
+        XMLGenerationError: If generating XML files fails
     """
     logger.section("Generating XML Files")
 
-    # Extract instrument names from audio files
-    instrument_names = utils.extract_instrument_names(audio_files)
+    try:
+        # Extract instrument names from audio files
+        instrument_names = utils.extract_instrument_names(audio_files)
 
-    # Add instrument names to metadata
-    metadata["instruments"] = instrument_names
+        # Add instrument names to metadata
+        metadata["instruments"] = instrument_names
 
-    logger.info("Generating drumkit.xml")
-    xml_generator.generate_drumkit_xml(target_dir, metadata)
+        logger.info("Generating drumkit.xml")
+        xml_generator.generate_drumkit_xml(target_dir, metadata)
 
-    logger.info("Generating instrument XML files")
-    for instrument_name in instrument_names:
-        instrument_files = []
-        for f in audio_files:
-            base_name = os.path.basename(f)
-            # It could be with or without velocity prefix, and with or without "_converted" suffix
-            if utils.is_instrument_file(base_name, instrument_name) or any(
-                base_name.startswith(f"{i}-")
-                and utils.is_instrument_file(base_name[len(f"{i}-") :], instrument_name)
-                for i in range(1, 10)
-            ):
-                instrument_files.append(f)
+        logger.info("Generating instrument XML files")
+        for instrument_name in instrument_names:
+            instrument_files = []
+            for f in audio_files:
+                base_name = os.path.basename(f)
+                # It could be with or without velocity prefix, and with or without "_converted" suffix
+                if utils.is_instrument_file(base_name, instrument_name) or any(
+                    base_name.startswith(f"{i}-")
+                    and utils.is_instrument_file(base_name[len(f"{i}-") :], instrument_name)
+                    for i in range(1, 10)
+                ):
+                    instrument_files.append(f)
 
-        xml_generator.generate_instrument_xml(
-            target_dir, instrument_name, metadata, instrument_files
-        )
+            xml_generator.generate_instrument_xml(
+                target_dir, instrument_name, metadata, instrument_files
+            )
 
-    logger.info("Generating midimap.xml")
-    xml_generator.generate_midimap_xml(target_dir, metadata)
+        logger.info("Generating midimap.xml")
+        xml_generator.generate_midimap_xml(target_dir, metadata)
+    except Exception as e:
+        error_msg = f"Failed to generate XML files: {e}"
+        raise XMLGenerationError(error_msg) from e
 
 
 def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, Any]) -> None:
@@ -474,32 +536,39 @@ def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, 
         source_dir: Path to the source directory
         target_dir: Path to the target directory
         metadata: Metadata with logo and extra files information
-    """
-    # Copy logo if specified
-    if metadata["logo"]:
-        logger.section("Copying Logo")
-        logo_path = os.path.join(source_dir, metadata["logo"])
-        if os.path.isfile(logo_path):
-            logger.info(f"Copying logo: {metadata['logo']}")
-            shutil.copy2(logo_path, target_dir)
-        else:
-            logger.warning(f"Logo file not found: {logo_path}")
 
-    # Copy extra files if specified
-    if metadata["extra_files"]:
-        logger.section("Copying Additional Files")
-        extra_files = metadata["extra_files"]
-        # If extra_files is already a list, use it directly
-        if not isinstance(extra_files, list):
-            extra_files = extra_files.split(",")
-        for extra_file in extra_files:
-            extra_file = extra_file.strip()
-            extra_file_path = os.path.join(source_dir, extra_file)
-            if os.path.isfile(extra_file_path):
-                logger.info(f"Copying extra file: {extra_file}")
-                shutil.copy2(extra_file_path, target_dir)
+    Raises:
+        DirectoryError: If copying additional files fails
+    """
+    try:
+        # Copy logo if specified
+        if metadata["logo"]:
+            logger.section("Copying Logo")
+            logo_path = os.path.join(source_dir, metadata["logo"])
+            if os.path.isfile(logo_path):
+                logger.info(f"Copying logo: {metadata['logo']}")
+                shutil.copy2(logo_path, target_dir)
             else:
-                logger.warning(f"Extra file not found: {extra_file_path}")
+                logger.warning(f"Logo file not found: {logo_path}")
+
+        # Copy extra files if specified
+        if metadata["extra_files"]:
+            logger.section("Copying Additional Files")
+            extra_files = metadata["extra_files"]
+            # If extra_files is already a list, use it directly
+            if not isinstance(extra_files, list):
+                extra_files = extra_files.split(",")
+            for extra_file in extra_files:
+                extra_file = extra_file.strip()
+                extra_file_path = os.path.join(source_dir, extra_file)
+                if os.path.isfile(extra_file_path):
+                    logger.info(f"Copying extra file: {extra_file}")
+                    shutil.copy2(extra_file_path, target_dir)
+                else:
+                    logger.warning(f"Extra file not found: {extra_file_path}")
+    except Exception as e:
+        error_msg = f"Failed to copy additional files: {e}"
+        raise DirectoryError(error_msg) from e
 
 
 def print_summary(
@@ -579,64 +648,76 @@ def main() -> None:
     """
     Main function for DrumGizmo kit generation.
     """
-    # Parse command line arguments
-    args = parse_arguments()
+    try:
+        # Parse command line arguments
+        args = parse_arguments()
 
-    # Set verbose mode
-    logger.set_verbose(args.verbose)
+        # Set verbose mode
+        logger.set_verbose(args.verbose)
 
-    # Display application information in verbose mode
-    logger.debug(f"{constants.APP_NAME} v{constants.APP_VERSION} - {constants.APP_LINK}")
+        # Display application information in verbose mode
+        logger.debug(f"{constants.APP_NAME} v{constants.APP_VERSION} - {constants.APP_LINK}")
 
-    # Validate directories
-    utils.validate_directories(args.source, args.target, args.config)
+        # Validate directories
+        utils.validate_directories(args.source, args.target, args.config)
 
-    # Display processing directories
-    logger.section("Processing Directories")
-    logger.info(f"Source directory: {args.source}")
-    logger.info(f"Target directory: {args.target}")
+        # Display processing directories
+        logger.section("Processing Directories")
+        logger.info(f"Source directory: {args.source}")
+        logger.info(f"Target directory: {args.target}")
 
-    # Load and process configuration
-    config_data = load_configuration(args)
-    transformed_config = transform_configuration(config_data)
-    validate_configuration(transformed_config)
-    metadata = prepare_metadata(transformed_config)
+        # Load and process configuration
+        config_data = load_configuration(args)
+        transformed_config = transform_configuration(config_data)
+        validate_configuration(transformed_config)
+        metadata = prepare_metadata(transformed_config)
 
-    # Print metadata
-    print_metadata(metadata)
+        # Print metadata
+        print_metadata(metadata)
 
-    # Scan source files
-    extensions = metadata["extensions"]
-    # If extensions is already a list, use it directly
-    if not isinstance(extensions, list):
-        extensions = extensions.split(",")
-    audio_files = utils.scan_source_files(args.source, extensions)
+        # Scan source files
+        extensions = metadata["extensions"]
+        # If extensions is already a list, use it directly
+        if not isinstance(extensions, list):
+            extensions = extensions.split(",")
+        audio_files = utils.scan_source_files(args.source, extensions)
 
-    # Print samples information
-    print_samples_info(audio_files, metadata)
+        # Print samples information
+        print_samples_info(audio_files, metadata)
 
-    # Preview MIDI mapping in dry run mode
-    if args.dry_run:
-        preview_midi_mapping(audio_files, metadata)
-        logger.message("\nDry run mode enabled, stopping here")
-        return
+        # Preview MIDI mapping in dry run mode
+        if args.dry_run:
+            preview_midi_mapping(audio_files, metadata)
+            logger.message("\nDry run mode enabled, stopping here")
+            return
 
-    # Prepare target directory
-    utils.prepare_target_directory(args.target)
+        # Check SoX dependency before proceeding
+        utils.check_dependency("sox", "SoX not found in the system, can not generate samples")
 
-    # Process audio files
-    processed_audio_files = process_audio_files(audio_files, args.target, metadata)
+        # Prepare target directory
+        utils.prepare_target_directory(args.target)
 
-    # Generate XML files
-    generate_xml_files(audio_files, args.target, metadata)
+        # Process audio files
+        processed_audio_files = process_audio_files(audio_files, args.target, metadata)
 
-    # Copy additional files
-    copy_additional_files(args.source, args.target, metadata)
+        # Generate XML files
+        generate_xml_files(audio_files, args.target, metadata)
 
-    # Print summary
-    print_summary(args.target, metadata, processed_audio_files, audio_files)
+        # Copy additional files
+        copy_additional_files(args.source, args.target, metadata)
 
-    logger.message("\nKit generation completed successfully!")
+        # Print summary
+        print_summary(args.target, metadata, processed_audio_files, audio_files)
+
+        logger.message("\nKit generation completed successfully!")
+    except DrumGizmoError as e:
+        logger.error(f"Error: {e}")
+    # pylint: disable=broad-exception-caught
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        if logger.is_verbose():
+            logger.error(traceback.format_exc())
+        # Suppression de l'appel à sys.exit(1) pour être cohérent avec notre refactoring
 
 
 if __name__ == "__main__":

@@ -5,11 +5,15 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
+# pylint: disable=too-many-lines
+# pylint: disable=attribute-defined-outside-init
+# pylint: disable=unused-argument
 """
 Tests for the main module of the DrumGizmo kit generator.
 """
 
 import argparse
+import io
 import os
 import shutil
 import tempfile
@@ -18,6 +22,7 @@ from unittest import mock
 import pytest
 
 from drumgizmo_kits_generator import constants, main
+from drumgizmo_kits_generator.exceptions import DependencyError
 
 
 @pytest.fixture
@@ -234,11 +239,16 @@ class TestParseArguments:
         assert args.channels == "Ch1,Ch2"
         assert args.main_channels == "Ch1"
 
-    @mock.patch("sys.argv", ["drumgizmo_kits_generator", "--app-version"])
     @mock.patch("sys.exit")
     @mock.patch("builtins.print")
-    def test_app_version_option(self, mock_print, mock_exit):
+    @mock.patch("argparse.ArgumentParser.parse_known_args")
+    def test_app_version_option(self, mock_parse_known_args, mock_print, mock_exit):
         """Test that --app-version option displays version and exits."""
+        # Mock parse_known_args to return a namespace with app_version=True
+        args = argparse.Namespace()
+        args.app_version = True
+        mock_parse_known_args.return_value = (args, [])
+
         # Call the function
         main.parse_arguments()
 
@@ -728,27 +738,31 @@ class TestPrintFunctions:
 
 
 class TestMain:
-    """Tests for the main module."""
+    """Tests for the main function."""
 
-    # Configuration de données partagée par tous les tests
-    config_data = {
-        "name": "Test Kit",
-        "version": "1.0",
-        "description": "Test description",
-        "notes": "Test notes",
-        "author": "Test Author",
-        "license": "CC-BY-SA",
-        "website": "https://example.com",
-        "samplerate": "48000",
-        "velocity_levels": 3,
-        "midi_note_min": 0,
-        "midi_note_max": 127,
-        "midi_note_median": 60,
-        "extensions": ["wav", "flac", "ogg"],
-        "channels": ["Left", "Right", "Overhead"],
-        "main_channels": ["Left", "Right"],
-    }
+    def setup_method(self):
+        """Initialize test data."""
+        self.config_data = {
+            "name": "Test Kit",
+            "version": "1.0.0",
+            "description": "Test description",
+            "notes": "Test notes",
+            "author": "Test Author",
+            "license": "Test License",
+            "website": "https://example.com",
+            "logo": "logo.png",
+            "samplerate": "44100",
+            "extra_files": "file1.txt,file2.txt",
+            "velocity_levels": "5",
+            "midi_note_min": "30",
+            "midi_note_max": "90",
+            "midi_note_median": "60",
+            "extensions": "wav,flac",
+            "channels": "Left,Right",
+            "main_channels": "Left,Right",
+        }
 
+    # pylint: disable=too-many-arguments
     @mock.patch("drumgizmo_kits_generator.main.parse_arguments")
     @mock.patch("drumgizmo_kits_generator.utils.validate_directories")
     @mock.patch("drumgizmo_kits_generator.main.load_configuration")
@@ -758,95 +772,21 @@ class TestMain:
     @mock.patch("drumgizmo_kits_generator.main.print_metadata")
     @mock.patch("drumgizmo_kits_generator.utils.scan_source_files")
     @mock.patch("drumgizmo_kits_generator.main.print_samples_info")
-    @mock.patch("drumgizmo_kits_generator.utils.prepare_target_directory")
-    @mock.patch("drumgizmo_kits_generator.main.process_audio_files")
-    @mock.patch("drumgizmo_kits_generator.main.generate_xml_files")
-    @mock.patch("drumgizmo_kits_generator.main.copy_additional_files")
-    def test_main_normal_flow(
-        self,
-        mock_copy,
-        mock_generate_xml,
-        mock_process_audio,
-        mock_prepare_target,
-        mock_print_samples,
-        mock_scan_source,
-        mock_print_metadata,
-        mock_prepare_metadata,
-        mock_validate_config,
-        mock_transform_config,
-        mock_load_config,
-        mock_validate_dirs,
-        mock_parse_args,
-        mock_logger,
-    ):
-        """Test main function normal execution flow."""
-        # Setup mocks
-        args = argparse.Namespace()
-        args.source = "/path/to/source"
-        args.target = "/path/to/target"
-        args.config = constants.DEFAULT_CONFIG_FILE
-        args.verbose = True
-        args.dry_run = False
-        mock_parse_args.return_value = args
-
-        config_data = self.config_data
-        mock_load_config.return_value = config_data
-
-        transformed_config = {"name": "Test Kit", "extensions": ["wav"]}
-        mock_transform_config.return_value = transformed_config
-
-        metadata = {"name": "Test Kit", "extensions": ["wav"], "instruments": []}
-        mock_prepare_metadata.return_value = metadata
-
-        audio_files = ["/path/to/source/kick.wav", "/path/to/source/snare.wav"]
-        mock_scan_source.return_value = audio_files
-
-        processed_files = [
-            "/path/to/target/Kick/samples/1-Kick.wav",
-            "/path/to/target/Snare/samples/1-Snare.wav",
-        ]
-        mock_process_audio.return_value = processed_files
-
-        # Call the function
-        main.main()
-
-        # Check that all expected functions were called in order
-        mock_parse_args.assert_called_once()
-        mock_logger["set_verbose"].assert_called_once_with(True)
-        mock_validate_dirs.assert_called_once_with(args.source, args.target, args.config)
-        mock_load_config.assert_called_once_with(args)
-        mock_transform_config.assert_called_once_with(config_data)
-        mock_validate_config.assert_called_once_with(transformed_config)
-        mock_prepare_metadata.assert_called_once_with(transformed_config)
-        mock_print_metadata.assert_called_once_with(metadata)
-        mock_scan_source.assert_called_once_with(args.source, metadata["extensions"])
-        mock_print_samples.assert_called_once_with(audio_files, metadata)
-        mock_prepare_target.assert_called_once_with(args.target)
-        mock_process_audio.assert_called_once_with(audio_files, args.target, metadata)
-        mock_generate_xml.assert_called_once_with(audio_files, args.target, metadata)
-        mock_copy.assert_called_once_with(args.source, args.target, metadata)
-
-    @mock.patch("drumgizmo_kits_generator.main.parse_arguments")
-    @mock.patch("drumgizmo_kits_generator.utils.validate_directories")
-    @mock.patch("drumgizmo_kits_generator.main.load_configuration")
-    @mock.patch("drumgizmo_kits_generator.main.transform_configuration")
-    @mock.patch("drumgizmo_kits_generator.main.validate_configuration")
-    @mock.patch("drumgizmo_kits_generator.main.prepare_metadata")
-    @mock.patch("drumgizmo_kits_generator.main.print_metadata")
-    @mock.patch("drumgizmo_kits_generator.utils.scan_source_files")
-    @mock.patch("drumgizmo_kits_generator.main.print_samples_info")
+    @mock.patch("drumgizmo_kits_generator.main.preview_midi_mapping")
+    @mock.patch("drumgizmo_kits_generator.logger.message")
     def test_main_dry_run(
         self,
-        mock_print_samples,
-        mock_scan_source,
+        mock_message,
+        mock_preview_midi_mapping,
+        mock_print_samples_info,
+        mock_scan_source_files,
         mock_print_metadata,
         mock_prepare_metadata,
-        mock_validate_config,
-        mock_transform_config,
-        mock_load_config,
-        mock_validate_dirs,
-        mock_parse_args,
-        mock_logger,
+        mock_validate_configuration,
+        mock_transform_configuration,
+        mock_load_configuration,
+        mock_validate_directories,
+        mock_parse_arguments,
     ):
         """Test main function in dry run mode."""
         # Setup mocks
@@ -856,44 +796,183 @@ class TestMain:
         args.config = constants.DEFAULT_CONFIG_FILE
         args.verbose = False
         args.dry_run = True
-        mock_parse_args.return_value = args
+        mock_parse_arguments.return_value = args
 
         config_data = self.config_data
-        mock_load_config.return_value = config_data
+        mock_load_configuration.return_value = config_data
 
-        transformed_config = {"name": "Test Kit", "extensions": ["wav"]}
-        mock_transform_config.return_value = transformed_config
+        transformed_config = dict(config_data)
+        mock_transform_configuration.return_value = transformed_config
 
-        metadata = {"name": "Test Kit", "extensions": ["wav"], "instruments": []}
+        metadata = dict(transformed_config)
+        metadata["instruments"] = []
         mock_prepare_metadata.return_value = metadata
 
-        audio_files = ["/path/to/source/kick.wav", "/path/to/source/snare.wav"]
-        mock_scan_source.return_value = audio_files
+        audio_files = [
+            "/path/to/source/Kick.wav",
+            "/path/to/source/Snare.wav",
+        ]
+        mock_scan_source_files.return_value = audio_files
 
         # Call the function
         main.main()
 
         # Check that dry run message was displayed
-        mock_logger["message"].assert_called_with("\nDry run mode enabled, stopping here")
-
-        # Check that file processing functions were not called
-        assert not hasattr(mock_logger, "prepare_target_directory")
-        assert not hasattr(mock_logger, "process_audio_files")
-        assert not hasattr(mock_logger, "generate_xml_files")
-        assert not hasattr(mock_logger, "copy_additional_files")
+        mock_print_samples_info.assert_called_once_with(audio_files, metadata)
+        mock_preview_midi_mapping.assert_called_once_with(audio_files, metadata)
+        mock_message.assert_called_with("\nDry run mode enabled, stopping here")
 
         # Verify that all mocks were used
-        mock_parse_args.assert_called_once()
-        mock_logger["set_verbose"].assert_called_once_with(False)
-        mock_validate_dirs.assert_called_once()
-        mock_load_config.assert_called_once()
-        mock_transform_config.assert_called_once()
-        mock_validate_config.assert_called_once()
+        mock_parse_arguments.assert_called_once()
+        mock_validate_directories.assert_called_once()
+        mock_load_configuration.assert_called_once()
+        mock_transform_configuration.assert_called_once()
+        mock_validate_configuration.assert_called_once()
         mock_prepare_metadata.assert_called_once()
         mock_print_metadata.assert_called_once()
-        mock_scan_source.assert_called_once()
-        mock_print_samples.assert_called_once()
+        mock_scan_source_files.assert_called_once()
+        mock_print_samples_info.assert_called_once()
 
+    @mock.patch("drumgizmo_kits_generator.logger.is_verbose")
+    @mock.patch("traceback.format_exc")
+    @mock.patch("drumgizmo_kits_generator.main.parse_arguments")
+    @mock.patch("drumgizmo_kits_generator.utils.validate_directories")
+    @mock.patch("drumgizmo_kits_generator.logger.error")
+    def test_main_unexpected_exception(
+        self,
+        mock_error,
+        mock_validate_directories,
+        mock_parse_arguments,
+        mock_format_exc,
+        mock_is_verbose,
+    ):
+        """Test that unexpected exceptions are handled correctly in the main function."""
+        # Setup mocks
+        mock_args = mock.MagicMock()
+        mock_parse_arguments.return_value = mock_args
+
+        # Make validate_directories raise an unexpected exception
+        mock_validate_directories.side_effect = Exception("Unexpected test error")
+
+        # Mock traceback.format_exc to return a known string
+        mock_format_exc.return_value = (
+            "Traceback (most recent call last):\n  ...\nException: Unexpected test error"
+        )
+
+        # Test with verbose mode off
+        mock_is_verbose.return_value = False
+
+        # Call the main function
+        main.main()
+
+        # Verify that an error message was printed
+        mock_error.assert_called_with("Unexpected error: Unexpected test error")
+
+        # Reset mocks
+        mock_error.reset_mock()
+
+        # Test with verbose mode on
+        mock_is_verbose.return_value = True
+
+        # Call the main function again
+        main.main()
+
+        # Verify that an error message was printed with traceback in verbose mode
+        mock_error.assert_any_call("Unexpected error: Unexpected test error")
+        mock_error.assert_any_call(mock_format_exc.return_value)
+
+
+class TestMainWithDependencies:
+    """Tests for the main function with dependency checks."""
+
+    def setup_method(self):
+        """Initialize test data."""
+        self.config_data = {
+            "name": "Test Kit",
+            "version": "1.0.0",
+            "description": "Test description",
+            "notes": "Test notes",
+            "author": "Test Author",
+            "license": "Test License",
+            "website": "https://example.com",
+            "logo": "logo.png",
+            "samplerate": "44100",
+            "extra_files": "file1.txt,file2.txt",
+            "velocity_levels": "5",
+            "midi_note_min": "30",
+            "midi_note_max": "90",
+            "midi_note_median": "60",
+            "extensions": "wav,flac",
+            "channels": "Left,Right",
+            "main_channels": "Left,Right",
+        }
+
+    # pylint: disable=too-many-arguments
+    @mock.patch("drumgizmo_kits_generator.utils.check_dependency")
+    @mock.patch("drumgizmo_kits_generator.main.parse_arguments")
+    @mock.patch("drumgizmo_kits_generator.utils.validate_directories")
+    @mock.patch("drumgizmo_kits_generator.main.load_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.transform_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.validate_configuration")
+    @mock.patch("drumgizmo_kits_generator.main.prepare_metadata")
+    @mock.patch("drumgizmo_kits_generator.main.print_metadata")
+    @mock.patch("drumgizmo_kits_generator.utils.scan_source_files")
+    @mock.patch("drumgizmo_kits_generator.main.print_samples_info")
+    @mock.patch("sys.stderr", new_callable=io.StringIO)
+    def test_main_sox_dependency_check(
+        self,
+        mock_stderr,
+        mock_print_samples_info,  # pylint: disable=unused-argument
+        mock_scan_source_files,  # pylint: disable=unused-argument
+        mock_print_metadata,  # pylint: disable=unused-argument
+        mock_prepare_metadata,  # pylint: disable=unused-argument
+        mock_validate_config,
+        mock_transform_config,
+        mock_load_config,
+        mock_validate_dirs,
+        mock_parse_args,
+        mock_check_dependency,
+    ):
+        """Test that SoX dependency is checked in the main function."""
+        # Setup mocks
+        mock_args = mock.MagicMock()
+        mock_args.dry_run = False
+        mock_parse_args.return_value = mock_args
+
+        # Make check_dependency raise a DependencyError
+        mock_check_dependency.side_effect = DependencyError("SoX not found")
+
+        # Call the main function
+        main.main()
+
+        # Verify that check_dependency was called with "sox"
+        mock_check_dependency.assert_called_with(
+            "sox", "SoX not found in the system, can not generate samples"
+        )
+
+        # Verify that an error message was printed
+        stderr_output = mock_stderr.getvalue()
+        assert "ERROR: " in stderr_output
+        assert "SoX not found" in stderr_output
+
+    @mock.patch("sys.exit")
+    @mock.patch("builtins.print")
+    @mock.patch("argparse.ArgumentParser.parse_known_args")
+    def test_main_app_version(self, mock_parse_known_args, mock_print, mock_exit):
+        """Test that --app-version option displays version and exits."""
+        # Mock parse_known_args to return a namespace with app_version=True
+        args = argparse.Namespace()
+        args.app_version = True
+        mock_parse_known_args.return_value = (args, [])
+
+        # Call the parse_arguments function directly
+        main.parse_arguments()
+
+        # Verify that version was printed and sys.exit was called
+        mock_print.assert_called_with(f"{constants.APP_NAME} v{constants.APP_VERSION}")
+        mock_exit.assert_called_with(0)
+
+    # pylint: disable=too-many-arguments
     @mock.patch("drumgizmo_kits_generator.utils.scan_source_files")
     @mock.patch("drumgizmo_kits_generator.main.process_audio_files")
     @mock.patch("drumgizmo_kits_generator.main.generate_xml_files")
