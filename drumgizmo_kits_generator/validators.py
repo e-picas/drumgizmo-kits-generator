@@ -237,7 +237,7 @@ def validate_extensions(
         raise ValidationError("Extensions list cannot be empty")
 
     # Ensure all extensions are trimmed
-    return [ext.strip() for ext in value] if value else []
+    return [ext.strip() for ext in value]
 
 
 def validate_channels(
@@ -260,7 +260,7 @@ def validate_channels(
         raise ValidationError("Channels list cannot be empty")
 
     # Ensure all channels are trimmed
-    return [channel.strip() for channel in value] if value else []
+    return [channel.strip() for channel in value]
 
 
 def validate_main_channels(
@@ -392,7 +392,7 @@ def validate_version(value: Optional[str], config: Dict[str, Any]) -> str:  # NO
         and defaults to DEFAULT_VERSION if the value is empty.
     """
     # No specific validation required for version
-    return value if value else constants.DEFAULT_VERSION
+    return value or constants.DEFAULT_VERSION
 
 
 def validate_description(
@@ -471,4 +471,4 @@ def validate_license(value: Optional[str], config: Dict[str, Any]) -> str:  # NO
         and defaults to DEFAULT_LICENSE if the value is empty.
     """
     # No specific validation required for license
-    return value if value else constants.DEFAULT_LICENSE
+    return value or constants.DEFAULT_LICENSE
