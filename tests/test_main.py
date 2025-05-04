@@ -234,6 +234,36 @@ class TestParseArguments:
         assert args.channels == "Ch1,Ch2"
         assert args.main_channels == "Ch1"
 
+    @mock.patch("sys.argv", ["drumgizmo_kits_generator", "--app-version"])
+    @mock.patch("sys.exit")
+    @mock.patch("builtins.print")
+    def test_app_version_option(self, mock_print, mock_exit):
+        """Test that --app-version option displays version and exits."""
+        # Call the function
+        main.parse_arguments()
+
+        # Verify that print was called with the correct version string
+        mock_print.assert_called_once_with(f"{constants.APP_NAME} v{constants.APP_VERSION}")
+
+        # Verify that sys.exit was called with 0
+        assert mock_exit.call_count > 0
+        assert mock_exit.call_args_list[0] == mock.call(0)
+
+    @mock.patch("sys.argv", ["drumgizmo_kits_generator", "-V"])
+    @mock.patch("sys.exit")
+    @mock.patch("builtins.print")
+    def test_app_version_short_option(self, mock_print, mock_exit):
+        """Test that -V option displays version and exits."""
+        # Call the function
+        main.parse_arguments()
+
+        # Verify that print was called with the correct version string
+        mock_print.assert_called_once_with(f"{constants.APP_NAME} v{constants.APP_VERSION}")
+
+        # Verify that sys.exit was called with 0
+        assert mock_exit.call_count > 0
+        assert mock_exit.call_args_list[0] == mock.call(0)
+
 
 class TestLoadConfiguration:
     """Tests for the load_configuration function."""
