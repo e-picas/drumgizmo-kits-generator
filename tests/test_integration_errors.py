@@ -69,8 +69,11 @@ class TestIntegrationErrors:
 
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
-            assert "ERROR: " in stderr_output
-            assert "Source directory does not exist" in stderr_output
+            # Check that the error message contains the expected text, ignoring ANSI color codes
+            assert "ERROR:" in stderr_output
+            assert f"Source directory '{nonexistent_dir}' does not exist" in stderr_output.replace(
+                "\x1b[91m", ""
+            ).replace("\x1b[0m", "")
 
     def test_nonexistent_config_file(self, temp_output_dir, temp_source_dir):
         """Test with a non-existent configuration file."""
@@ -97,8 +100,11 @@ class TestIntegrationErrors:
 
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
-            assert "ERROR: " in stderr_output
-            assert "Configuration file does not exist" in stderr_output
+            # Check for a warning about the configuration file not being found
+            assert "WARNING:" in stderr_output.replace("\x1b[91m", "").replace("\x1b[0m", "")
+            assert f"Configuration file not found: {nonexistent_config}" in stderr_output.replace(
+                "\x1b[91m", ""
+            ).replace("\x1b[0m", "")
 
     def test_invalid_config_file(self, temp_output_dir, temp_source_dir, temp_config_file):
         """Test with an invalid configuration file (not a valid INI file)."""

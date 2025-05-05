@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 from typing import Any, Dict, List
 
 from drumgizmo_kits_generator import constants, logger
+from drumgizmo_kits_generator.utils import calculate_midi_note
 
 
 def _add_metadata_elements(metadata_elem: ET.Element, metadata: Dict[str, Any]) -> None:
@@ -221,34 +222,6 @@ def generate_instrument_xml(
     logger.info(f"Generated instrument XML at {xml_path}")
 
 
-def _calculate_midi_note(
-    i: int, left_count: int, midi_note_median: int, midi_note_min: int, midi_note_max: int
-) -> int:
-    """
-    Calculate the MIDI note for an instrument based on its position.
-    Args:
-        i: Index of the instrument
-        left_count: Number of instruments to the left of the median
-        midi_note_median: Median MIDI note
-        midi_note_min: Minimum MIDI note
-        midi_note_max: Maximum MIDI note
-    Returns:
-        The calculated MIDI note
-    """
-    # Calculate note based on position relative to median
-    if i < left_count:
-        # Instruments to the left of median
-        offset = left_count - i
-        note = midi_note_median - offset
-    else:
-        # Instruments at or to the right of median
-        offset = i - left_count
-        note = midi_note_median + offset
-
-    # Ensure note is within range
-    return max(midi_note_min, min(note, midi_note_max))
-
-
 def _add_midimap_elements(
     root: ET.Element, instruments: List[str], midi_params: Dict[str, int]
 ) -> Dict[str, int]:
@@ -270,7 +243,7 @@ def _add_midimap_elements(
     midi_mapping = {}
     for i, instrument_name in enumerate(instruments):
         # Calculate note based on position
-        note = _calculate_midi_note(
+        note = calculate_midi_note(
             i, left_count, midi_params["median"], midi_params["min"], midi_params["max"]
         )
 

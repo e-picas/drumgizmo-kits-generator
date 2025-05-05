@@ -1,21 +1,172 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Audio processing module for DrumGizmo kit generator.
-Contains functions for processing audio files.
-"""
+"""Audio processing module for DrumGizmo kit generation."""
 
 import os
 import shutil
 import subprocess
-import tempfile
 from typing import Any, Dict, List
 
-from drumgizmo_kits_generator import constants, logger, utils
+from drumgizmo_kits_generator import constants, utils
 from drumgizmo_kits_generator.exceptions import AudioProcessingError, DependencyError
+from drumgizmo_kits_generator.logger import debug, info
 
 
-def process_sample(file_path: str, target_dir: str, metadata: Dict[str, Any]) -> List[str]:
+def convert_sample_rate(file_path: str, target_sample_rate: str) -> str:
+    """
+    Convert the sample rate of an audio file.
+
+    Args:
+        file_path: Path to the audio file
+        target_sample_rate: Target sample rate
+
+    Returns:
+        str: Path to the converted file
+
+    Raises:
+        DependencyError: If SoX is not found
+        AudioProcessingError: If sample rate conversion fails
+    """
+    debug(f"Converting {file_path} to {target_sample_rate} Hz")
+
+    # Check if SoX is available
+    if not shutil.which("sox"):
+        error_msg = "SoX not found in the system, can not generate samples"
+        raise DependencyError(error_msg)
+
+    # Get file name components
+    file_basename = utils.get_file_basename(file_path)
+    file_extension = utils.get_file_extension(file_path, with_dot=True)
+
+    # Use the temp_directory context manager for automatic cleanup
+    with utils.temp_directory(prefix=constants.DEFAULT_TEMP_DIR_PREFIX) as temp_dir:
+        converted_file = utils.join_paths(temp_dir, f"{file_basename}{file_extension}")
+
+        try:
+            # Use SoX to convert the sample rate
+            cmd = [
+                "sox",
+                file_path,
+                "-r",
+                str(target_sample_rate),
+                converted_file,
+            ]
+            subprocess.run(
+                cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            # Log success
+            debug(f"Successfully converted sample rate to {target_sample_rate} Hz")
+
+            # Return the path to the converted file
+            # Note: This file will be available until the calling function is done with it
+            # The caller is responsible for copying it to a permanent location if needed
+            return converted_file
+        except subprocess.CalledProcessError as e:
+            # This will raise an exception, so it will never return
+            utils.handle_subprocess_error(e, "converting sample rate")
+            return None  # pragma: no cover
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            # This will raise an exception, so it will never return
+            utils.handle_subprocess_error(e, "converting sample rate")
+            return None  # pragma: no cover
+
+
+def get_audio_info(file_path: str) -> Dict[str, Any]:
+    """
+    Get information about an audio file using SoX.
+
+    Args:
+        file_path: Path to the audio file
+
+    Returns:
+        Dict[str, Any]: Dictionary with audio information
+
+    Raises:
+        DependencyError: If SoX (soxi) is not found
+        AudioProcessingError: If getting audio information fails
+    """
+    debug(f"Getting audio information for {file_path}")
+
+    # Check if the file exists
+    if not os.path.isfile(file_path):
+        raise AudioProcessingError(f"Audio file not found: {file_path}")
+
+    # Check if soxi is available
+    soxi_path = shutil.which("soxi")
+    if not soxi_path:
+        error_msg = "SoX (soxi) not found in the system, cannot get audio information"
+        raise DependencyError(error_msg)
+
+    # Initialize default info
+    audio_info = {
+        "channels": None,
+        "samplerate": None,
+        "bits": None,
+        "duration": None,
+    }
+
+    try:
+        # Get number of channels
+        cmd = [soxi_path, "-c", file_path]
+        result = subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        audio_info["channels"] = int(result.stdout.strip())
+
+        # Get sample rate
+        cmd = [soxi_path, "-r", file_path]
+        result = subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        audio_info["samplerate"] = int(result.stdout.strip())
+
+        # Get bit depth
+        cmd = [soxi_path, "-b", file_path]
+        result = subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        audio_info["bits"] = int(result.stdout.strip())
+
+        # Get duration in seconds
+        cmd = [soxi_path, "-D", file_path]
+        result = subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        audio_info["duration"] = float(result.stdout.strip())
+
+        debug(f"Audio info for {file_path}: {audio_info}")
+    except subprocess.CalledProcessError as e:
+        utils.handle_subprocess_error(e, "getting audio information")
+        return {}  # pragma: no cover
+    except ValueError as e:
+        error_msg = f"Failed to parse audio information: {e}"
+        raise AudioProcessingError(error_msg) from e
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        utils.handle_subprocess_error(e, "getting audio information")
+        return {}  # pragma: no cover
+
+    return audio_info
+
+
+def process_sample(
+    file_path: str,
+    target_dir: str,
+    metadata: Dict[str, Any],
+) -> List[str]:
     """
     Process an audio sample: copy to target directory and create velocity variations.
 
@@ -31,56 +182,54 @@ def process_sample(file_path: str, target_dir: str, metadata: Dict[str, Any]) ->
         AudioProcessingError: If processing fails
         DependencyError: If SoX is not found
     """
-    # Get file name and extension
-    file_name = os.path.basename(file_path)
-    file_base, _ = os.path.splitext(file_name)
+    # Get file name and base name
+    file_basename = utils.get_file_basename(file_path)
 
     # Clean up the instrument name
-    instrument_name = utils.clean_instrument_name(file_base)
+    instrument_name = utils.clean_instrument_name(file_basename)
 
     # Create instrument directory
-    instrument_dir = os.path.join(target_dir, instrument_name)
-    samples_dir = os.path.join(instrument_dir, "samples")
+    instrument_dir = utils.join_paths(target_dir, instrument_name)
+    samples_dir = utils.join_paths(instrument_dir, constants.DEFAULT_SAMPLES_DIR)
     os.makedirs(samples_dir, exist_ok=True)
-    logger.info(f"Creating directory for instrument: {instrument_name}")
+    info(f"Creating directory for instrument: {instrument_name}")
 
-    # Convert sample rate if needed
-    temp_dirs = []  # Track temporary directories to clean up later
     try:
         # Check if SoX is available
         utils.check_dependency("sox", "SoX not found in the system, can not generate samples")
 
+        # Process with sample rate conversion if needed
         if "samplerate" in metadata and metadata["samplerate"]:
-            converted_file = utils.convert_sample_rate(file_path, metadata["samplerate"])
-            # If the file was converted, track the temp directory
-            if converted_file != file_path:
-                temp_dirs.append(os.path.dirname(converted_file))
+            # The convert_sample_rate function now uses the temp_directory context manager
+            # so we don't need to track and clean up temp directories manually
+            converted_file = convert_sample_rate(file_path, metadata["samplerate"])
         else:
             converted_file = file_path
 
         # Create velocity variations
         velocity_levels = metadata.get("velocity_levels", constants.DEFAULT_VELOCITY_LEVELS)
         variation_files = create_velocity_variations(
-            converted_file, samples_dir, velocity_levels, instrument_name
+            converted_file,
+            samples_dir,
+            velocity_levels,
+            instrument_name,
         )
 
         # Log success
-        logger.info(f"Processed {file_name} with {velocity_levels} volume variations")
+        info(f"Processed {utils.get_filename(file_path)} with {velocity_levels} volume variations")
 
         return variation_files
     # pylint: disable=try-except-raise
     except (AudioProcessingError, DependencyError):
         # Re-raise the exception to be handled by the caller
         raise
-    finally:
-        # Clean up temporary directories
-        for temp_dir in temp_dirs:
-            if os.path.exists(temp_dir) and temp_dir.startswith(tempfile.gettempdir()):
-                shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 def create_velocity_variations(
-    file_path: str, target_dir: str, velocity_levels: int, instrument_name: str
+    file_path: str,
+    target_dir: str,
+    velocity_levels: int,
+    instrument_name: str,
 ) -> List[str]:
     """
     Create velocity variations of an audio file.
@@ -98,7 +247,7 @@ def create_velocity_variations(
         AudioProcessingError: If creating velocity variations fails
         DependencyError: If SoX is not found
     """
-    logger.debug(f"Creating {velocity_levels} velocity variations for {file_path}")
+    debug(f"Creating {velocity_levels} velocity variations for {file_path}")
 
     # Check if source file exists
     if not os.path.exists(file_path):
@@ -109,21 +258,30 @@ def create_velocity_variations(
     utils.check_dependency("sox", "SoX not found in the system, can not create velocity variations")
 
     # Get file extension
-    _, file_ext = os.path.splitext(file_path)
+    file_ext = utils.get_file_extension(file_path, with_dot=True)
 
     variation_files = []
     for i in range(1, velocity_levels + 1):
-        # Create a file name for this velocity level
-        velocity_file = os.path.join(target_dir, f"{i}-{instrument_name}{file_ext}")
+        # Create a file name for this velocity level using the standard format
+        velocity_file = utils.join_paths(
+            target_dir,
+            constants.DEFAULT_VELOCITY_FILENAME_FORMAT.format(
+                level=i,
+                instrument=instrument_name,
+                ext=file_ext,
+            ),
+        )
 
         # Calculate volume adjustment based on velocity level
         # Level 1 = 100% volume (0 dB)
         # Other levels decrease in volume
         if i == 1:
-            volume_factor = 1.0  # 100% volume
+            volume_factor = constants.DEFAULT_VELOCITY_VOLUME_MAX  # 100% volume
         else:
-            # Linear decrease from 1.0 to 0.25 for velocity levels
-            volume_factor = 1.0 - ((i - 1) / (velocity_levels - 1)) * 0.75
+            # Linear decrease from MAX to MIN for velocity levels
+            volume_factor = constants.DEFAULT_VELOCITY_VOLUME_MAX - (
+                (i - 1) / (velocity_levels - 1)
+            ) * (constants.DEFAULT_VELOCITY_VOLUME_MAX - constants.DEFAULT_VELOCITY_VOLUME_MIN)
 
         # Use SoX to adjust volume and save to the new file
         try:
@@ -131,15 +289,29 @@ def create_velocity_variations(
             db_adjustment = 20 * (volume_factor - 1)
 
             # Create a copy with adjusted volume
-            cmd = ["sox", file_path, velocity_file, "gain", f"{db_adjustment:.2f}"]
-            subprocess.run(cmd, check=True, capture_output=True)
+            cmd = [
+                "sox",
+                file_path,
+                velocity_file,
+                "gain",
+                f"{db_adjustment:.2f}",
+            ]
+            subprocess.run(
+                cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
 
             variation_files.append(velocity_file)
-            logger.debug(
-                f"Created velocity variation {i}/{velocity_levels} at {volume_factor:.2f} volume"
-            )
+            debug(f"Created velocity variation {i}/{velocity_levels} at {volume_factor:.2f} volume")
         except subprocess.CalledProcessError as e:
-            error_msg = f"Failed to create velocity variation: {e}"
-            raise AudioProcessingError(error_msg) from e
+            # This will raise an exception, so it will never return
+            utils.handle_subprocess_error(e, "creating velocity variation")
+            return []  # pragma: no cover
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            # This will raise an exception, so it will never return
+            utils.handle_subprocess_error(e, "creating velocity variation")
+            return []  # pragma: no cover
 
     return variation_files

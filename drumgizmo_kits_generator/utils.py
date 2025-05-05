@@ -9,14 +9,11 @@ import os
 import shutil
 import subprocess
 import tempfile
-from typing import Any, Dict, List
+from contextlib import contextmanager
+from typing import Dict, List
 
 from drumgizmo_kits_generator import constants, logger
-from drumgizmo_kits_generator.exceptions import (
-    AudioProcessingError,
-    DependencyError,
-    DirectoryError,
-)
+from drumgizmo_kits_generator.exceptions import AudioProcessingError, DependencyError
 
 
 def check_dependency(command: str, error_message: str = None) -> None:
@@ -35,127 +32,24 @@ def check_dependency(command: str, error_message: str = None) -> None:
         raise DependencyError(msg)
 
 
-def convert_sample_rate(file_path: str, target_sample_rate: str) -> str:
+def strip_quotes(value: str) -> str:
     """
-    Convert the sample rate of an audio file.
+    Strip quotes from a string value.
 
     Args:
-        file_path: Path to the audio file
-        target_sample_rate: Target sample rate
+        value: The string value to strip quotes from
 
     Returns:
-        str: Path to the converted file
-
-    Raises:
-        DependencyError: If SoX is not found
-        AudioProcessingError: If sample rate conversion fails
+        str: The value without quotes
     """
-    logger.debug(f"Converting {file_path} to {target_sample_rate} Hz")
+    if not isinstance(value, str):
+        return value
 
-    # Check if SoX is available
-    if not shutil.which("sox"):
-        error_msg = "SoX not found in the system, can not generate samples"
-        raise DependencyError(error_msg)
-
-    # Get file name and extension
-    file_name = os.path.basename(file_path)
-    file_base, file_ext = os.path.splitext(file_name)
-
-    # Create a temporary directory for the converted audio
-    temp_dir = tempfile.mkdtemp(prefix="drumgizmo_")
-    converted_file = os.path.join(temp_dir, f"{file_base}{file_ext}")
-
-    try:
-        # Use SoX to convert the sample rate
-        cmd = ["sox", file_path, "-r", str(target_sample_rate), converted_file]
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
-
-        # Log success
-        logger.debug(f"Successfully converted sample rate to {target_sample_rate} Hz")
-        return converted_file
-    except subprocess.CalledProcessError as e:
-        error_msg = f"Failed to convert sample rate: {e}"
-        if hasattr(e, "stderr") and e.stderr:
-            error_msg += f" (stderr: {e.stderr.strip()})"
-        # Clean up the temporary directory in case of error
-        shutil.rmtree(temp_dir, ignore_errors=True)
-        raise AudioProcessingError(error_msg) from e
-    except Exception as e:
-        error_msg = f"Unexpected error during sample rate conversion: {e}"
-        # Clean up the temporary directory in case of error
-        shutil.rmtree(temp_dir, ignore_errors=True)
-        raise AudioProcessingError(error_msg) from e
-
-
-def get_audio_info(file_path: str) -> Dict[str, Any]:
-    """
-    Get information about an audio file using SoX.
-
-    Args:
-        file_path: Path to the audio file
-
-    Returns:
-        Dict[str, Any]: Dictionary with audio information
-
-    Raises:
-        DependencyError: If SoX (soxi) is not found
-        AudioProcessingError: If getting audio information fails
-    """
-    logger.debug(f"Getting audio information for {file_path}")
-
-    # Check if the file exists
-    if not os.path.isfile(file_path):
-        raise AudioProcessingError(f"Audio file not found: {file_path}")
-
-    # Check if soxi is available
-    soxi_path = shutil.which("soxi")
-    if not soxi_path:
-        error_msg = "SoX (soxi) not found in the system, cannot get audio information"
-        raise DependencyError(error_msg)
-
-    # Initialize default info
-    info = {
-        "channels": None,
-        "samplerate": None,
-        "bits": None,
-        "duration": None,
-    }
-
-    try:
-        # Get number of channels
-        cmd = [soxi_path, "-c", file_path]
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        info["channels"] = int(result.stdout.strip())
-
-        # Get sample rate
-        cmd = [soxi_path, "-r", file_path]
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        info["samplerate"] = int(result.stdout.strip())
-
-        # Get bit depth
-        cmd = [soxi_path, "-b", file_path]
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        info["bits"] = int(result.stdout.strip())
-
-        # Get duration in seconds
-        cmd = [soxi_path, "-D", file_path]
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        info["duration"] = float(result.stdout.strip())
-
-        logger.debug(f"Audio info for {file_path}: {info}")
-    except subprocess.CalledProcessError as e:
-        error_msg = f"Failed to get audio information: {e}"
-        if hasattr(e, "stderr") and e.stderr:
-            error_msg += f" (stderr: {e.stderr.strip()})"
-        raise AudioProcessingError(error_msg) from e
-    except ValueError as e:
-        error_msg = f"Failed to parse audio information: {e}"
-        raise AudioProcessingError(error_msg) from e
-    except Exception as e:
-        error_msg = f"Unexpected error while getting audio information: {e}"
-        raise AudioProcessingError(error_msg) from e
-
-    return info
+    if (value.startswith('"') and value.endswith('"')) or (
+        value.startswith("'") and value.endswith("'")
+    ):
+        return value[1:-1]
+    return value
 
 
 def clean_instrument_name(file_base: str) -> str:
@@ -205,33 +99,6 @@ def scan_source_files(source_dir: str, extensions: List[str]) -> List[str]:
     return audio_files
 
 
-def validate_directories(source_dir: str, target_dir: str, config_file: str = None) -> None:
-    """
-    Validate source and target directories, and config file if specified.
-
-    Args:
-        source_dir: Path to the source directory
-        target_dir: Path to the target directory
-        config_file: Path to the configuration file (optional)
-
-    Raises:
-        DirectoryError: If validation fails
-    """
-    # Validate source directory
-    if not os.path.isdir(source_dir):
-        raise DirectoryError(f"Source directory does not exist: {source_dir}")
-
-    # Validate target directory
-    target_parent = os.path.dirname(os.path.abspath(target_dir))
-    if not os.path.exists(target_dir) and not os.path.isdir(target_parent):
-        raise DirectoryError(f"Parent directory of target does not exist: {target_parent}")
-
-    # Validate config file if specified
-    if config_file and config_file != constants.DEFAULT_CONFIG_FILE:
-        if not os.path.isfile(config_file):
-            raise DirectoryError(f"Configuration file does not exist: {config_file}")
-
-
 def prepare_target_directory(target_dir: str) -> None:
     """
     Prepare the target directory by creating it if it doesn't exist
@@ -257,25 +124,40 @@ def prepare_target_directory(target_dir: str) -> None:
                 os.remove(item_path)
 
 
-def is_instrument_file(base_name: str, instrument_name: str) -> bool:
+def is_instrument_file(base_name: str, instrument_name: str, extensions: List[str] = None) -> bool:
     """
     Check if a file belongs to a specific instrument.
 
     Args:
         base_name: Base name of the file
         instrument_name: Name of the instrument
+        extensions: List of valid extensions (optional)
 
     Returns:
         bool: True if the file belongs to the instrument, False otherwise
     """
-    # Check for common audio file extensions
-    for ext in [".wav", ".flac", ".ogg"]:
+    # If no extensions provided, use default extensions
+    if extensions is None:
+        extensions_str = constants.DEFAULT_EXTENSIONS
+        extensions = [ext.strip() for ext in extensions_str.split(",")]
+
+    # Process extensions to ensure they have a leading dot
+    processed_exts = []
+    for ext in extensions:
+        ext = ext.lower()
+        if not ext.startswith("."):
+            ext = f".{ext}"
+        processed_exts.append(ext)
+
+    # Check for instrument match with any of the extensions
+    for ext in processed_exts:
         # Check for direct instrument match
         if base_name.endswith(f"{instrument_name}{ext}"):
             return True
         # Check for converted instrument match
         if base_name.endswith(f"{instrument_name}_converted{ext}"):
             return True
+
     return False
 
 
@@ -358,3 +240,174 @@ def calculate_midi_mapping(instruments: List[str], midi_params: Dict[str, int]) 
         midi_mapping[instrument_name] = note
 
     return midi_mapping
+
+
+def calculate_midi_note(
+    i: int, left_count: int, midi_note_median: int, midi_note_min: int, midi_note_max: int
+) -> int:
+    """
+    Calculate the MIDI note for an instrument based on its position.
+
+    Args:
+        i: Index of the instrument
+        left_count: Number of instruments to the left of the median
+        midi_note_median: Median MIDI note
+        midi_note_min: Minimum MIDI note
+        midi_note_max: Maximum MIDI note
+
+    Returns:
+        int: The calculated MIDI note
+    """
+    # Calculate note based on position relative to median
+    if i < left_count:
+        # Instruments to the left of median
+        offset = left_count - i
+        note = midi_note_median - offset
+    else:
+        # Instruments at or to the right of median
+        offset = i - left_count
+        note = midi_note_median + offset
+
+    # Ensure note is within range
+    return max(midi_note_min, min(note, midi_note_max))
+
+
+def handle_subprocess_error(e: Exception, operation_name: str, from_exception: bool = True) -> None:
+    """
+    Handle errors from subprocess calls in a consistent way.
+
+    Args:
+        e: The caught exception
+        operation_name: Name of the operation being performed
+        from_exception: Whether to include the original exception in the raised exception
+
+    Raises:
+        AudioProcessingError: With appropriate error message
+
+    Example:
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            handle_subprocess_error(e, "converting sample rate")
+        except Exception as e:
+            handle_subprocess_error(e, "converting sample rate", False)
+    """
+    if isinstance(e, subprocess.CalledProcessError):
+        error_msg = f"Failed while {operation_name}: {e}"
+        if hasattr(e, "stderr") and e.stderr:
+            error_msg += f" (stderr: {e.stderr.strip()})"
+        if from_exception:
+            raise AudioProcessingError(error_msg) from e
+        raise AudioProcessingError(error_msg)
+
+    # For other types of exceptions
+    error_msg = f"Unexpected error while {operation_name}: {e}"
+    if from_exception:
+        raise AudioProcessingError(error_msg) from e
+    raise AudioProcessingError(error_msg)
+
+
+@contextmanager
+def temp_directory(prefix=None):
+    """
+    Context manager for temporary directory handling.
+
+    Args:
+        prefix: Prefix for the temporary directory (optional)
+
+    Yields:
+        str: Path to the temporary directory
+
+    Example:
+        with temp_directory() as temp_dir:
+            # Do something with temp_dir
+            ...
+        # Directory is automatically cleaned up after the block
+    """
+    if prefix is None:
+        prefix = constants.DEFAULT_TEMP_DIR_PREFIX
+
+    temp_dir = tempfile.mkdtemp(prefix=prefix)
+    try:
+        yield temp_dir
+    finally:
+        if os.path.exists(temp_dir) and temp_dir.startswith(tempfile.gettempdir()):
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+# Path utilities
+def get_filename(file_path: str) -> str:
+    """
+    Get the filename from a path.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        str: Filename without directory path
+    """
+    return os.path.basename(file_path)
+
+
+def get_file_extension(file_path: str, with_dot: bool = False, lowercase: bool = True) -> str:
+    """
+    Get the file extension from a path.
+
+    Args:
+        file_path: Path to the file
+        with_dot: Whether to include the dot in the extension
+        lowercase: Whether to convert the extension to lowercase
+
+    Returns:
+        str: File extension
+    """
+    _, ext = os.path.splitext(file_path)
+    if not with_dot:
+        ext = ext.lstrip(".")
+    if lowercase:
+        ext = ext.lower()
+    return ext
+
+
+def get_file_basename(file_path: str) -> str:
+    """
+    Get the base filename without extension.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        str: Base filename without extension
+    """
+    filename = get_filename(file_path)
+    basename, _ = os.path.splitext(filename)
+    return basename
+
+
+def join_paths(*paths: str) -> str:
+    """
+    Join path components intelligently.
+
+    Args:
+        *paths: Path components to join
+
+    Returns:
+        str: Joined path
+    """
+    return os.path.join(*paths)
+
+
+def get_file_parts(file_path: str) -> tuple:
+    """
+    Get all parts of a file path: directory, basename, and extension.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        tuple: (directory, basename, extension)
+    """
+    directory = os.path.dirname(file_path)
+    filename = get_filename(file_path)
+    basename, extension = os.path.splitext(filename)
+    return directory, basename, extension.lstrip(".")

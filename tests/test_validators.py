@@ -5,6 +5,8 @@
 Tests for the validators module.
 """
 
+from unittest import mock
+
 import pytest
 
 from drumgizmo_kits_generator import constants, logger, validators
@@ -421,3 +423,53 @@ def test_validate_license():
     assert validators.validate_license("GPL-3.0", {}) == "GPL-3.0"
     assert validators.validate_license("Apache-2.0", {}) == "Apache-2.0"
     assert validators.validate_license("BSD-3-Clause", {}) == "BSD-3-Clause"
+
+
+class TestValidateDirectories:
+    """Tests for the validate_directories function."""
+
+    @mock.patch("os.path.isdir")
+    @mock.patch("os.makedirs")
+    def test_validate_directories_existing(self, mock_makedirs, mock_isdir):
+        """Test validate_directories with existing directories."""
+        mock_isdir.return_value = True
+
+        validators.validate_directories("/path/to/source", "/path/to/target")
+
+        mock_isdir.assert_any_call("/path/to/source")
+        mock_makedirs.assert_not_called()
+
+    @mock.patch("os.path.isdir")
+    @mock.patch("os.makedirs")
+    def test_validate_directories_nonexistent_target(self, mock_makedirs, mock_isdir):
+        """Test validate_directories with nonexistent target directory."""
+        # Source exists, target doesn't
+        mock_isdir.side_effect = lambda path: path == "/path/to/source"
+
+        validators.validate_directories("/path/to/source", "/path/to/target")
+
+        mock_isdir.assert_any_call("/path/to/source")
+        mock_isdir.assert_any_call("/path/to/target")
+        mock_makedirs.assert_called_once_with("/path/to/target", exist_ok=True)
+
+    @mock.patch("os.path.isdir")
+    def test_validate_directories_nonexistent_source(self, mock_isdir):
+        """Test validate_directories with nonexistent source directory."""
+        mock_isdir.return_value = False
+
+        with pytest.raises(FileNotFoundError):
+            validators.validate_directories("/path/to/source", "/path/to/target")
+
+        mock_isdir.assert_called_once_with("/path/to/source")
+
+    @mock.patch("os.path.isdir")
+    @mock.patch("os.makedirs")
+    def test_validate_directories_dry_run(self, mock_makedirs, mock_isdir):
+        """Test validate_directories in dry run mode."""
+        # Source exists, target doesn't
+        mock_isdir.side_effect = lambda path: path == "/path/to/source"
+
+        validators.validate_directories("/path/to/source", "/path/to/target", dry_run=True)
+
+        mock_isdir.assert_called_once_with("/path/to/source")
+        mock_makedirs.assert_not_called()

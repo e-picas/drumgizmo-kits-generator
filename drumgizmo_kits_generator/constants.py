@@ -38,5 +38,16 @@ DEFAULT_SAMPLERATE = "44100"
 DEFAULT_CHANNELS = "Left,Right"
 DEFAULT_MAIN_CHANNELS = ""
 
+# Default values for audio processing
+DEFAULT_VELOCITY_VOLUME_MIN = 0.25  # Minimum volume factor (25%)
+DEFAULT_VELOCITY_VOLUME_MAX = 1.0  # Maximum volume factor (100%)
+DEFAULT_VELOCITY_FILENAME_FORMAT = (
+    "{level}-{instrument}{ext}"  # Format for velocity variation filenames
+)
+DEFAULT_TEMP_DIR_PREFIX = "drumgizmo_"  # Prefix for temporary directories
+
+# Default paths for instrument structure
+DEFAULT_SAMPLES_DIR = "samples"  # Default name for samples directory within instrument directory
+
 # Default configuration file name
 DEFAULT_CONFIG_FILE = "drumgizmo-kit.ini"

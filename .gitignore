@@ -7,3 +7,4 @@ coverage.xml
 *.pyc
 tests/target_test/
 *.egg-info/
+NOTES.md

@@ -659,7 +659,7 @@ def main() -> None:
         logger.debug(f"{constants.APP_NAME} v{constants.APP_VERSION} - {constants.APP_LINK}")
 
         # Validate directories
-        utils.validate_directories(args.source, args.target, args.config)
+        validators.validate_directories(args.source, args.target, args.dry_run)
 
         # Display processing directories
         logger.section("Processing Directories")

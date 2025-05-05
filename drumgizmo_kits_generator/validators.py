@@ -472,3 +472,26 @@ def validate_license(value: Optional[str], config: Dict[str, Any]) -> str:  # NO
     """
     # No specific validation required for license
     return value or constants.DEFAULT_LICENSE
+
+
+def validate_directories(source_dir: str, target_dir: str, dry_run: bool = False) -> None:
+    """
+    Validate source and target directories.
+
+    Args:
+        source_dir: Path to source directory
+        target_dir: Path to target directory
+        dry_run: Whether this is a dry run
+
+    Raises:
+        FileNotFoundError: If source directory doesn't exist
+    """
+    # Check if source directory exists
+    if not os.path.isdir(source_dir):
+        logger.error(f"Source directory '{source_dir}' does not exist")
+        raise FileNotFoundError(f"Source directory '{source_dir}' does not exist")
+
+    # Create target directory if it doesn't exist
+    if not dry_run and not os.path.isdir(target_dir):
+        os.makedirs(target_dir, exist_ok=True)
+        logger.debug(f"Target directory '{target_dir}' created")

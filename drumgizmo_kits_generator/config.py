@@ -11,25 +11,7 @@ from typing import Any, Dict, Optional
 
 from drumgizmo_kits_generator import constants, logger
 from drumgizmo_kits_generator.exceptions import ConfigurationError
-
-
-def _strip_quotes(value: str) -> str:
-    """
-    Strip quotes from a string value.
-
-    Args:
-        value: The string value to strip quotes from
-
-    Returns:
-        str: The value without quotes
-    """
-    if (
-        isinstance(value, str)
-        and (value.startswith('"') and value.endswith('"'))
-        or (value.startswith("'") and value.endswith("'"))
-    ):
-        return value[1:-1]
-    return value
+from drumgizmo_kits_generator.utils import strip_quotes
 
 
 def load_config_file(config_file_path: str) -> Dict[str, Any]:
@@ -62,20 +44,20 @@ def load_config_file(config_file_path: str) -> Dict[str, Any]:
         section = config_parser[section_name]
 
         # Process general kit information
-        config_data["name"] = _strip_quotes(section.get("name", constants.DEFAULT_NAME))
-        config_data["version"] = _strip_quotes(section.get("version", constants.DEFAULT_VERSION))
-        config_data["description"] = _strip_quotes(section.get("description", ""))
-        config_data["notes"] = _strip_quotes(section.get("notes", ""))
-        config_data["author"] = _strip_quotes(section.get("author", ""))
-        config_data["license"] = _strip_quotes(section.get("license", constants.DEFAULT_LICENSE))
-        config_data["website"] = _strip_quotes(section.get("website", ""))
+        config_data["name"] = strip_quotes(section.get("name", constants.DEFAULT_NAME))
+        config_data["version"] = strip_quotes(section.get("version", constants.DEFAULT_VERSION))
+        config_data["description"] = strip_quotes(section.get("description", ""))
+        config_data["notes"] = strip_quotes(section.get("notes", ""))
+        config_data["author"] = strip_quotes(section.get("author", ""))
+        config_data["license"] = strip_quotes(section.get("license", constants.DEFAULT_LICENSE))
+        config_data["website"] = strip_quotes(section.get("website", ""))
 
         # Process additional files
-        config_data["logo"] = _strip_quotes(section.get("logo", ""))
-        config_data["extra_files"] = _strip_quotes(section.get("extra_files", ""))
+        config_data["logo"] = strip_quotes(section.get("logo", ""))
+        config_data["extra_files"] = strip_quotes(section.get("extra_files", ""))
 
         # Process audio parameters
-        config_data["samplerate"] = _strip_quotes(
+        config_data["samplerate"] = strip_quotes(
             section.get("samplerate", str(constants.DEFAULT_SAMPLERATE))
         )
         config_data["velocity_levels"] = section.get(
@@ -94,13 +76,13 @@ def load_config_file(config_file_path: str) -> Dict[str, Any]:
         )
 
         # Process file extensions
-        config_data["extensions"] = _strip_quotes(
+        config_data["extensions"] = strip_quotes(
             section.get("extensions", constants.DEFAULT_EXTENSIONS)
         )
 
         # Process channels
-        config_data["channels"] = _strip_quotes(section.get("channels", constants.DEFAULT_CHANNELS))
-        config_data["main_channels"] = _strip_quotes(
+        config_data["channels"] = strip_quotes(section.get("channels", constants.DEFAULT_CHANNELS))
+        config_data["main_channels"] = strip_quotes(
             section.get("main_channels", constants.DEFAULT_MAIN_CHANNELS)
         )
     else:
