@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import tempfile
 from contextlib import contextmanager
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from drumgizmo_kits_generator import constants, logger
 from drumgizmo_kits_generator.exceptions import AudioProcessingError, DependencyError
@@ -203,7 +203,7 @@ def calculate_midi_mapping(instruments: List[str], midi_params: Dict[str, int]) 
         midi_params: Dictionary with MIDI parameters (min, max, median)
 
     Returns:
-        Dict[str, int]: Dictionary mapping instrument names to MIDI notes
+        Dict[str, int]: Dictionary mapping instrument names to MIDI note numbers
     """
     # Use default values if parameters are None
     min_note = midi_params.get("min")
@@ -411,3 +411,31 @@ def get_file_parts(file_path: str) -> tuple:
     filename = get_filename(file_path)
     basename, extension = os.path.splitext(filename)
     return directory, basename, extension.lstrip(".")
+
+
+def evaluate_midi_mapping(audio_files: List[str], metadata: Dict[str, Any]) -> Dict[str, int]:
+    """
+    Calculate MIDI mapping for given audio files based on metadata.
+
+    Args:
+        audio_files: List of audio file paths
+        metadata: Dictionary containing MIDI note range information
+
+    Returns:
+        Dict[str, int]: Mapping of instrument names to MIDI note numbers
+    """
+    # Extract instrument names from audio files
+    instrument_names = extract_instrument_names(audio_files)
+
+    if not instrument_names:
+        return {}
+
+    # Get MIDI note range
+    midi_params = {
+        "min": metadata.get("midi_note_min"),
+        "max": metadata.get("midi_note_max"),
+        "median": metadata.get("midi_note_median"),
+    }
+
+    # Calculate MIDI mapping
+    return calculate_midi_mapping(instrument_names, midi_params)

@@ -27,17 +27,20 @@ def mock_logger():
     ) as mock_warning, mock.patch(
         "drumgizmo_kits_generator.logger.error"
     ) as mock_error, mock.patch(
-        "drumgizmo_kits_generator.audio.debug"
-    ) as mock_audio_debug, mock.patch(
-        "drumgizmo_kits_generator.audio.info"
-    ) as mock_audio_info:
+        "drumgizmo_kits_generator.logger.section"
+    ) as mock_section, mock.patch(
+        "drumgizmo_kits_generator.logger.message"
+    ) as mock_message, mock.patch(
+        "drumgizmo_kits_generator.logger.set_verbose"
+    ) as mock_set_verbose:
         yield {
             "info": mock_info,
             "debug": mock_debug,
             "warning": mock_warning,
             "error": mock_error,
-            "audio_debug": mock_audio_debug,
-            "audio_info": mock_audio_info,
+            "section": mock_section,
+            "message": mock_message,
+            "set_verbose": mock_set_verbose,
         }
 
 
@@ -185,7 +188,7 @@ class TestConvertSampleRate:
         # Assertions
         assert result != sample_file  # Should return a new file
         assert temp_dir in result  # Should be in the temp directory
-        assert mock_logger["audio_debug"].call_count >= 1  # Log about conversion
+        assert mock_logger["debug"].call_count >= 1  # Log about conversion
         mock_run.assert_called_once()  # SoX command should be called
         mock_temp_directory.assert_called_once()
         assert "prefix" in mock_temp_directory.call_args[1]
@@ -347,7 +350,7 @@ class TestGetAudioInfo:
         assert result["samplerate"] == 44100
         assert result["bits"] == 24
         assert result["duration"] == 2.5
-        assert mock_logger["audio_debug"].call_count >= 1  # Debug log about audio info
+        assert mock_logger["debug"].call_count >= 1  # Debug log about audio info
 
     @mock.patch("subprocess.run")
     @mock.patch("shutil.which")

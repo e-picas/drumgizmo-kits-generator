@@ -5,9 +5,8 @@ import shutil
 import subprocess
 from typing import Any, Dict, List
 
-from drumgizmo_kits_generator import constants, utils
+from drumgizmo_kits_generator import constants, logger, utils
 from drumgizmo_kits_generator.exceptions import AudioProcessingError, DependencyError
-from drumgizmo_kits_generator.logger import debug, info
 
 
 def convert_sample_rate(file_path: str, target_sample_rate: str) -> str:
@@ -25,7 +24,7 @@ def convert_sample_rate(file_path: str, target_sample_rate: str) -> str:
         DependencyError: If SoX is not found
         AudioProcessingError: If sample rate conversion fails
     """
-    debug(f"Converting {file_path} to {target_sample_rate} Hz")
+    logger.debug(f"Converting {file_path} to {target_sample_rate} Hz")
 
     # Check if SoX is available
     if not shutil.which("sox"):
@@ -57,7 +56,7 @@ def convert_sample_rate(file_path: str, target_sample_rate: str) -> str:
             )
 
             # Log success
-            debug(f"Successfully converted sample rate to {target_sample_rate} Hz")
+            logger.debug(f"Successfully converted sample rate to {target_sample_rate} Hz")
 
             # Return the path to the converted file
             # Note: This file will be available until the calling function is done with it
@@ -87,7 +86,7 @@ def get_audio_info(file_path: str) -> Dict[str, Any]:
         DependencyError: If SoX (soxi) is not found
         AudioProcessingError: If getting audio information fails
     """
-    debug(f"Getting audio information for {file_path}")
+    logger.debug(f"Getting audio information for {file_path}")
 
     # Check if the file exists
     if not os.path.isfile(file_path):
@@ -148,7 +147,7 @@ def get_audio_info(file_path: str) -> Dict[str, Any]:
         )
         audio_info["duration"] = float(result.stdout.strip())
 
-        debug(f"Audio info for {file_path}: {audio_info}")
+        logger.debug(f"Audio info for {file_path}: {audio_info}")
     except subprocess.CalledProcessError as e:
         utils.handle_subprocess_error(e, "getting audio information")
         return {}  # pragma: no cover
@@ -192,7 +191,7 @@ def process_sample(
     instrument_dir = utils.join_paths(target_dir, instrument_name)
     samples_dir = utils.join_paths(instrument_dir, constants.DEFAULT_SAMPLES_DIR)
     os.makedirs(samples_dir, exist_ok=True)
-    info(f"Creating directory for instrument: {instrument_name}")
+    logger.info(f"Creating directory for instrument: {instrument_name}")
 
     try:
         # Check if SoX is available
@@ -216,7 +215,9 @@ def process_sample(
         )
 
         # Log success
-        info(f"Processed {utils.get_filename(file_path)} with {velocity_levels} volume variations")
+        logger.info(
+            f"Processed {utils.get_filename(file_path)} with {velocity_levels} volume variations"
+        )
 
         return variation_files
     # pylint: disable=try-except-raise
@@ -247,7 +248,7 @@ def create_velocity_variations(
         AudioProcessingError: If creating velocity variations fails
         DependencyError: If SoX is not found
     """
-    debug(f"Creating {velocity_levels} velocity variations for {file_path}")
+    logger.debug(f"Creating {velocity_levels} velocity variations for {file_path}")
 
     # Check if source file exists
     if not os.path.exists(file_path):
@@ -304,7 +305,9 @@ def create_velocity_variations(
             )
 
             variation_files.append(velocity_file)
-            debug(f"Created velocity variation {i}/{velocity_levels} at {volume_factor:.2f} volume")
+            logger.debug(
+                f"Created velocity variation {i}/{velocity_levels} at {volume_factor:.2f} volume"
+            )
         except subprocess.CalledProcessError as e:
             # This will raise an exception, so it will never return
             utils.handle_subprocess_error(e, "creating velocity variation")

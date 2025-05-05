@@ -9,8 +9,8 @@ import configparser
 import os
 from typing import Any, Dict, Optional
 
-from drumgizmo_kits_generator import constants, logger
-from drumgizmo_kits_generator.exceptions import ConfigurationError
+from drumgizmo_kits_generator import constants, logger, transformers, validators
+from drumgizmo_kits_generator.exceptions import ConfigurationError, ValidationError
 from drumgizmo_kits_generator.utils import strip_quotes
 
 
@@ -175,3 +175,148 @@ def merge_configs(*configs: Dict[str, Any]) -> Dict[str, Any]:
             if value is not None:  # Only update if value is not None
                 result[key] = value
     return result
+
+
+def load_configuration(args):
+    """
+    Load configuration from defaults, config file, and command line arguments.
+
+    Args:
+        args: Parsed command line arguments
+
+    Returns:
+        Dict[str, Any]: Aggregated configuration
+
+    Raises:
+        ConfigurationError: If loading configuration fails
+    """
+    # Start with default configuration
+    config_data = {
+        "source": args.source,
+        "target": args.target,
+        "verbose": args.verbose,
+        "dry_run": args.dry_run,
+        "name": constants.DEFAULT_NAME,
+        "version": constants.DEFAULT_VERSION,
+        "license": constants.DEFAULT_LICENSE,
+        "samplerate": constants.DEFAULT_SAMPLERATE,
+        "extensions": constants.DEFAULT_EXTENSIONS,
+        "velocity_levels": constants.DEFAULT_VELOCITY_LEVELS,
+        "midi_note_min": constants.DEFAULT_MIDI_NOTE_MIN,
+        "midi_note_max": constants.DEFAULT_MIDI_NOTE_MAX,
+        "midi_note_median": constants.DEFAULT_MIDI_NOTE_MEDIAN,
+        "channels": constants.DEFAULT_CHANNELS,
+        "main_channels": constants.DEFAULT_MAIN_CHANNELS,
+        "description": None,
+        "notes": None,
+        "author": None,
+        "website": None,
+        "logo": None,
+        "extra_files": None,
+    }
+
+    # Load configuration from file if it exists
+    config_file = args.config
+    try:
+        if os.path.isfile(os.path.join(args.source, config_file)):
+            config_file = os.path.join(args.source, config_file)
+            logger.info(f"Using configuration file: {config_file}")
+            file_config = load_config_file(config_file)
+            config_data.update(file_config)
+        elif os.path.isfile(config_file):
+            logger.info(f"Using configuration file: {config_file}")
+            file_config = load_config_file(config_file)
+            config_data.update(file_config)
+        elif config_file != constants.DEFAULT_CONFIG_FILE:
+            # Only show warning if a non-default config file was specified but not found
+            logger.warning(f"Configuration file not found: {config_file}")
+    except Exception as e:
+        error_msg = f"Failed to load configuration file: {e}"
+        raise ConfigurationError(error_msg) from e
+
+    # Override with command line arguments
+    cli_config = {}
+    for key in [
+        "name",
+        "version",
+        "description",
+        "notes",
+        "author",
+        "license",
+        "website",
+        "logo",
+        "samplerate",
+        "extra_files",
+        "velocity_levels",
+        "midi_note_min",
+        "midi_note_max",
+        "midi_note_median",
+        "extensions",
+        "channels",
+        "main_channels",
+    ]:
+        cli_value = getattr(args, key, None)
+        if cli_value is not None:
+            cli_config[key] = cli_value
+
+    config_data.update(cli_config)
+
+    return config_data
+
+
+def transform_configuration(config_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Transform configuration values to appropriate types.
+
+    Args:
+        config_data: Raw configuration data
+
+    Returns:
+        Dict[str, Any]: Transformed configuration data
+
+    Raises:
+        ConfigurationError: If transformation fails
+    """
+    transformed_config = config_data.copy()
+
+    try:
+        # Apply transformers for each configuration entry
+        for key in transformed_config:
+            transformer_name = f"transform_{key}"
+            if hasattr(transformers, transformer_name):
+                transformer = getattr(transformers, transformer_name)
+                transformed_config[key] = transformer(transformed_config[key])
+    except Exception as e:
+        error_msg = f"Failed to transform configuration: {e}"
+        raise ConfigurationError(error_msg) from e
+
+    return transformed_config
+
+
+def validate_configuration(config_data: Dict[str, Any]) -> None:
+    """
+    Validate configuration values.
+
+    Args:
+        config_data: Configuration data to validate
+
+    Raises:
+        ValidationError: If validation fails
+    """
+    try:
+        # Apply validators for each configuration entry
+        for key in config_data:
+            validator_name = f"validate_{key}"
+            if hasattr(validators, validator_name):
+                validator = getattr(validators, validator_name)
+                validator(config_data[key], config_data)
+
+        # Additional validation for MIDI note range
+        if config_data["midi_note_min"] > config_data["midi_note_max"]:
+            error_msg = f"MIDI note min ({config_data['midi_note_min']}) is greater than max ({config_data['midi_note_max']})"
+            raise ValidationError(error_msg)
+    except Exception as e:
+        if not isinstance(e, ValidationError):
+            error_msg = f"Failed to validate configuration: {e}"
+            raise ValidationError(error_msg) from e
+        raise

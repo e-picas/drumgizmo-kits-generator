@@ -64,6 +64,7 @@ clean:
 		-o -name "coverage.xml" \
 		-o -name "*.pyc" \
 		-o -name "build" \
+		-o -name "*.egg-info" \
 	\) -exec rm -rf {} \;
 	rm -rf tests/target_test
 
