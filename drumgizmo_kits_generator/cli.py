@@ -191,7 +191,7 @@ def print_midi_mapping(audio_files: List[str], metadata: Dict[str, Any]) -> None
         audio_files: List of audio file paths
         metadata: Dictionary containing metadata for MIDI mapping
     """
-    logger.info("=== MIDI Mapping Preview ===")
+    logger.info("\n=== MIDI Mapping Preview ===")
     midi_mapping = utils.evaluate_midi_mapping(audio_files, metadata)
 
     if not midi_mapping:

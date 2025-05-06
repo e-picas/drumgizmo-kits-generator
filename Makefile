@@ -50,20 +50,17 @@ test:
 coverage:
 	python3 -m pytest --cov=drumgizmo_kits_generator --cov-report=term-missing
 
-## Generate a test kit to a temporary directory from `examples/sources/` and compare it with `examples/target/`
+## Generate a test kit from `examples/sources/` to `tests/target_test/` (excluded from VCS)
 generate:
-	@TEMP_DIR=tests/target_test/ && \
-	OUTPUT_FILE=$$(mktemp) && \
-	echo "Generating kit in temporary directory: $$TEMP_DIR" && \
-	echo "Output will be saved to: $$OUTPUT_FILE" && \
-	python3 create_drumgizmo_kit.py -s examples/sources/ -t "$$TEMP_DIR" -r 2>&1 | tee "$$OUTPUT_FILE" && \
-	echo -e "\n=== Comparing directory structure ===" && \
-	diff -r "$$TEMP_DIR" examples/target/ || true && \
-	echo -e "\n=== Comparing output with expected ===" && \
-	sed "s|$$TEMP_DIR|examples/target/|g" "$$OUTPUT_FILE" > "$$OUTPUT_FILE.normalized" && \
-	diff -u "$$OUTPUT_FILE.normalized" examples/target-generation-output.txt || true && \
-	echo -e "\nKit generated in: $$TEMP_DIR" && \
-	echo "Output saved to: $$OUTPUT_FILE"
+	python3 create_drumgizmo_kit.py -s examples/sources/ -t tests/target_test/
+
+## Generate a test kit in DRY-RUN mode from `examples/sources/` to `tests/target_test/` (excluded from VCS)
+generate-dry-run:
+	python3 create_drumgizmo_kit.py -s examples/sources/ -t tests/target_test/ --dry-run
+
+## Run the test script to generate a test kit and compare it with `examples/target/`
+generate-and-compare:
+	./scripts/generate_test_kit.py
 
 ## Cleanup Python's temporary files, cache and build
 clean:
@@ -82,8 +79,8 @@ clean:
 version:
 	@python3 create_drumgizmo_kit.py --app-version
 
-## Run all checks: `format`, `lint`, `test`, `coverage` and `generate`
-all: format lint test coverage generate
+## Run all checks: `format`, `lint`, `test`, `coverage` and `generate-and-compare`
+all: format lint test coverage generate-and-compare
 
 # This generates a 'help' string with the list of available tasks
 # with their description if it is prefixed by two dashes:
@@ -103,7 +100,7 @@ help:
 			helpMessage = substr(lastLine, RSTART + 3, RLENGTH); \
 			gsub("\\\\", "", helpCommand); \
 			gsub(":+$$", "", helpCommand); \
-			printf "  \x1b[32;01m%-15s\x1b[0m %s\n", helpCommand, helpMessage; \
+			printf "  \x1b[32;01m%-20s\x1b[0m %s\n", helpCommand, helpMessage; \
 		} \
 	} \
 	{ lastLine = $$0 }' $(MAKEFILE_LIST) | sort -u

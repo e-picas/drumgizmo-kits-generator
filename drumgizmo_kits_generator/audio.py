@@ -3,22 +3,28 @@
 import os
 import shutil
 import subprocess
+import tempfile
 from typing import Any, Dict, List
 
 from drumgizmo_kits_generator import constants, logger, utils
 from drumgizmo_kits_generator.exceptions import AudioProcessingError, DependencyError
 
 
-def convert_sample_rate(file_path: str, target_sample_rate: str) -> str:
+def convert_sample_rate(
+    file_path: str,
+    target_sample_rate: str,
+    target_dir: str = None,
+) -> str:
     """
     Convert the sample rate of an audio file.
 
     Args:
         file_path: Path to the audio file
         target_sample_rate: Target sample rate
+        target_dir: Optional directory to copy the converted file to
 
     Returns:
-        str: Path to the converted file
+        str: Path to the converted file (in target_dir if provided, otherwise in temp dir)
 
     Raises:
         DependencyError: If SoX is not found
@@ -35,41 +41,56 @@ def convert_sample_rate(file_path: str, target_sample_rate: str) -> str:
     file_basename = utils.get_file_basename(file_path)
     file_extension = utils.get_file_extension(file_path, with_dot=True)
 
-    # Use the temp_directory context manager for automatic cleanup
-    with utils.temp_directory(prefix=constants.DEFAULT_TEMP_DIR_PREFIX) as temp_dir:
-        converted_file = utils.join_paths(temp_dir, f"{file_basename}{file_extension}")
+    # Define the output file name
+    output_filename = f"{file_basename}{file_extension}"
 
-        try:
-            # Use SoX to convert the sample rate
-            cmd = [
-                "sox",
-                file_path,
-                "-r",
-                str(target_sample_rate),
-                converted_file,
-            ]
-            subprocess.run(
-                cmd,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
+    # If target_dir is provided, create it if it doesn't exist
+    if target_dir:
+        os.makedirs(target_dir, exist_ok=True)
+        output_file = os.path.join(target_dir, output_filename)
+    else:
+        # Use a temporary directory if no target_dir is provided
+        temp_dir = tempfile.mkdtemp(prefix=constants.DEFAULT_TEMP_DIR_PREFIX)
+        output_file = os.path.join(temp_dir, output_filename)
 
-            # Log success
-            logger.debug(f"Successfully converted sample rate to {target_sample_rate} Hz")
+    try:
+        # Use SoX to convert the sample rate
+        cmd = [
+            "sox",
+            file_path,
+            "-r",
+            str(target_sample_rate),
+            output_file,
+        ]
+        subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
 
-            # Return the path to the converted file
-            # Note: This file will be available until the calling function is done with it
-            # The caller is responsible for copying it to a permanent location if needed
-            return converted_file
-        except subprocess.CalledProcessError as e:
-            # This will raise an exception, so it will never return
-            utils.handle_subprocess_error(e, "converting sample rate")
-            return None  # pragma: no cover
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            # This will raise an exception, so it will never return
-            utils.handle_subprocess_error(e, "converting sample rate")
-            return None  # pragma: no cover
+        # Log success
+        logger.debug(f"Successfully converted sample rate to {target_sample_rate} Hz")
+
+        # Return the path to the converted file
+        return output_file
+
+    except subprocess.CalledProcessError as e:
+        # Clean up the output file if it was created
+        if os.path.exists(output_file):
+            os.remove(output_file)
+        if not target_dir and os.path.exists(temp_dir):
+            os.rmdir(temp_dir)
+        utils.handle_subprocess_error(e, "converting sample rate")
+        return None  # pragma: no cover
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # Clean up the output file if it was created
+        if os.path.exists(output_file):
+            os.remove(output_file)
+        if not target_dir and os.path.exists(temp_dir):
+            os.rmdir(temp_dir)
+        utils.handle_subprocess_error(e, "converting sample rate")
+        return None  # pragma: no cover
 
 
 def get_audio_info(file_path: str) -> Dict[str, Any]:
@@ -199,20 +220,35 @@ def process_sample(
 
         # Process with sample rate conversion if needed
         if "samplerate" in metadata and metadata["samplerate"]:
-            # The convert_sample_rate function now uses the temp_directory context manager
-            # so we don't need to track and clean up temp directories manually
-            converted_file = convert_sample_rate(file_path, metadata["samplerate"])
+            # Convert the sample rate to a temporary file
+            temp_dir = tempfile.mkdtemp(prefix=constants.DEFAULT_TEMP_DIR_PREFIX)
+            try:
+                converted_file = convert_sample_rate(
+                    file_path, metadata["samplerate"], target_dir=temp_dir
+                )
+                file_to_process = converted_file
+            except Exception:
+                # Clean up temp dir if something goes wrong
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
+                raise
         else:
-            converted_file = file_path
+            file_to_process = file_path
+            temp_dir = None
 
-        # Create velocity variations
-        velocity_levels = metadata.get("velocity_levels")
-        variation_files = create_velocity_variations(
-            converted_file,
-            samples_dir,
-            velocity_levels,
-            instrument_name,
-        )
+        try:
+            # Create velocity variations
+            velocity_levels = metadata.get("velocity_levels")
+            variation_files = create_velocity_variations(
+                file_to_process,
+                samples_dir,
+                velocity_levels,
+                instrument_name,
+            )
+        finally:
+            # Clean up the temporary file and directory if they exist
+            if temp_dir and os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
 
         # Log success
         logger.info(

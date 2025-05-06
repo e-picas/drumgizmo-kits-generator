@@ -169,18 +169,16 @@ class TestConvertSampleRate:
 
     @mock.patch("shutil.which")
     @mock.patch("subprocess.run")
-    @mock.patch("drumgizmo_kits_generator.utils.temp_directory")
+    @mock.patch("tempfile.mkdtemp")
     def test_convert_sample_rate_with_sox(
-        self, mock_temp_directory, mock_run, mock_which, sample_file, mock_logger
+        self, mock_mkdtemp, mock_run, mock_which, sample_file, mock_logger
     ):
         """Test convert_sample_rate with SoX available."""
         # Setup mocks
         mock_which.return_value = "/usr/bin/sox"  # SoX is available
         mock_run.return_value = mock.MagicMock(returncode=0)
         temp_dir = "/tmp/drumgizmo_temp"
-        mock_context = mock.MagicMock()
-        mock_context.__enter__.return_value = temp_dir
-        mock_temp_directory.return_value = mock_context
+        mock_mkdtemp.return_value = temp_dir
 
         # Call the function
         result = audio.convert_sample_rate(sample_file, "48000")
@@ -190,18 +188,24 @@ class TestConvertSampleRate:
         assert temp_dir in result  # Should be in the temp directory
         assert mock_logger["debug"].call_count >= 1  # Log about conversion
         mock_run.assert_called_once()  # SoX command should be called
-        mock_temp_directory.assert_called_once()
-        assert "prefix" in mock_temp_directory.call_args[1]
-        assert mock_temp_directory.call_args[1]["prefix"] == constants.DEFAULT_TEMP_DIR_PREFIX
+        mock_mkdtemp.assert_called_once_with(
+            prefix=constants.DEFAULT_TEMP_DIR_PREFIX
+        )  # Should have created a temp dir
 
-    @mock.patch("drumgizmo_kits_generator.utils.temp_directory")
-    @mock.patch("subprocess.run")
     @mock.patch("shutil.which")
+    @mock.patch("subprocess.run")
+    @mock.patch("tempfile.mkdtemp")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.rmdir")
+    @mock.patch("os.remove")
     def test_convert_sample_rate_with_error(
         self,
-        mock_which,
+        mock_remove,
+        mock_rmdir,
+        mock_exists,
+        mock_mkdtemp,
         mock_run,
-        mock_temp_directory,
+        mock_which,
         sample_file,
         mock_logger,
     ):
@@ -209,10 +213,8 @@ class TestConvertSampleRate:
         # Setup mocks
         mock_which.return_value = "/usr/bin/sox"  # SoX is available
         mock_run.side_effect = subprocess.CalledProcessError(1, "sox")
-        temp_dir = "/tmp/drumgizmo_temp"
-        mock_context = mock.MagicMock()
-        mock_context.__enter__.return_value = temp_dir
-        mock_temp_directory.return_value = mock_context
+        mock_mkdtemp.return_value = "/tmp/drumgizmo_temp"
+        mock_exists.return_value = True  # File exists before removal
 
         # Call the function - it should raise AudioProcessingError
         with pytest.raises(audio.AudioProcessingError) as excinfo:
@@ -221,22 +223,28 @@ class TestConvertSampleRate:
         # Verify the error message
         assert "converting sample rate" in str(excinfo.value)
         assert "sox" in str(excinfo.value)
-        # Verify that temp_directory was called with the right prefix
-        mock_temp_directory.assert_called_once()
-        assert "prefix" in mock_temp_directory.call_args[1]
-        assert mock_temp_directory.call_args[1]["prefix"] == constants.DEFAULT_TEMP_DIR_PREFIX
-        # Verify that the context manager was used correctly
-        mock_context.__enter__.assert_called_once()
-        mock_context.__exit__.assert_called_once()
+        mock_mkdtemp.assert_called_once_with(
+            prefix=constants.DEFAULT_TEMP_DIR_PREFIX
+        )  # Should have created a temp dir
+        mock_run.assert_called_once()
+        mock_rmdir.assert_called_once_with(
+            "/tmp/drumgizmo_temp"
+        )  # Should have cleaned up the temp dir
 
-    @mock.patch("drumgizmo_kits_generator.utils.temp_directory")
-    @mock.patch("subprocess.run")
     @mock.patch("shutil.which")
+    @mock.patch("subprocess.run")
+    @mock.patch("tempfile.mkdtemp")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.rmdir")
+    @mock.patch("os.remove")
     def test_convert_sample_rate_with_error_and_stderr(
         self,
-        mock_which,
+        mock_remove,
+        mock_rmdir,
+        mock_exists,
+        mock_mkdtemp,
         mock_run,
-        mock_temp_directory,
+        mock_which,
         sample_file,
         mock_logger,
     ):
@@ -247,9 +255,8 @@ class TestConvertSampleRate:
         error.stderr = "SoX error: invalid sample rate"
         mock_run.side_effect = error
         temp_dir = "/tmp/drumgizmo_temp"
-        mock_context = mock.MagicMock()
-        mock_context.__enter__.return_value = temp_dir
-        mock_temp_directory.return_value = mock_context
+        mock_mkdtemp.return_value = temp_dir
+        mock_exists.return_value = True  # File exists before removal
 
         # Call the function - it should raise AudioProcessingError
         with pytest.raises(audio.AudioProcessingError) as excinfo:
@@ -258,22 +265,27 @@ class TestConvertSampleRate:
         # Verify the error message includes stderr
         assert "converting sample rate" in str(excinfo.value)
         assert "SoX error: invalid sample rate" in str(excinfo.value)
-        # Verify that temp_directory was called with the right prefix
-        mock_temp_directory.assert_called_once()
-        assert "prefix" in mock_temp_directory.call_args[1]
-        assert mock_temp_directory.call_args[1]["prefix"] == constants.DEFAULT_TEMP_DIR_PREFIX
-        # Verify that the context manager was used correctly
-        mock_context.__enter__.assert_called_once()
-        mock_context.__exit__.assert_called_once()
 
-    @mock.patch("drumgizmo_kits_generator.utils.temp_directory")
-    @mock.patch("subprocess.run")
+        # Verify that mkdtemp was called with the right prefix
+        mock_mkdtemp.assert_called_once_with(prefix=constants.DEFAULT_TEMP_DIR_PREFIX)
+
+        # Verify that the temp directory was cleaned up
+        mock_rmdir.assert_called_once_with(temp_dir)
+
     @mock.patch("shutil.which")
+    @mock.patch("subprocess.run")
+    @mock.patch("tempfile.mkdtemp")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.rmdir")
+    @mock.patch("os.remove")
     def test_convert_sample_rate_with_generic_exception(
         self,
-        mock_which,
+        mock_remove,
+        mock_rmdir,
+        mock_exists,
+        mock_mkdtemp,
         mock_run,
-        mock_temp_directory,
+        mock_which,
         sample_file,
         mock_logger,
     ):
@@ -282,9 +294,8 @@ class TestConvertSampleRate:
         mock_which.return_value = "/usr/bin/sox"  # SoX is available
         mock_run.side_effect = Exception("Unexpected error")
         temp_dir = "/tmp/drumgizmo_temp"
-        mock_context = mock.MagicMock()
-        mock_context.__enter__.return_value = temp_dir
-        mock_temp_directory.return_value = mock_context
+        mock_mkdtemp.return_value = temp_dir
+        mock_exists.return_value = True  # File exists before removal
 
         # Call the function - it should raise AudioProcessingError
         with pytest.raises(audio.AudioProcessingError) as excinfo:
@@ -292,13 +303,10 @@ class TestConvertSampleRate:
 
         # Verify the error message
         assert "Unexpected error while converting sample rate" in str(excinfo.value)
-        # Verify that temp_directory was called with the right prefix
-        mock_temp_directory.assert_called_once()
-        assert "prefix" in mock_temp_directory.call_args[1]
-        assert mock_temp_directory.call_args[1]["prefix"] == constants.DEFAULT_TEMP_DIR_PREFIX
-        # Verify that the context manager was used correctly
-        mock_context.__enter__.assert_called_once()
-        mock_context.__exit__.assert_called_once()
+        # Verify that mkdtemp was called with the right prefix
+        mock_mkdtemp.assert_called_once_with(prefix=constants.DEFAULT_TEMP_DIR_PREFIX)
+        # Verify that the temp directory was cleaned up
+        mock_rmdir.assert_called_once_with(temp_dir)
 
 
 class TestGetAudioInfo:
@@ -427,8 +435,14 @@ class TestProcessSample:
     @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
+    @mock.patch("os.makedirs")
+    @mock.patch("os.path.exists")
+    @mock.patch("shutil.rmtree")
     def test_process_sample_with_sample_rate_conversion(
         self,
+        mock_rmtree,
+        mock_exists,
+        mock_makedirs,
         mock_create_velocity,
         mock_convert_sample_rate,
         mock_clean_name,
@@ -439,23 +453,32 @@ class TestProcessSample:
         """Test process_sample with sample rate conversion."""
         # Setup mocks
         mock_clean_name.return_value = "test_instrument"
-        converted_file = "/path/to/converted_file.wav"
+        temp_dir = "/tmp/drumgizmo_temp"
+        converted_file = os.path.join(temp_dir, "converted.wav")
         mock_convert_sample_rate.return_value = converted_file
         mock_create_velocity.return_value = ["file1.wav", "file2.wav", "file3.wav"]
+        mock_exists.return_value = True
 
-        # Call the function
-        result = audio.process_sample(sample_file, tmp_dir, metadata)
+        # Mock the temp directory creation
+        with mock.patch("tempfile.mkdtemp") as mock_mkdtemp:
+            mock_mkdtemp.return_value = temp_dir
+
+            # Call the function
+            result = audio.process_sample(sample_file, tmp_dir, metadata)
 
         # Assertions
         assert result == ["file1.wav", "file2.wav", "file3.wav"]
         mock_clean_name.assert_called_once()
-        mock_convert_sample_rate.assert_called_once_with(sample_file, metadata["samplerate"])
+        mock_convert_sample_rate.assert_called_once_with(
+            sample_file, metadata["samplerate"], target_dir=temp_dir
+        )
         mock_create_velocity.assert_called_once_with(
             converted_file,
             os.path.join(tmp_dir, "test_instrument", "samples"),
             metadata["velocity_levels"],
             "test_instrument",
         )
+        mock_rmtree.assert_called_once_with(temp_dir)
 
     @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
@@ -493,10 +516,14 @@ class TestProcessSample:
     @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
+    @mock.patch("os.makedirs")
+    @mock.patch("os.path.exists")
     @mock.patch("shutil.rmtree")
     def test_process_sample_cleanup_temp_dirs(
         self,
         mock_rmtree,
+        mock_exists,
+        mock_makedirs,
         mock_create_velocity,
         mock_convert_sample_rate,
         mock_clean_name,
@@ -507,16 +534,22 @@ class TestProcessSample:
         """Test process_sample cleans up temporary directories."""
         # Setup mocks
         mock_clean_name.return_value = "test_instrument"
-        converted_file = "/path/to/converted_file.wav"
+        temp_dir = "/tmp/drumgizmo_temp"
+        converted_file = os.path.join(temp_dir, "converted.wav")
         mock_convert_sample_rate.return_value = converted_file
         mock_create_velocity.return_value = ["file1.wav", "file2.wav", "file3.wav"]
+        mock_exists.return_value = True
 
-        # Call the function
-        result = audio.process_sample(sample_file, tmp_dir, metadata)
+        # Mock the temp directory creation
+        with mock.patch("tempfile.mkdtemp") as mock_mkdtemp:
+            mock_mkdtemp.return_value = temp_dir
+
+            # Call the function
+            result = audio.process_sample(sample_file, tmp_dir, metadata)
 
         # Assertions
         assert result == ["file1.wav", "file2.wav", "file3.wav"]
-        assert mock_rmtree.call_count == 0  # No temp dirs to clean up in this test
+        mock_rmtree.assert_called_once_with(temp_dir)  # Should have cleaned up the temp dir
 
     @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")

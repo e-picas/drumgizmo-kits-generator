@@ -1,0 +1,37 @@
+
+=== Processing Directories ===
+Source directory: examples/sources/
+Target directory: examples/target/
+Using configuration file: examples/sources/drumgizmo-kit.ini
+
+=== Kit Metadata ===
+Name: Test Kit
+Version: 1.0
+Description: This is a description
+Notes: DrumGizmo kit generated for testing purpose
+Author: Piero
+License: CC-BY-SA
+Website: https://picas.fr/
+Logo: pngtree-music-notes-png-image_8660757.png
+Sample rate: 48000 Hz
+Velocity levels: 4
+MIDI note range: [0, 127]
+MIDI note median: 60
+Audio extensions: ['wav', 'WAV', 'flac', 'FLAC', 'ogg', 'OGG']
+Audio channels: ['AmbL', 'AmbR', 'Hihat', 'Kdrum_back', 'Kdrum_front', 'OHL', 'OHR', 'Ride', 'Snare_bottom', 'Snare_top', 'Tom1', 'Tom2', 'Tom3']
+Main channels: ['AmbL', 'AmbR', 'OHL', 'OHR']
+Extra files: ['Lorem Ipsum.pdf']
+
+=== Source Audio Samples ===
+Found 3 audio files:
+- E-Mu-Proteus-FX-Wacky-Snare.wav
+- Example.ogg
+- gs-16b-1c-44100hz.flac
+
+=== MIDI Mapping Preview ===
+MIDI mapping preview (alphabetical order):
+  MIDI Note 59: E-Mu-Proteus-FX-Wacky-Snare
+  MIDI Note 60: Example
+  MIDI Note 61: gs-16b-1c-44100hz
+
+Dry run mode enabled, stopping here

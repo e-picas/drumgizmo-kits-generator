@@ -48,38 +48,21 @@ def process_audio_files(
     utils.check_dependency("sox", "SoX not found in the system, can not generate samples")
 
     processed_audio_files = {}
-    velocity_levels = metadata.get("velocity_levels")
 
     try:
         for file_path in audio_files:
             file_name = os.path.basename(file_path)
             logger.info(f"Processing {file_name}")
 
-            # Get base name without extension
-            # pylint: disable-next=unused-variable
-            file_base, file_ext = os.path.splitext(file_name)
+            # Process the sample with sample rate conversion if needed
+            processed_files = audio.process_sample(file_path, target_dir, metadata)
 
-            # Clean up the instrument name
-            instrument_name = utils.clean_instrument_name(file_base)
-
-            # Create directory for the instrument
-            instrument_dir = os.path.join(target_dir, instrument_name)
-            samples_dir = os.path.join(instrument_dir, "samples")
-
-            if not os.path.exists(instrument_dir):
-                logger.info(f"Creating directory for instrument: {instrument_name}")
-                os.makedirs(instrument_dir)
-                os.makedirs(samples_dir)
-
-            # Create velocity variations
-            processed_files = audio.create_velocity_variations(
-                file_path, samples_dir, velocity_levels, instrument_name
-            )
-
-            # Store processed files for this instrument
-            processed_audio_files[instrument_name] = processed_files
-
-            logger.info(f"Processed {file_name} with {velocity_levels} volume variations")
+            # Get the instrument name from the first processed file
+            if processed_files:
+                instrument_name = os.path.basename(
+                    os.path.dirname(os.path.dirname(processed_files[0]))
+                )
+                processed_audio_files[instrument_name] = processed_files
 
         return processed_audio_files
     except Exception as e:
