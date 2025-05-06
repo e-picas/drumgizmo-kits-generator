@@ -92,10 +92,7 @@ class Logger:
         else:
             print(f"{RED}ERROR: {msg}{RESET}", file=sys.stderr)
         if self.verbose_mode:
-            if self.raw_output:
-                traceback.print_exc(file=sys.stderr)
-            else:
-                traceback.print_exc(file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
         sys.stderr.flush()
 
     def section(self, title: str) -> None:
