@@ -50,10 +50,20 @@ test:
 coverage:
 	python3 -m pytest --cov=drumgizmo_kits_generator --cov-report=term-missing
 
-## Generate a test kit to `tests/target_test/` (excluded from VCS) from `examples/sources/` and compare it with `examples/target/`
+## Generate a test kit to a temporary directory from `examples/sources/` and compare it with `examples/target/`
 generate:
-	python3 create_drumgizmo_kit.py -s examples/sources/ -t tests/target_test/
-	diff -r tests/target_test/ examples/target/ || true
+	@TEMP_DIR=tests/target_test/ && \
+	OUTPUT_FILE=$$(mktemp) && \
+	echo "Generating kit in temporary directory: $$TEMP_DIR" && \
+	echo "Output will be saved to: $$OUTPUT_FILE" && \
+	python3 create_drumgizmo_kit.py -s examples/sources/ -t "$$TEMP_DIR" -r 2>&1 | tee "$$OUTPUT_FILE" && \
+	echo -e "\n=== Comparing directory structure ===" && \
+	diff -r "$$TEMP_DIR" examples/target/ || true && \
+	echo -e "\n=== Comparing output with expected ===" && \
+	sed "s|$$TEMP_DIR|examples/target/|g" "$$OUTPUT_FILE" > "$$OUTPUT_FILE.normalized" && \
+	diff -u "$$OUTPUT_FILE.normalized" examples/target-generation-output.txt || true && \
+	echo -e "\nKit generated in: $$TEMP_DIR" && \
+	echo "Output saved to: $$OUTPUT_FILE"
 
 ## Cleanup Python's temporary files, cache and build
 clean:

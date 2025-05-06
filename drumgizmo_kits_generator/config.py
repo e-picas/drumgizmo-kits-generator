@@ -11,7 +11,6 @@ from typing import Any, Dict
 
 from drumgizmo_kits_generator import constants, logger, transformers, validators
 from drumgizmo_kits_generator.exceptions import ConfigurationError, ValidationError
-from drumgizmo_kits_generator.utils import strip_quotes
 
 
 def load_configuration(args):
@@ -122,90 +121,15 @@ def load_config_file(config_file_path: str) -> Dict[str, Any]:
     if section_name in config_parser:
         section = config_parser[section_name]
 
-        # Process general kit information
-        config_data["name"] = strip_quotes(section.get("name", constants.DEFAULT_NAME))
-        config_data["version"] = strip_quotes(section.get("version", constants.DEFAULT_VERSION))
-        config_data["description"] = strip_quotes(section.get("description", ""))
-        config_data["notes"] = strip_quotes(section.get("notes", ""))
-        config_data["author"] = strip_quotes(section.get("author", ""))
-        config_data["license"] = strip_quotes(section.get("license", constants.DEFAULT_LICENSE))
-        config_data["website"] = strip_quotes(section.get("website", ""))
-
-        # Process additional files
-        config_data["logo"] = strip_quotes(section.get("logo", ""))
-        config_data["extra_files"] = strip_quotes(section.get("extra_files", ""))
-
-        # Process audio parameters
-        config_data["samplerate"] = strip_quotes(
-            section.get("samplerate", str(constants.DEFAULT_SAMPLERATE))
-        )
-        config_data["velocity_levels"] = section.get(
-            "velocity_levels", str(constants.DEFAULT_VELOCITY_LEVELS)
-        )
-
-        # Process MIDI configuration
-        config_data["midi_note_min"] = section.get(
-            "midi_note_min", str(constants.DEFAULT_MIDI_NOTE_MIN)
-        )
-        config_data["midi_note_max"] = section.get(
-            "midi_note_max", str(constants.DEFAULT_MIDI_NOTE_MAX)
-        )
-        config_data["midi_note_median"] = section.get(
-            "midi_note_median", str(constants.DEFAULT_MIDI_NOTE_MEDIAN)
-        )
-
-        # Process file extensions
-        config_data["extensions"] = strip_quotes(
-            section.get("extensions", constants.DEFAULT_EXTENSIONS)
-        )
-
-        # Process channels
-        config_data["channels"] = strip_quotes(section.get("channels", constants.DEFAULT_CHANNELS))
-        config_data["main_channels"] = strip_quotes(
-            section.get("main_channels", constants.DEFAULT_MAIN_CHANNELS)
-        )
+        # Process all configuration keys from DEFAULT_CONFIG_DATA
+        for key in constants.DEFAULT_CONFIG_DATA:
+            config_data[key] = section.get(key)
     else:
         logger.warning(f"Section '{section_name}' not found in {config_file_path}")
+        # If section not found, return empty config (will use defaults in transform_configuration)
+        return config_data
 
     return config_data
-
-
-def prepare_metadata(config_data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Prepare metadata for kit generation.
-
-    Args:
-        config_data: Validated configuration data
-
-    Returns:
-        Dict[str, Any]: Metadata for kit generation
-
-    Raises:
-        ConfigurationError: If preparing metadata fails
-    """
-    try:
-        metadata = config_data.copy()
-
-        # Convert string values to appropriate types
-        if isinstance(metadata.get("velocity_levels"), str):
-            metadata["velocity_levels"] = int(metadata["velocity_levels"])
-
-        if isinstance(metadata.get("midi_note_min"), str):
-            metadata["midi_note_min"] = int(metadata["midi_note_min"])
-
-        if isinstance(metadata.get("midi_note_max"), str):
-            metadata["midi_note_max"] = int(metadata["midi_note_max"])
-
-        if isinstance(metadata.get("midi_note_median"), str):
-            metadata["midi_note_median"] = int(metadata["midi_note_median"])
-
-        if isinstance(metadata.get("samplerate"), str):
-            metadata["samplerate"] = int(metadata["samplerate"])
-
-        return metadata
-    except Exception as e:
-        error_msg = f"Failed to prepare metadata: {e}"
-        raise ConfigurationError(error_msg) from e
 
 
 def transform_configuration(config_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -221,6 +145,7 @@ def transform_configuration(config_data: Dict[str, Any]) -> Dict[str, Any]:
     Raises:
         ConfigurationError: If transformation fails
     """
+
     transformed_config = config_data.copy()
 
     try:

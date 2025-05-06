@@ -21,7 +21,7 @@ from unittest import mock
 
 import pytest
 
-from drumgizmo_kits_generator import cli, config, constants, main, utils
+from drumgizmo_kits_generator import cli, constants, main, utils
 from drumgizmo_kits_generator.exceptions import DependencyError
 
 
@@ -40,7 +40,9 @@ def mock_logger():
         "drumgizmo_kits_generator.logger.message"
     ) as mock_message, mock.patch(
         "drumgizmo_kits_generator.logger.set_verbose"
-    ) as mock_set_verbose:
+    ) as mock_set_verbose, mock.patch(
+        "drumgizmo_kits_generator.logger.set_raw_output"
+    ) as mock_set_raw_output:
         yield {
             "info": mock_info,
             "debug": mock_debug,
@@ -49,6 +51,7 @@ def mock_logger():
             "section": mock_section,
             "message": mock_message,
             "set_verbose": mock_set_verbose,
+            "set_raw_output": mock_set_raw_output,
         }
 
 
@@ -95,6 +98,7 @@ def sample_args():
     args.target = "/path/to/target"
     args.config = constants.DEFAULT_CONFIG_FILE
     args.verbose = False
+    args.raw_output = False
     args.dry_run = False
     args.name = None
     args.version = None
@@ -148,127 +152,6 @@ main_channels = Left,Right
     # Clean up
     if os.path.exists(temp_file_path):
         os.unlink(temp_file_path)
-
-
-class TestPrepareMetadata:
-    """Tests for the prepare_metadata function."""
-
-    def test_prepare_metadata(self):
-        """Test prepare_metadata correctly processes configuration data."""
-        # Create config data
-        config_data = {
-            "name": "Test Kit",
-            "version": "1.0",
-            "description": "Test description",
-            "notes": "Test notes",
-            "author": "Test Author",
-            "license": "CC-BY-SA",
-            "website": "https://example.com",
-            "logo": "logo.png",
-            "samplerate": "48000",
-            "extra_files": ["file1.txt"],
-            "velocity_levels": 4,
-            "midi_note_min": 0,
-            "midi_note_max": 127,
-            "midi_note_median": 60,
-            "extensions": ["wav", "flac", "ogg"],
-            "channels": ["Left", "Right", "Overhead"],
-            "main_channels": ["Left", "Right"],
-        }
-
-        # Call the function from config module
-        metadata = config.prepare_metadata(config_data)
-
-        # Check that metadata contains all expected keys
-        assert metadata["name"] == "Test Kit"
-        assert metadata["version"] == "1.0"
-        assert metadata["description"] == "Test description"
-        assert metadata["notes"] == "Test notes"
-        assert metadata["author"] == "Test Author"
-        assert metadata["license"] == "CC-BY-SA"
-        assert metadata["website"] == "https://example.com"
-        assert metadata["logo"] == "logo.png"
-        assert metadata["samplerate"] == 48000
-        assert metadata["extra_files"] == ["file1.txt"]
-        assert metadata["velocity_levels"] == 4
-        assert metadata["midi_note_min"] == 0
-        assert metadata["midi_note_max"] == 127
-        assert metadata["midi_note_median"] == 60
-        assert metadata["extensions"] == ["wav", "flac", "ogg"]
-        assert metadata["channels"] == ["Left", "Right", "Overhead"]
-        assert metadata["main_channels"] == ["Left", "Right"]
-
-        # In the actual implementation, the instruments list might be added elsewhere
-        # So we'll just check that the metadata contains the original config data
-        for key, value in config_data.items():
-            if key == "samplerate":
-                assert metadata[key] == int(value)
-            else:
-                assert metadata[key] == value
-
-    def test_prepare_metadata_with_string_values(self):
-        """Test prepare_metadata with string values."""
-        config_data = {
-            "name": "Test Kit",
-            "version": "1.0.0",
-            "description": "Test description",
-            "notes": "Test notes",
-            "author": "Test Author",
-            "license": "Test License",
-            "website": "https://example.com",
-            "logo": "logo.png",
-            "samplerate": "44100",
-            "extra_files": "file1.txt,file2.txt",
-            "velocity_levels": "5",
-            "midi_note_min": "30",
-            "midi_note_max": "90",
-            "midi_note_median": "60",
-            "extensions": "wav,flac",
-            "channels": "Left,Right",
-            "main_channels": "Left,Right",
-        }
-
-        # Call the function from config module
-        metadata = config.prepare_metadata(config_data)
-
-        assert metadata["name"] == "Test Kit"
-        assert metadata["velocity_levels"] == 5
-        assert metadata["midi_note_min"] == 30
-        assert metadata["midi_note_max"] == 90
-        assert metadata["midi_note_median"] == 60
-        assert metadata["samplerate"] == 44100
-
-    def test_prepare_metadata_with_integer_values(self):
-        """Test prepare_metadata with integer values."""
-        config_data = {
-            "name": "Test Kit",
-            "version": "1.0.0",
-            "description": "Test description",
-            "notes": "Test notes",
-            "author": "Test Author",
-            "license": "Test License",
-            "website": "https://example.com",
-            "logo": "logo.png",
-            "samplerate": "44100",
-            "extra_files": "file1.txt,file2.txt",
-            "velocity_levels": 5,  # Already an integer
-            "midi_note_min": 30,  # Already an integer
-            "midi_note_max": 90,  # Already an integer
-            "midi_note_median": 60,  # Already an integer
-            "extensions": "wav,flac",
-            "channels": "Left,Right",
-            "main_channels": "Left,Right",
-        }
-
-        # Call the function from config module
-        metadata = config.prepare_metadata(config_data)
-
-        assert metadata["name"] == "Test Kit"
-        assert metadata["velocity_levels"] == 5
-        assert metadata["midi_note_min"] == 30
-        assert metadata["midi_note_max"] == 90
-        assert metadata["midi_note_median"] == 60
-        assert metadata["samplerate"] == 44100
 
 
 class TestEvaluateMidiMapping:
@@ -372,10 +255,7 @@ class TestMain:
     # pylint: disable=too-many-arguments
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
     @mock.patch("drumgizmo_kits_generator.validators.validate_directories")
-    @mock.patch(
-        "drumgizmo_kits_generator.main.load_configuration"
-    )  # Modifié pour cibler l'import dans main
-    @mock.patch("drumgizmo_kits_generator.config.prepare_metadata")
+    @mock.patch("drumgizmo_kits_generator.config.load_configuration")
     @mock.patch("drumgizmo_kits_generator.cli.print_metadata")
     @mock.patch("drumgizmo_kits_generator.utils.scan_source_files")
     @mock.patch("drumgizmo_kits_generator.cli.print_samples_info")
@@ -388,7 +268,6 @@ class TestMain:
         mock_print_samples_info,
         mock_scan_source_files,
         mock_print_metadata,
-        mock_prepare_metadata,
         mock_load_configuration,
         mock_validate_directories,
         mock_parse_arguments,
@@ -401,6 +280,7 @@ class TestMain:
         args.config = constants.DEFAULT_CONFIG_FILE
         args.verbose = False
         args.dry_run = True
+        args.raw_output = False
         mock_parse_arguments.return_value = args
 
         # La configuration est déjà transformée et validée par load_configuration
@@ -411,14 +291,12 @@ class TestMain:
                 "target": "/path/to/target",
                 "config": constants.DEFAULT_CONFIG_FILE,
                 "verbose": False,
+                "raw_output": False,
                 "dry_run": True,
+                "extensions": ["wav", "flac"],
             }
         )
         mock_load_configuration.return_value = config_data
-
-        metadata = dict(config_data)
-        metadata["instruments"] = []
-        mock_prepare_metadata.return_value = metadata
 
         audio_files = [
             "/path/to/source/Kick.wav",
@@ -430,18 +308,19 @@ class TestMain:
         main.main()
 
         # Check that dry run message was displayed
-        mock_print_samples_info.assert_called_once_with(audio_files, metadata)
-        mock_print_midi_mapping.assert_called_once_with(audio_files, metadata)
+        mock_print_samples_info.assert_called_once_with(audio_files, config_data)
+        mock_print_midi_mapping.assert_called_once_with(audio_files, config_data)
         mock_message.assert_called_with("\nDry run mode enabled, stopping here")
 
         # Verify that all mocks were used
         mock_parse_arguments.assert_called_once()
-        mock_validate_directories.assert_called_once()
+        mock_validate_directories.assert_called_once_with(
+            "/path/to/source", "/path/to/target", True
+        )
         mock_load_configuration.assert_called_once_with(args)
-        mock_prepare_metadata.assert_called_once_with(config_data)
-        mock_print_metadata.assert_called_once_with(metadata)
+
+        mock_print_metadata.assert_called_once_with(config_data)
         mock_scan_source_files.assert_called_once_with("/path/to/source", ["wav", "flac"])
-        mock_print_samples_info.assert_called_once_with(audio_files, metadata)
 
     @mock.patch("drumgizmo_kits_generator.logger.is_verbose")
     @mock.patch("traceback.format_exc")
@@ -524,7 +403,6 @@ class TestMainWithDependencies:
     @mock.patch("drumgizmo_kits_generator.config.load_configuration")
     @mock.patch("drumgizmo_kits_generator.config.transform_configuration")
     @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
-    @mock.patch("drumgizmo_kits_generator.config.prepare_metadata")
     @mock.patch("drumgizmo_kits_generator.cli.print_metadata")
     @mock.patch("drumgizmo_kits_generator.utils.scan_source_files")
     @mock.patch("drumgizmo_kits_generator.cli.print_samples_info")
@@ -537,7 +415,6 @@ class TestMainWithDependencies:
         mock_print_samples_info,  # pylint: disable=unused-argument
         mock_scan_source_files,  # pylint: disable=unused-argument
         mock_print_metadata,  # pylint: disable=unused-argument
-        mock_prepare_metadata,  # pylint: disable=unused-argument
         mock_validate_config,
         mock_transform_config,
         mock_load_config,
@@ -575,6 +452,7 @@ class TestMainWithDependencies:
         # Mock parse_known_args to return a namespace with app_version=True
         args = argparse.Namespace()
         args.app_version = True
+        args.raw_output = False
         mock_parse_known_args.return_value = (args, [])
 
         # Call the parse_arguments function directly
@@ -592,11 +470,8 @@ class TestMainWithDependencies:
     @mock.patch("drumgizmo_kits_generator.validators.validate_directories")
     @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
-    @mock.patch(
-        "drumgizmo_kits_generator.main.load_configuration"
-    )  # Modifié pour cibler l'import dans main
+    @mock.patch("drumgizmo_kits_generator.config.load_configuration")
     @mock.patch("drumgizmo_kits_generator.config.transform_configuration")
-    @mock.patch("drumgizmo_kits_generator.config.prepare_metadata")
     @mock.patch("drumgizmo_kits_generator.cli.print_metadata")
     @mock.patch("drumgizmo_kits_generator.cli.print_samples_info")
     @mock.patch("drumgizmo_kits_generator.cli.print_midi_mapping")
@@ -607,7 +482,6 @@ class TestMainWithDependencies:
         mock_print_midi_mapping,  # pylint: disable=unused-argument
         mock_print_samples,
         mock_print_metadata,
-        mock_prepare_metadata,
         mock_transform_config,
         mock_load_config,
         mock_parse_args,
@@ -626,6 +500,7 @@ class TestMainWithDependencies:
             config=None,
             verbose=False,
             dry_run=False,
+            raw_output=False,
         )
         mock_parse_args.return_value = args
 
@@ -642,10 +517,6 @@ class TestMainWithDependencies:
         mock_load_config.return_value = (
             transformed_config  # load_configuration retourne la config transformée
         )
-
-        metadata = dict(transformed_config)
-        metadata["instruments"] = []
-        mock_prepare_metadata.return_value = metadata
 
         audio_files = ["kick.wav", "snare.wav"]
         mock_scan_source.return_value = audio_files
@@ -669,17 +540,14 @@ class TestMainWithDependencies:
         # Note: Ces appels sont effectués à l'intérieur de load_configuration
         # donc nous ne devrions pas les vérifier ici car nous avons mocké load_configuration
 
-        # Vérifier que prepare_metadata a été appelé avec la configuration transformée
-        mock_prepare_metadata.assert_called_once_with(transformed_config)
-
         # Vérifier les autres appels
-        mock_print_metadata.assert_called_once_with(metadata)
-        mock_print_samples.assert_called_once_with(audio_files, metadata)
+        mock_print_metadata.assert_called_once_with(transformed_config)
+        mock_print_samples.assert_called_once_with(audio_files, transformed_config)
         mock_scan_source.assert_called_once_with("/path/to/source", [".wav", ".flac"])
         mock_prepare_target.assert_called_once_with("/path/to/target")
-        mock_process.assert_called_once_with(audio_files, "/path/to/target", metadata)
-        mock_generate.assert_called_once_with(audio_files, "/path/to/target", metadata)
-        mock_copy.assert_called_once_with("/path/to/source", "/path/to/target", metadata)
+        mock_process.assert_called_once_with(audio_files, "/path/to/target", transformed_config)
+        mock_generate.assert_called_once_with(audio_files, "/path/to/target", transformed_config)
+        mock_copy.assert_called_once_with("/path/to/source", "/path/to/target", transformed_config)
 
 
 if __name__ == "__main__":

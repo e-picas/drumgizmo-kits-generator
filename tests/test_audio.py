@@ -533,6 +533,7 @@ class TestProcessSample:
             "name": "Test Kit",
             "version": "1.0",
             "description": "Test description",
+            "velocity_levels": constants.DEFAULT_VELOCITY_LEVELS,
         }
 
         # Call the function

@@ -28,7 +28,9 @@ def mock_logger():
         "drumgizmo_kits_generator.logger.message"
     ) as mock_message, mock.patch(
         "drumgizmo_kits_generator.logger.set_verbose"
-    ) as mock_set_verbose:
+    ) as mock_set_verbose, mock.patch(
+        "drumgizmo_kits_generator.logger.set_raw_output"
+    ) as mock_set_raw_output:
         yield {
             "info": mock_info,
             "debug": mock_debug,
@@ -37,6 +39,7 @@ def mock_logger():
             "section": mock_section,
             "message": mock_message,
             "set_verbose": mock_set_verbose,
+            "set_raw_output": mock_set_raw_output,
         }
 
 
@@ -137,6 +140,7 @@ class TestParseArguments:
         # Mock parse_known_args to return a namespace with app_version=True
         args = argparse.Namespace()
         args.app_version = True
+        args.raw_output = False
         mock_parse_known_args.return_value = (args, [])
 
         # Call the function

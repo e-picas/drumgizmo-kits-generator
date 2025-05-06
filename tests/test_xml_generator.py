@@ -17,7 +17,7 @@ from unittest import mock
 
 import pytest
 
-from drumgizmo_kits_generator import constants, xml_generator
+from drumgizmo_kits_generator import xml_generator
 
 
 @pytest.fixture
@@ -177,7 +177,7 @@ class TestGenerateDrumkitXml:
         assert metadata_elem.find("description") is None  # Not provided
         assert metadata_elem.find("notes") is not None  # Default notes
         assert metadata_elem.find("author") is None  # Not provided
-        assert metadata_elem.find("license").text == constants.DEFAULT_LICENSE  # Default license
+        assert metadata_elem.find("license").text is None  # Not provided
         assert metadata_elem.find("website") is None  # Not provided
         assert metadata_elem.find("logo") is None  # Not provided
 

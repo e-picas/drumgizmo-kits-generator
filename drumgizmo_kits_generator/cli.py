@@ -57,6 +57,12 @@ def parse_arguments() -> argparse.Namespace:
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument(
+        "-r",
+        "--raw-output",
+        action="store_true",
+        help="Do not include ANSI characters in output (for automatic processing)",
+    )
+    parser.add_argument(
         "-x", "--dry-run", action="store_true", help="Dry run mode (no files will be created)"
     )
     parser.add_argument(
@@ -213,43 +219,62 @@ def print_summary(
         processed_audio_files: The processed audio files
         audio_files: The original audio files
     """
-    logger.section("Generation Complete")
+    logger.section("Summary")
 
-    # Basic information
-    logger.info(f"Successfully generated DrumGizmo kit: {metadata['name']} v{metadata['version']}")
-    logger.info(f"Location: {os.path.abspath(target_dir)}")
+    logger.info(f"Processing complete. DrumGizmo kit successfully created in: {target_dir}")
+    logger.info(f"Number of instruments created: {len(processed_audio_files)}")
+    logger.info("Main files:")
+    logger.info(f"- {os.path.join(target_dir, 'drumkit.xml')}")
+    logger.info(f"- {os.path.join(target_dir, 'midimap.xml')}")
 
-    # Sample statistics
-    total_processed = sum(len(files) for files in processed_audio_files.values())
-    logger.info(f"\nSamples processed: {total_processed} files")
+    logger.info("\nKit metadata summary:")
+    logger.info(f"Name: {metadata.get('name', '')}")
+    logger.info(f"Version: {metadata.get('version', '')}")
+    logger.info(f"Description: {metadata.get('description', '')}")
+    logger.info(f"Notes: {metadata.get('notes', '')}")
+    logger.info(f"Author: {metadata.get('author', '')}")
+    logger.info(f"License: {metadata.get('license', '')}")
+    logger.info(f"Sample rate: {metadata.get('samplerate', '')} Hz")
+    logger.info(f"Website: {metadata.get('website', '')}")
+    logger.info(f"Logo: {metadata.get('logo', '')}")
 
-    # List of generated instruments and their sample counts
-    if processed_audio_files:
-        logger.info("\nInstruments generated:")
-        for instrument, files in processed_audio_files.items():
-            logger.info(f"- {instrument}: {len(files)} samples")
+    logger.info("\nInstrument to sample mapping:")
+    if isinstance(processed_audio_files, dict):
+        # If processed_audio_files is a dictionary (new format)
 
-    # Warnings if any
-    midi_range = metadata["midi_note_max"] - metadata["midi_note_min"] + 1
-    if len(audio_files) > midi_range:
-        logger.warning(
-            f"\nWarning: Number of audio files ({len(audio_files)}) exceeds MIDI note range "
-            f"({metadata['midi_note_min']}-{metadata['midi_note_max']}, {midi_range} notes). "
-            "Some samples may not be accessible."
-        )
+        # Get MIDI parameters
+        midi_params = {
+            "min": metadata.get("midi_note_min"),
+            "max": metadata.get("midi_note_max"),
+            "median": metadata.get("midi_note_median"),
+        }
 
-    # Next steps
-    logger.info(
-        "\nTo use this kit in DrumGizmo, copy it to your DrumGizmo kits directory "
-        "and restart your DAW."
-    )
+        # Get instrument names
+        instruments = list(processed_audio_files.keys())
 
-    # Additional notes if any
-    if metadata.get("notes"):
-        logger.info(f"\nNotes: {metadata['notes']}")
+        # Calculate MIDI mapping
+        midi_mapping = utils.calculate_midi_mapping(instruments, midi_params)
 
-    # Final message
-    logger.info("\nDone!")
+        # Display mapping with MIDI notes
+        for instrument, audio_file in zip(processed_audio_files.keys(), audio_files):
+            midi_note = midi_mapping.get(instrument, "N/A")
+            logger.info(f"  (MIDI Note {midi_note}) {instrument}: {os.path.basename(audio_file)}")
+    else:
+        # If processed_audio_files is a list (old format used in tests)
+        for audio_file in audio_files:
+            instrument_name = os.path.basename(audio_file)
+            logger.info(f"  {instrument_name}: {instrument_name}")
+
+    extra_files = []
+    if metadata.get("logo"):
+        extra_files.append(metadata["logo"])
+    if metadata.get("extra_files"):
+        extra_files.extend(metadata["extra_files"])
+
+    if extra_files:
+        logger.info("\nExtra files copied:")
+        for extra_file in extra_files:
+            logger.info(f"  {extra_file}")
 
 
 if __name__ == "__main__":

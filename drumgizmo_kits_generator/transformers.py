@@ -8,6 +8,7 @@ Contains functions for transforming configuration values.
 from typing import Any, List
 
 from drumgizmo_kits_generator import constants, logger
+from drumgizmo_kits_generator.utils import strip_quotes
 
 
 def transform_velocity_levels(value: Any) -> int:
@@ -18,12 +19,15 @@ def transform_velocity_levels(value: Any) -> int:
         value: The velocity_levels value to transform
 
     Returns:
-        int: The transformed velocity_levels value
+        int: The transformed velocity_levels value, or default if invalid
     """
+    if value is None:
+        return constants.DEFAULT_VELOCITY_LEVELS
+
     try:
         return int(value)
     except (ValueError, TypeError):
-        return 0
+        return constants.DEFAULT_VELOCITY_LEVELS
 
 
 def transform_midi_note_min(value: Any) -> int:
@@ -34,12 +38,15 @@ def transform_midi_note_min(value: Any) -> int:
         value: The midi_note_min value to transform
 
     Returns:
-        int: The transformed midi_note_min value
+        int: The transformed midi_note_min value, or default if invalid
     """
+    if value is None:
+        return constants.DEFAULT_MIDI_NOTE_MIN
+
     try:
-        return int(value)
+        return int(strip_quotes(value))
     except (ValueError, TypeError):
-        return 0
+        return constants.DEFAULT_MIDI_NOTE_MIN
 
 
 def transform_midi_note_max(value: Any) -> int:
@@ -50,12 +57,15 @@ def transform_midi_note_max(value: Any) -> int:
         value: The midi_note_max value to transform
 
     Returns:
-        int: The transformed midi_note_max value
+        int: The transformed midi_note_max value, or default if invalid
     """
+    if value is None:
+        return constants.DEFAULT_MIDI_NOTE_MAX
+
     try:
-        return int(value)
+        return int(strip_quotes(value))
     except (ValueError, TypeError):
-        return 127
+        return constants.DEFAULT_MIDI_NOTE_MAX
 
 
 def transform_midi_note_median(value: Any) -> int:
@@ -66,25 +76,35 @@ def transform_midi_note_median(value: Any) -> int:
         value: The midi_note_median value to transform
 
     Returns:
-        int: The transformed midi_note_median value
+        int: The transformed midi_note_median value, or default if invalid
     """
+    if value is None:
+        return constants.DEFAULT_MIDI_NOTE_MEDIAN
+
     try:
-        return int(value)
+        return int(strip_quotes(value))
     except (ValueError, TypeError):
-        return 60
+        return constants.DEFAULT_MIDI_NOTE_MEDIAN
 
 
-def transform_samplerate(value: Any) -> str:
+def transform_samplerate(value: Any) -> int:
     """
-    Transform samplerate to a string.
+    Transform samplerate to an integer.
 
     Args:
         value: The samplerate value to transform
 
     Returns:
-        str: The transformed samplerate value
+        int: The transformed samplerate value, or default if invalid
     """
-    return str(value)
+    if value is None:
+        return int(constants.DEFAULT_SAMPLERATE)
+
+    try:
+        return int(strip_quotes(value))
+    except (ValueError, TypeError):
+        logger.warning(f"Invalid samplerate value, using default: {constants.DEFAULT_SAMPLERATE}")
+        return int(constants.DEFAULT_SAMPLERATE)
 
 
 def transform_extensions(value: Any) -> List[str]:
@@ -95,19 +115,20 @@ def transform_extensions(value: Any) -> List[str]:
         value: The extensions value to transform (comma-separated string)
 
     Returns:
-        List[str]: The transformed extensions list
+        List[str]: The transformed extensions list, or default if empty/invalid
     """
-    # If value is None, return empty list (for backward compatibility with tests)
+    # If value is None, return default extensions
     if value is None:
-        return []
+        return constants.DEFAULT_EXTENSIONS.split(",")
 
     # If value is already a list, return it
     if isinstance(value, list):
         return value
 
-    # If not a string, convert to string
+    # If not a string, use default
     if not isinstance(value, str):
-        return []  # Return empty list for non-string values (for backward compatibility)
+        logger.warning(f"Invalid extensions type, using default: {constants.DEFAULT_EXTENSIONS}")
+        return constants.DEFAULT_EXTENSIONS.split(",")
 
     # Remove quotes if present
     if value.startswith('"') and value.endswith('"'):
@@ -116,15 +137,10 @@ def transform_extensions(value: Any) -> List[str]:
     # Split by comma and strip whitespace
     extensions = [ext.strip() for ext in value.split(",") if ext.strip()]
 
-    # For backward compatibility with tests, return empty list for empty input
-    # In real usage, we would use the default value, but tests expect empty list
-    if not extensions and value == "":
-        return []
-
-    # If no extensions found (but input wasn't empty), use default
+    # If no extensions found, use default
     if not extensions:
-        logger.warning(f"No extensions found, using default: {constants.DEFAULT_EXTENSIONS}")
-        extensions = constants.DEFAULT_EXTENSIONS.split(",")
+        logger.warning(f"No valid extensions found, using default: {constants.DEFAULT_EXTENSIONS}")
+        return constants.DEFAULT_EXTENSIONS.split(",")
 
     return extensions
 
@@ -137,20 +153,32 @@ def transform_channels(value: Any) -> List[str]:
         value: The channels value to transform (comma-separated string)
 
     Returns:
-        List[str]: The transformed channels list
+        List[str]: The transformed channels list, or default if empty/invalid
     """
+    # If value is None, return default channels
+    if value is None:
+        return constants.DEFAULT_CHANNELS.split(",")
+
+    # If value is already a list, return it
     if isinstance(value, list):
         return value
 
+    # If not a string, use default
     if not isinstance(value, str):
-        return []
+        logger.warning(f"Invalid channels type, using default: {constants.DEFAULT_CHANNELS}")
+        return constants.DEFAULT_CHANNELS.split(",")
 
     # Remove quotes if present
-    if value.startswith('"') and value.endswith('"'):
-        value = value[1:-1]
+    value = strip_quotes(value)
 
     # Split by comma and strip whitespace
     channels = [channel.strip() for channel in value.split(",") if channel.strip()]
+
+    # If no channels found, use default
+    if not channels:
+        logger.warning(f"No valid channels found, using default: {constants.DEFAULT_CHANNELS}")
+        return constants.DEFAULT_CHANNELS.split(",")
+
     return channels
 
 
@@ -162,17 +190,28 @@ def transform_main_channels(value: Any) -> List[str]:
         value: The main_channels value to transform (comma-separated string)
 
     Returns:
-        List[str]: The transformed main_channels list
+        List[str]: The transformed main_channels list, or default if empty/invalid
     """
+    # If value is None, return default main channels
+    if value is None:
+        return constants.DEFAULT_MAIN_CHANNELS.split(",") if constants.DEFAULT_MAIN_CHANNELS else []
+
+    # If value is already a list, return it
     if isinstance(value, list):
         return value
 
+    # If not a string, return empty list (main channels can be empty)
     if not isinstance(value, str):
+        logger.warning("Invalid main_channels type, using empty list")
         return []
 
     # Remove quotes if present
     if value.startswith('"') and value.endswith('"'):
         value = value[1:-1]
+
+    # If empty string, return empty list
+    if not value.strip():
+        return []
 
     # Split by comma and strip whitespace
     main_channels = [channel.strip() for channel in value.split(",") if channel.strip()]
@@ -187,18 +226,149 @@ def transform_extra_files(value: Any) -> List[str]:
         value: The extra_files value to transform (comma-separated string)
 
     Returns:
-        List[str]: The transformed extra_files list
+        List[str]: The transformed extra_files list, or empty list if None/invalid
     """
+    # If value is None, return empty list
+    if value is None:
+        return []
+
+    # If value is already a list, return it
     if isinstance(value, list):
         return value
 
+    # If not a string, return empty list
     if not isinstance(value, str):
+        logger.warning("Invalid extra_files type, using empty list")
         return []
 
     # Remove quotes if present
     if value.startswith('"') and value.endswith('"'):
         value = value[1:-1]
 
+    # If empty string, return empty list
+    if not value.strip():
+        return []
+
     # Split by comma and strip whitespace
-    extra_files = [file.strip() for file in value.split(",") if file.strip()]
+    extra_files = [f.strip() for f in value.split(",") if f.strip()]
     return extra_files
+
+
+def transform_name(value: Any) -> str:
+    """
+    Transform name to a string.
+
+    Args:
+        value: The name value to transform
+
+    Returns:
+        str: The transformed name value
+    """
+    if value is None:
+        return constants.DEFAULT_NAME
+    return str(strip_quotes(value)).strip()
+
+
+def transform_version(value: Any) -> str:
+    """
+    Transform version to a string.
+
+    Args:
+        value: The version value to transform
+
+    Returns:
+        str: The transformed version value
+    """
+    if value is None:
+        return constants.DEFAULT_VERSION
+    return str(strip_quotes(value)).strip()
+
+
+def transform_description(value: Any) -> str:
+    """
+    Transform description to a string.
+
+    Args:
+        value: The description value to transform
+
+    Returns:
+        str: The transformed description value, or empty string if None
+    """
+    if value is None:
+        return ""
+    return str(strip_quotes(value)).strip()
+
+
+def transform_notes(value: Any) -> str:
+    """
+    Transform notes to a string.
+
+    Args:
+        value: The notes value to transform
+
+    Returns:
+        str: The transformed notes value, or empty string if None
+    """
+    if value is None:
+        return ""
+    return str(strip_quotes(value)).strip()
+
+
+def transform_author(value: Any) -> str:
+    """
+    Transform author to a string.
+
+    Args:
+        value: The author value to transform
+
+    Returns:
+        str: The transformed author value, or empty string if None
+    """
+    if value is None:
+        return ""
+    return str(strip_quotes(value)).strip()
+
+
+def transform_license(value: Any) -> str:
+    """
+    Transform license to a string.
+
+    Args:
+        value: The license value to transform
+
+    Returns:
+        str: The transformed license value, or default if None
+    """
+    if value is None:
+        return constants.DEFAULT_LICENSE
+    return str(strip_quotes(value)).strip()
+
+
+def transform_website(value: Any) -> str:
+    """
+    Transform website to a string.
+
+    Args:
+        value: The website value to transform
+
+    Returns:
+        str: The transformed website value, or empty string if None
+    """
+    if value is None:
+        return ""
+    return str(strip_quotes(value)).strip()
+
+
+def transform_logo(value: Any) -> str:
+    """
+    Transform logo to a string.
+
+    Args:
+        value: The logo value to transform
+
+    Returns:
+        str: The transformed logo value, or empty string if None
+    """
+    if value is None:
+        return ""
+    return str(strip_quotes(value)).strip()

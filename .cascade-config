@@ -142,14 +142,17 @@ config
 -v/--verbose
 : desc: Increase process verbosity
 
--x/--dry-run
-: desc: Enable the DEBUG or "dry run" mode: metadata and samples list are printed instead of generating the kit
-
 -V/--app-version
 : desc: Print the application version and exit with a 0 status
 
+-x/--dry-run
+: desc: Enable the DEBUG or "dry run" mode: metadata and samples list are printed instead of generating the kit
+
+-r/--raw-output
+: desc: Do not include ANSI characters in output (for automatic processing)
+
 ## Configuration entries
-Each of these configuration entries can be defined in the configuration file with a `kit_` prefix or as a command line option (without prefix).
+Each of these configuration entries can be defined in the configuration file in a `drumgizmo_kit_generator` section or as a command line option (without prefix).
 They are loaded in the following precedence order: defaults then configuration file then command line options.
 All default values are stored as constants.
 

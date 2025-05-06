@@ -206,7 +206,7 @@ def process_sample(
             converted_file = file_path
 
         # Create velocity variations
-        velocity_levels = metadata.get("velocity_levels", constants.DEFAULT_VELOCITY_LEVELS)
+        velocity_levels = metadata.get("velocity_levels")
         variation_files = create_velocity_variations(
             converted_file,
             samples_dir,

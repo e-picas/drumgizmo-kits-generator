@@ -77,9 +77,9 @@ Website: https://picas.fr/
 Logo: pngtree-music-notes-png-image_8660757.png
 
 Instrument to sample mapping:
-  (MIDI Note 59) E-Mu-Proteus-FX-Wacky-Snare.wav: E-Mu-Proteus-FX-Wacky-Snare.wav
-  (MIDI Note 60) Example.ogg: Example.ogg
-  (MIDI Note 61) gs-16b-1c-44100hz.flac: gs-16b-1c-44100hz.flac
+  (MIDI Note 59) E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare.wav
+  (MIDI Note 60) Example: Example.ogg
+  (MIDI Note 61) gs-16b-1c-44100hz: gs-16b-1c-44100hz.flac
 
 Extra files copied:
   pngtree-music-notes-png-image_8660757.png

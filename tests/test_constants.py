@@ -50,13 +50,13 @@ def test_default_constants_types():
     assert isinstance(constants.DEFAULT_MIDI_NOTE_MIN, int)
     assert isinstance(constants.DEFAULT_MIDI_NOTE_MAX, int)
     assert isinstance(constants.DEFAULT_MIDI_NOTE_MEDIAN, int)
+    assert isinstance(constants.DEFAULT_SAMPLERATE, int)
 
     # String constants
     assert isinstance(constants.DEFAULT_EXTENSIONS, str)
     assert isinstance(constants.DEFAULT_NAME, str)
     assert isinstance(constants.DEFAULT_VERSION, str)
     assert isinstance(constants.DEFAULT_LICENSE, str)
-    assert isinstance(constants.DEFAULT_SAMPLERATE, str)
     assert isinstance(constants.DEFAULT_CHANNELS, str)
     assert isinstance(constants.DEFAULT_MAIN_CHANNELS, str)
     assert isinstance(constants.DEFAULT_CONFIG_FILE, str)

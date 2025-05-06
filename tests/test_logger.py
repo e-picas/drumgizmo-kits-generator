@@ -16,9 +16,13 @@ from drumgizmo_kits_generator import logger
 @pytest.fixture
 def reset_logger():
     """Reset logger state before each test."""
-    # Reset verbose mode
+    # Save current state
     original_verbose = logger._logger.verbose_mode
+    original_raw_output = logger._logger.raw_output
+
+    # Reset to default state
     logger._logger.verbose_mode = False
+    logger._logger.raw_output = False
 
     # Save original stdout and stderr
     original_stdout = sys.stdout
@@ -30,8 +34,9 @@ def reset_logger():
     # Restore original stdout and stderr
     sys.stdout = original_stdout
     sys.stderr = original_stderr
-    # Restore original verbose mode
+    # Restore original state
     logger._logger.verbose_mode = original_verbose
+    logger._logger.raw_output = original_raw_output
 
 
 def test_set_verbose():
@@ -81,6 +86,20 @@ def test_is_verbose_module_function():
     finally:
         # Restore the original state
         logger.set_verbose(original_state)
+
+
+def test_set_raw_output():
+    """Test setting raw output mode."""
+    # Initially raw_output should be False
+    assert not logger._logger.raw_output
+
+    # Set raw_output to True
+    logger.set_raw_output(True)
+    assert logger._logger.raw_output
+
+    # Set raw_output back to False
+    logger.set_raw_output(False)
+    assert not logger._logger.raw_output
 
 
 def test_info(capsys):
@@ -179,3 +198,71 @@ def test_section(capsys):
     # Verify output
     captured = capsys.readouterr()
     assert captured.out == expected_output
+
+
+def test_raw_output_info(capsys):
+    """Test info function with raw output enabled."""
+    # Enable raw output
+    logger.set_raw_output(True)
+
+    # Test with a message that contains color codes
+    test_msg = f"{logger.RED}Test message{logger.RESET}"
+    logger.info(test_msg)
+    captured = capsys.readouterr()
+    assert captured.out == "Test message\n"
+
+    # Disable raw output for other tests
+    logger.set_raw_output(False)
+
+
+def test_raw_output_warning(capsys):
+    """Test warning function with raw output enabled."""
+    # Enable raw output
+    logger.set_raw_output(True)
+
+    logger.warning("Test warning")
+    captured = capsys.readouterr()
+    assert captured.err == "WARNING: Test warning\n"
+
+    # Disable raw output for other tests
+    logger.set_raw_output(False)
+
+
+def test_raw_output_error(capsys):
+    """Test error function with raw output enabled."""
+    # Enable raw output
+    logger.set_raw_output(True)
+
+    logger.error("Test error")
+    captured = capsys.readouterr()
+    # Vérifie que le message d'erreur commence par "ERROR: Test error"
+    assert captured.err.startswith("ERROR: Test error\n")
+
+    # Disable raw output for other tests
+    logger.set_raw_output(False)
+
+
+def test_raw_output_message(capsys):
+    """Test message function with raw output enabled."""
+    # Enable raw output
+    logger.set_raw_output(True)
+
+    logger.message("Test message")
+    captured = capsys.readouterr()
+    assert captured.out == "Test message\n"
+
+    # Disable raw output for other tests
+    logger.set_raw_output(False)
+
+
+def test_raw_output_section(capsys):
+    """Test section function with raw output enabled."""
+    # Enable raw output
+    logger.set_raw_output(True)
+
+    logger.section("Test Section")
+    captured = capsys.readouterr()
+    assert captured.out == "\n=== Test Section ===\n"
+
+    # Disable raw output for other tests
+    logger.set_raw_output(False)

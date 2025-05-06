@@ -10,7 +10,6 @@ import traceback
 from typing import Any, Dict, List
 
 from drumgizmo_kits_generator import audio, cli, config, constants, logger, utils, validators
-from drumgizmo_kits_generator.config import load_configuration
 from drumgizmo_kits_generator.exceptions import (
     AudioProcessingError,
     DependencyError,
@@ -49,7 +48,7 @@ def process_audio_files(
     utils.check_dependency("sox", "SoX not found in the system, can not generate samples")
 
     processed_audio_files = {}
-    velocity_levels = metadata.get("velocity_levels", constants.DEFAULT_VELOCITY_LEVELS)
+    velocity_levels = metadata.get("velocity_levels")
 
     try:
         for file_path in audio_files:
@@ -184,8 +183,9 @@ def main() -> None:
     try:
         args = cli.parse_arguments()
 
-        # Initialize logger with verbosity level
+        # Initialize logger with verbosity level and raw output
         logger.set_verbose(args.verbose)
+        logger.set_raw_output(args.raw_output)
 
         # Display application information in verbose mode
         logger.debug(f"{constants.APP_NAME} v{constants.APP_VERSION} - {constants.APP_LINK}")
@@ -199,8 +199,7 @@ def main() -> None:
         logger.info(f"Target directory: {args.target}")
 
         # Load configuration (already transformed and validated)
-        config_data = load_configuration(args)
-        metadata = config.prepare_metadata(config_data)
+        metadata = config.load_configuration(args)
 
         # Print metadata
         cli.print_metadata(metadata)

@@ -27,7 +27,7 @@ def _add_metadata_elements(metadata_elem: ET.Element, metadata: Dict[str, Any]) 
 
     # Add version
     version_elem = ET.SubElement(metadata_elem, "version")
-    version_elem.text = metadata.get("version", constants.DEFAULT_VERSION)
+    version_elem.text = metadata.get("version")
 
     # Add description
     if metadata.get("description"):
@@ -52,7 +52,7 @@ def _add_metadata_elements(metadata_elem: ET.Element, metadata: Dict[str, Any]) 
 
     # Add license
     license_elem = ET.SubElement(metadata_elem, "license")
-    license_elem.text = metadata.get("license", constants.DEFAULT_LICENSE)
+    license_elem.text = metadata.get("license")
 
     # Add samplerate
     samplerate_elem = ET.SubElement(metadata_elem, "samplerate")
@@ -148,7 +148,7 @@ def _add_instrument_samples(
         original_ext: File extension for audio files
     """
     # Get velocity levels
-    velocity_levels = metadata.get("velocity_levels", constants.DEFAULT_VELOCITY_LEVELS)
+    velocity_levels = metadata.get("velocity_levels")
 
     # Add a sample for each velocity level
     for i in range(1, velocity_levels + 1):
@@ -281,7 +281,7 @@ def generate_midimap_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
     }
 
     # Get instruments
-    instruments = metadata.get("instruments", [])
+    instruments = metadata.get("instruments")
 
     if not instruments:
         logger.warning("No instruments found for MIDI mapping")
