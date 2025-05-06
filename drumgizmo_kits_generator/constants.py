@@ -51,3 +51,24 @@ DEFAULT_SAMPLES_DIR = "samples"  # Default name for samples directory within ins
 
 # Default configuration file name
 DEFAULT_CONFIG_FILE = "drumgizmo-kit.ini"
+
+# Default configuration object
+DEFAULT_CONFIG_DATA = {
+    "name": DEFAULT_NAME,
+    "version": DEFAULT_VERSION,
+    "license": DEFAULT_LICENSE,
+    "samplerate": DEFAULT_SAMPLERATE,
+    "extensions": DEFAULT_EXTENSIONS,
+    "velocity_levels": DEFAULT_VELOCITY_LEVELS,
+    "midi_note_min": DEFAULT_MIDI_NOTE_MIN,
+    "midi_note_max": DEFAULT_MIDI_NOTE_MAX,
+    "midi_note_median": DEFAULT_MIDI_NOTE_MEDIAN,
+    "channels": DEFAULT_CHANNELS,
+    "main_channels": DEFAULT_MAIN_CHANNELS,
+    "description": None,
+    "notes": None,
+    "author": None,
+    "website": None,
+    "logo": None,
+    "extra_files": None,
+}

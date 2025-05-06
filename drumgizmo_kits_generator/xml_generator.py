@@ -306,32 +306,3 @@ def generate_midimap_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
     logger.debug("MIDI mapping (alphabetical order):")
     for instrument, note in sorted(midi_mapping.items(), key=lambda x: x[0]):
         logger.debug(f"  MIDI Note {note}: {instrument}")
-
-
-def generate_all_xml_files(target_dir: str, metadata: Dict[str, Any]) -> None:
-    """
-    Generate all XML files for a DrumGizmo kit.
-
-    Args:
-        target_dir: Path to the target directory
-        metadata: Metadata for the kit
-    """
-    # Ensure target directory exists
-    os.makedirs(target_dir, exist_ok=True)
-
-    # Generate drumkit.xml
-    generate_drumkit_xml(target_dir, metadata)
-
-    # Generate instrument XML files for each instrument
-    for instrument_name in metadata.get("instruments", []):
-        generate_instrument_xml(
-            target_dir,
-            instrument_name,
-            metadata,
-            [],  # Audio files are referenced by pattern, not by list
-        )
-
-    # Generate midimap.xml
-    generate_midimap_xml(target_dir, metadata)
-
-    logger.info(f"Generated all XML files for kit: {metadata['name']}")

@@ -9,15 +9,10 @@ import shutil
 import traceback
 from typing import Any, Dict, List
 
-from drumgizmo_kits_generator import audio, cli, constants, logger, utils, validators
-from drumgizmo_kits_generator.config import (
-    load_configuration,
-    transform_configuration,
-    validate_configuration,
-)
+from drumgizmo_kits_generator import audio, cli, config, constants, logger, utils, validators
+from drumgizmo_kits_generator.config import load_configuration
 from drumgizmo_kits_generator.exceptions import (
     AudioProcessingError,
-    ConfigurationError,
     DependencyError,
     DirectoryError,
     DrumGizmoError,
@@ -184,44 +179,6 @@ def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, 
         raise DirectoryError(error_msg) from e
 
 
-def prepare_metadata(config_data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Prepare metadata for kit generation.
-
-    Args:
-        config_data: Validated configuration data
-
-    Returns:
-        Dict[str, Any]: Metadata for kit generation
-
-    Raises:
-        ConfigurationError: If preparing metadata fails
-    """
-    try:
-        metadata = config_data.copy()
-
-        # Convert string values to appropriate types
-        if isinstance(metadata["velocity_levels"], str):
-            metadata["velocity_levels"] = int(metadata["velocity_levels"])
-
-        if isinstance(metadata["midi_note_min"], str):
-            metadata["midi_note_min"] = int(metadata["midi_note_min"])
-
-        if isinstance(metadata["midi_note_max"], str):
-            metadata["midi_note_max"] = int(metadata["midi_note_max"])
-
-        if isinstance(metadata["midi_note_median"], str):
-            metadata["midi_note_median"] = int(metadata["midi_note_median"])
-
-        if isinstance(metadata["samplerate"], str):
-            metadata["samplerate"] = int(metadata["samplerate"])
-
-        return metadata
-    except Exception as e:
-        error_msg = f"Failed to prepare metadata: {e}"
-        raise ConfigurationError(error_msg) from e
-
-
 def main() -> None:
     """Main entry point for the DrumGizmo Kit Generator."""
     try:
@@ -241,11 +198,9 @@ def main() -> None:
         logger.info(f"Source directory: {args.source}")
         logger.info(f"Target directory: {args.target}")
 
-        # Load and process configuration
+        # Load configuration (already transformed and validated)
         config_data = load_configuration(args)
-        transformed_config = transform_configuration(config_data)
-        validate_configuration(transformed_config)
-        metadata = prepare_metadata(transformed_config)
+        metadata = config.prepare_metadata(config_data)
 
         # Print metadata
         cli.print_metadata(metadata)

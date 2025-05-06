@@ -21,7 +21,7 @@ from unittest import mock
 
 import pytest
 
-from drumgizmo_kits_generator import cli, constants, main, utils
+from drumgizmo_kits_generator import cli, config, constants, main, utils
 from drumgizmo_kits_generator.exceptions import DependencyError
 
 
@@ -176,8 +176,8 @@ class TestPrepareMetadata:
             "main_channels": ["Left", "Right"],
         }
 
-        # Call the function
-        metadata = main.prepare_metadata(config_data)
+        # Call the function from config module
+        metadata = config.prepare_metadata(config_data)
 
         # Check that metadata contains all expected keys
         assert metadata["name"] == "Test Kit"
@@ -228,7 +228,8 @@ class TestPrepareMetadata:
             "main_channels": "Left,Right",
         }
 
-        metadata = main.prepare_metadata(config_data)
+        # Call the function from config module
+        metadata = config.prepare_metadata(config_data)
 
         assert metadata["name"] == "Test Kit"
         assert metadata["velocity_levels"] == 5
@@ -259,7 +260,8 @@ class TestPrepareMetadata:
             "main_channels": "Left,Right",
         }
 
-        metadata = main.prepare_metadata(config_data)
+        # Call the function from config module
+        metadata = config.prepare_metadata(config_data)
 
         assert metadata["name"] == "Test Kit"
         assert metadata["velocity_levels"] == 5
@@ -370,10 +372,10 @@ class TestMain:
     # pylint: disable=too-many-arguments
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
     @mock.patch("drumgizmo_kits_generator.validators.validate_directories")
-    @mock.patch("drumgizmo_kits_generator.main.load_configuration")
-    @mock.patch("drumgizmo_kits_generator.main.transform_configuration")
-    @mock.patch("drumgizmo_kits_generator.main.validate_configuration")
-    @mock.patch("drumgizmo_kits_generator.main.prepare_metadata")
+    @mock.patch(
+        "drumgizmo_kits_generator.main.load_configuration"
+    )  # Modifié pour cibler l'import dans main
+    @mock.patch("drumgizmo_kits_generator.config.prepare_metadata")
     @mock.patch("drumgizmo_kits_generator.cli.print_metadata")
     @mock.patch("drumgizmo_kits_generator.utils.scan_source_files")
     @mock.patch("drumgizmo_kits_generator.cli.print_samples_info")
@@ -387,8 +389,6 @@ class TestMain:
         mock_scan_source_files,
         mock_print_metadata,
         mock_prepare_metadata,
-        mock_validate_configuration,
-        mock_transform_configuration,
         mock_load_configuration,
         mock_validate_directories,
         mock_parse_arguments,
@@ -403,13 +403,20 @@ class TestMain:
         args.dry_run = True
         mock_parse_arguments.return_value = args
 
-        config_data = self.config_data
+        # La configuration est déjà transformée et validée par load_configuration
+        config_data = dict(self.config_data)
+        config_data.update(
+            {
+                "source": "/path/to/source",
+                "target": "/path/to/target",
+                "config": constants.DEFAULT_CONFIG_FILE,
+                "verbose": False,
+                "dry_run": True,
+            }
+        )
         mock_load_configuration.return_value = config_data
 
-        transformed_config = dict(config_data)
-        mock_transform_configuration.return_value = transformed_config
-
-        metadata = dict(transformed_config)
+        metadata = dict(config_data)
         metadata["instruments"] = []
         mock_prepare_metadata.return_value = metadata
 
@@ -430,13 +437,11 @@ class TestMain:
         # Verify that all mocks were used
         mock_parse_arguments.assert_called_once()
         mock_validate_directories.assert_called_once()
-        mock_load_configuration.assert_called_once()
-        mock_transform_configuration.assert_called_once()
-        mock_validate_configuration.assert_called_once()
-        mock_prepare_metadata.assert_called_once()
-        mock_print_metadata.assert_called_once()
-        mock_scan_source_files.assert_called_once()
-        mock_print_samples_info.assert_called_once()
+        mock_load_configuration.assert_called_once_with(args)
+        mock_prepare_metadata.assert_called_once_with(config_data)
+        mock_print_metadata.assert_called_once_with(metadata)
+        mock_scan_source_files.assert_called_once_with("/path/to/source", ["wav", "flac"])
+        mock_print_samples_info.assert_called_once_with(audio_files, metadata)
 
     @mock.patch("drumgizmo_kits_generator.logger.is_verbose")
     @mock.patch("traceback.format_exc")
@@ -516,10 +521,10 @@ class TestMainWithDependencies:
     @mock.patch("drumgizmo_kits_generator.utils.check_dependency")
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
     @mock.patch("drumgizmo_kits_generator.validators.validate_directories")
-    @mock.patch("drumgizmo_kits_generator.main.load_configuration")
-    @mock.patch("drumgizmo_kits_generator.main.transform_configuration")
-    @mock.patch("drumgizmo_kits_generator.main.validate_configuration")
-    @mock.patch("drumgizmo_kits_generator.main.prepare_metadata")
+    @mock.patch("drumgizmo_kits_generator.config.load_configuration")
+    @mock.patch("drumgizmo_kits_generator.config.transform_configuration")
+    @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
+    @mock.patch("drumgizmo_kits_generator.config.prepare_metadata")
     @mock.patch("drumgizmo_kits_generator.cli.print_metadata")
     @mock.patch("drumgizmo_kits_generator.utils.scan_source_files")
     @mock.patch("drumgizmo_kits_generator.cli.print_samples_info")
@@ -585,11 +590,13 @@ class TestMainWithDependencies:
     @mock.patch("drumgizmo_kits_generator.main.generate_xml_files")
     @mock.patch("drumgizmo_kits_generator.main.copy_additional_files")
     @mock.patch("drumgizmo_kits_generator.validators.validate_directories")
-    @mock.patch("drumgizmo_kits_generator.main.validate_configuration")
+    @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
-    @mock.patch("drumgizmo_kits_generator.main.load_configuration")
-    @mock.patch("drumgizmo_kits_generator.main.transform_configuration")
-    @mock.patch("drumgizmo_kits_generator.main.prepare_metadata")
+    @mock.patch(
+        "drumgizmo_kits_generator.main.load_configuration"
+    )  # Modifié pour cibler l'import dans main
+    @mock.patch("drumgizmo_kits_generator.config.transform_configuration")
+    @mock.patch("drumgizmo_kits_generator.config.prepare_metadata")
     @mock.patch("drumgizmo_kits_generator.cli.print_metadata")
     @mock.patch("drumgizmo_kits_generator.cli.print_samples_info")
     @mock.patch("drumgizmo_kits_generator.cli.print_midi_mapping")
@@ -622,14 +629,19 @@ class TestMainWithDependencies:
         )
         mock_parse_args.return_value = args
 
-        config_data = self.config_data
-        mock_load_config.return_value = config_data
+        # Configurer les retours des mocks dans l'ordre d'appel
+        config_data = dict(self.config_data)
 
+        # Simuler la transformation de la configuration
         transformed_config = dict(config_data)
         transformed_config["extensions"] = [".wav", ".flac"]
-        mock_transform_config.return_value = transformed_config
 
+        # Configurer les retours des mocks pour simuler le flux normal
+        mock_transform_config.return_value = transformed_config
         mock_validate_config.return_value = transformed_config
+        mock_load_config.return_value = (
+            transformed_config  # load_configuration retourne la config transformée
+        )
 
         metadata = dict(transformed_config)
         metadata["instruments"] = []
@@ -648,18 +660,26 @@ class TestMainWithDependencies:
 
         # Assertions
         mock_parse_args.assert_called_once()
-        mock_validate_dirs.assert_called_once()
-        mock_load_config.assert_called_once()
-        mock_transform_config.assert_called_once()
-        mock_validate_config.assert_called_once()
-        mock_prepare_metadata.assert_called_once()
-        mock_print_metadata.assert_called_once()
-        mock_print_samples.assert_called_once()
-        mock_scan_source.assert_called_once()
-        mock_prepare_target.assert_called_once()
-        mock_process.assert_called_once()
-        mock_generate.assert_called_once()
-        mock_copy.assert_called_once()
+        mock_validate_dirs.assert_called_once_with("/path/to/source", "/path/to/target", False)
+
+        # Vérifier que load_configuration a été appelé avec les bons arguments
+        mock_load_config.assert_called_once_with(args)
+
+        # Vérifier que les fonctions de transformation et validation ont été appelées
+        # Note: Ces appels sont effectués à l'intérieur de load_configuration
+        # donc nous ne devrions pas les vérifier ici car nous avons mocké load_configuration
+
+        # Vérifier que prepare_metadata a été appelé avec la configuration transformée
+        mock_prepare_metadata.assert_called_once_with(transformed_config)
+
+        # Vérifier les autres appels
+        mock_print_metadata.assert_called_once_with(metadata)
+        mock_print_samples.assert_called_once_with(audio_files, metadata)
+        mock_scan_source.assert_called_once_with("/path/to/source", [".wav", ".flac"])
+        mock_prepare_target.assert_called_once_with("/path/to/target")
+        mock_process.assert_called_once_with(audio_files, "/path/to/target", metadata)
+        mock_generate.assert_called_once_with(audio_files, "/path/to/target", metadata)
+        mock_copy.assert_called_once_with("/path/to/source", "/path/to/target", metadata)
 
 
 if __name__ == "__main__":

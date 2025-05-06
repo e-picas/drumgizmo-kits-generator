@@ -397,22 +397,6 @@ def join_paths(*paths: str) -> str:
     return os.path.join(*paths)
 
 
-def get_file_parts(file_path: str) -> tuple:
-    """
-    Get all parts of a file path: directory, basename, and extension.
-
-    Args:
-        file_path: Path to the file
-
-    Returns:
-        tuple: (directory, basename, extension)
-    """
-    directory = os.path.dirname(file_path)
-    filename = get_filename(file_path)
-    basename, extension = os.path.splitext(filename)
-    return directory, basename, extension.lstrip(".")
-
-
 def evaluate_midi_mapping(audio_files: List[str], metadata: Dict[str, Any]) -> Dict[str, int]:
     """
     Calculate MIDI mapping for given audio files based on metadata.

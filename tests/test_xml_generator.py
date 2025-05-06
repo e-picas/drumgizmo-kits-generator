@@ -387,25 +387,3 @@ class TestGenerateMidimapXml:
         # Check that notes are within range
         assert all(note >= metadata["midi_note_min"] for note in notes)
         assert all(note <= metadata["midi_note_max"] for note in notes)
-
-
-class TestGenerateAllXmlFiles:
-    """Tests for the generate_all_xml_files function."""
-
-    @mock.patch("drumgizmo_kits_generator.xml_generator.generate_drumkit_xml")
-    @mock.patch("drumgizmo_kits_generator.xml_generator.generate_instrument_xml")
-    @mock.patch("drumgizmo_kits_generator.xml_generator.generate_midimap_xml")
-    def test_generate_all_xml_files(
-        self, mock_midimap, mock_instrument, mock_drumkit, temp_dir, basic_metadata, mock_logger
-    ):
-        """Test generate_all_xml_files calls all the necessary functions."""
-        # Call the function
-        xml_generator.generate_all_xml_files(temp_dir, basic_metadata)
-
-        # Check that all the necessary functions were called
-        mock_drumkit.assert_called_once_with(temp_dir, basic_metadata)
-        assert mock_instrument.call_count == len(basic_metadata["instruments"])
-        mock_midimap.assert_called_once_with(temp_dir, basic_metadata)
-
-        # Check logger calls
-        assert mock_logger["info"].call_count >= 1
