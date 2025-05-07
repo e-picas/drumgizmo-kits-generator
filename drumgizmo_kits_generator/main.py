@@ -49,9 +49,6 @@ def process_audio_files(
     """
     logger.section("Processing Audio Files")
 
-    # Verify SoX dependency before processing any files
-    utils.check_dependency("sox", "SoX not found in the system, can not generate samples")
-
     processed_audio_files = {}
 
     try:
@@ -209,7 +206,10 @@ def main() -> None:
             return
 
         # Check SoX dependency before proceeding
-        utils.check_dependency("sox", "SoX not found in the system, can not generate samples")
+        utils.check_dependency(
+            "sox",
+            "The required 'SoX' software has not been found in the system, can not generate kit!",
+        )
 
         # Prepare target directory
         utils.prepare_target_directory(args.target)

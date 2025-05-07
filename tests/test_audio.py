@@ -15,6 +15,7 @@ Tests for the audio module of the DrumGizmo kit generator.
 """
 
 import os
+import shutil
 import subprocess
 import tempfile
 from unittest import mock
@@ -412,7 +413,8 @@ class TestConvertSampleRate:
         mock_run.assert_called_once()
         # pylint: disable-next=unused-variable
         args, kwargs = mock_run.call_args
-        assert args[0][0] == "sox"
+        sox_path = shutil.which("sox")
+        assert args[0][0] == sox_path
         assert args[0][1] == sample_file
         assert args[0][2] == "-r"
         assert args[0][3] == "48000"
@@ -556,7 +558,7 @@ class TestGetAudioInfo:
             audio.get_audio_info(sample_file)
 
         # Verify the error message
-        assert "SoX (soxi) not found" in str(excinfo.value)
+        assert "soxi (part of SoX) not found" in str(excinfo.value)
 
     @mock.patch("shutil.which")
     @mock.patch("subprocess.run")
@@ -725,12 +727,10 @@ class TestProcessSample:
     @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
-    @mock.patch("drumgizmo_kits_generator.utils.check_dependency")
     @mock.patch("os.makedirs")
     def test_process_sample_without_sample_rate_conversion(
         self,
         mock_makedirs,
-        mock_check_dep,
         mock_create_velocity,
         mock_convert_sample_rate,
         mock_clean_name,
@@ -756,9 +756,6 @@ class TestProcessSample:
         # Assertions
         assert result == ["file1.wav", "file2.wav", "file3.wav"]
         mock_clean_name.assert_called_once()
-        mock_check_dep.assert_called_once_with(
-            "sox", "SoX not found in the system, can not generate samples"
-        )
         mock_makedirs.assert_called_once_with(
             os.path.join(tmp_dir, "test_instrument", "samples"), exist_ok=True
         )
@@ -774,7 +771,6 @@ class TestProcessSample:
     @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
-    @mock.patch("drumgizmo_kits_generator.utils.check_dependency")
     @mock.patch("os.makedirs")
     @mock.patch("os.path.exists")
     @mock.patch("shutil.rmtree")
@@ -783,7 +779,6 @@ class TestProcessSample:
         mock_rmtree,
         mock_exists,
         mock_makedirs,
-        mock_check_dep,
         mock_create_velocity,
         mock_convert_sample_rate,
         mock_clean_name,
@@ -809,9 +804,6 @@ class TestProcessSample:
 
         # Assertions
         assert result == ["file1.wav", "file2.wav", "file3.wav"]
-        mock_check_dep.assert_called_once_with(
-            "sox", "SoX not found in the system, can not generate samples"
-        )
         mock_makedirs.assert_called_once_with(
             os.path.join(tmp_dir, "test_instrument", "samples"), exist_ok=True
         )
@@ -819,12 +811,10 @@ class TestProcessSample:
 
     @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
-    @mock.patch("drumgizmo_kits_generator.utils.check_dependency")
     @mock.patch("os.makedirs")
     def test_process_sample_with_default_velocity_levels(
         self,
         mock_makedirs,
-        mock_check_dep,
         mock_create_velocity,
         mock_clean_name,
         tmp_dir,
@@ -848,9 +838,6 @@ class TestProcessSample:
 
         # Assertions
         assert result == ["file1.wav", "file2.wav", "file3.wav"]
-        mock_check_dep.assert_called_once_with(
-            "sox", "SoX not found in the system, can not generate samples"
-        )
         mock_makedirs.assert_called_once_with(
             os.path.join(tmp_dir, "test_instrument", "samples"), exist_ok=True
         )

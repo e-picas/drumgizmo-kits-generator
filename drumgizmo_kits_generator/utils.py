@@ -21,7 +21,7 @@ from drumgizmo_kits_generator import constants, logger
 from drumgizmo_kits_generator.exceptions import AudioProcessingError, DependencyError
 
 
-def check_dependency(command: str, error_message: str = None) -> None:
+def check_dependency(command: str, error_message: str = None) -> str:
     """
     Check if a command is available in the system.
 
@@ -29,12 +29,17 @@ def check_dependency(command: str, error_message: str = None) -> None:
         command: Command to check
         error_message: Custom error message (optional)
 
+    Returns:
+        str: The full path to the command if found
+
     Raises:
         DependencyError: If the command is not found
     """
-    if not shutil.which(command):
+    cmd_path = shutil.which(command)
+    if not cmd_path:
         msg = error_message or f"Required dependency '{command}' not found in the system"
         raise DependencyError(msg)
+    return cmd_path
 
 
 def strip_quotes(value: str) -> str:

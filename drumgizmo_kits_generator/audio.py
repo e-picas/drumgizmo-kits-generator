@@ -42,10 +42,10 @@ def convert_sample_rate(
     """
     logger.debug(f"Converting {file_path} to {target_sample_rate} Hz")
 
-    # Check if SoX is available
-    if not shutil.which("sox"):
-        error_msg = "SoX not found in the system, can not generate samples"
-        raise DependencyError(error_msg)
+    # Check if SoX is available and get its path
+    sox_path = utils.check_dependency(
+        "sox", "SoX not found in the system, can not generate samples"
+    )
 
     # Get file name components
     file_basename = utils.get_file_basename(file_path)
@@ -66,7 +66,7 @@ def convert_sample_rate(
     try:
         # Use SoX to convert the sample rate
         cmd = [
-            "sox",
+            sox_path,
             file_path,
             "-r",
             str(target_sample_rate),
@@ -120,11 +120,10 @@ def get_audio_info(file_path: str) -> Dict[str, Any]:
     if not os.path.isfile(file_path):
         raise AudioProcessingError(f"Audio file not found: {file_path}")
 
-    # Check if soxi is available
-    soxi_path = shutil.which("soxi")
-    if not soxi_path:
-        error_msg = "SoX (soxi) not found in the system, cannot get audio information"
-        raise DependencyError(error_msg)
+    # Check if soxi is available and get its path
+    soxi_path = utils.check_dependency(
+        "soxi", "soxi (part of SoX) not found in the system, can not get audio information"
+    )
 
     # Initialize default info
     audio_info = {
@@ -222,9 +221,6 @@ def process_sample(
     logger.info(f"Creating directory for instrument: {instrument_name}")
 
     try:
-        # Check if SoX is available
-        utils.check_dependency("sox", "SoX not found in the system, can not generate samples")
-
         # Process with sample rate conversion if needed
         if "samplerate" in metadata and metadata["samplerate"]:
             # Convert the sample rate to a temporary file
@@ -343,13 +339,18 @@ def create_velocity_variation(
     if not os.path.exists(file_path):
         raise AudioProcessingError(f"Source file not found: {file_path}")
 
+    # Check if SoX is available and get its path
+    sox_path = utils.check_dependency(
+        "sox", "SoX not found in the system, can not create velocity variations"
+    )
+
     try:
         # Convert volume factor to dB
         db_adjustment = 20 * (volume_factor - 1)
 
         # Create a copy with adjusted volume using SoX
         cmd = [
-            "sox",
+            sox_path,
             file_path,
             target_file,
             "gain",
@@ -400,9 +401,6 @@ def create_velocity_variations(
     if not os.path.exists(file_path):
         error_msg = f"Source file not found: {file_path}"
         raise AudioProcessingError(error_msg)
-
-    # Check if SoX is available
-    utils.check_dependency("sox", "SoX not found in the system, can not create velocity variations")
 
     # Get file extension
     file_ext = utils.get_file_extension(file_path, with_dot=True)

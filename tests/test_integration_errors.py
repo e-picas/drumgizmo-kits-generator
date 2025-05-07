@@ -263,7 +263,7 @@ class TestIntegrationErrors:
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
             assert "ERROR: " in stderr_output
-            assert "SoX not found" in stderr_output
+            assert "'SoX' software has not been found" in stderr_output
 
     def test_dry_run_mode(self, temp_output_dir, temp_source_dir, temp_config_file):
         """Test dry run mode (no actual files should be generated)."""

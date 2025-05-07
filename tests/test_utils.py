@@ -372,10 +372,14 @@ class TestCheckDependency:
     def test_check_dependency_found(self, mock_which, mock_logger_fixture):
         """Test check_dependency with a command that is found."""
         # Setup mocks
-        mock_which.return_value = "/usr/bin/test_command"
+        expected_path = "/usr/bin/test_command"
+        mock_which.return_value = expected_path
 
-        # Call the function - should not raise an exception
-        utils.check_dependency("test_command")
+        # Call the function and get the returned path
+        result = utils.check_dependency("test_command")
+
+        # Verify that the function returns the correct path
+        assert result == expected_path
 
         # Verify that logger.error was not called
         mock_logger_fixture["error"].assert_not_called()
@@ -413,3 +417,22 @@ class TestCheckDependency:
 
         # No need to verify logger.error call as it's now handled in main.py
         # mock_logger_fixture["error"].assert_called_once()
+
+    @mock.patch("shutil.which")
+    def test_check_dependency_returns_correct_path(self, mock_which, mock_logger_fixture):
+        """Test that check_dependency returns the correct path when command is found."""
+        # Setup mocks
+        expected_path = "/custom/path/to/command"
+        mock_which.return_value = expected_path
+
+        # Call the function
+        result = utils.check_dependency("custom_command")
+
+        # Verify the returned path is correct
+        assert result == expected_path
+
+        # Verify shutil.which was called with the correct argument
+        mock_which.assert_called_once_with("custom_command")
+
+        # Verify no errors were logged
+        mock_logger_fixture["error"].assert_not_called()

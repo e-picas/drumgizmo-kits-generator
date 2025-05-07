@@ -442,7 +442,8 @@ class TestMainWithDependencies:
 
         # Verify that check_dependency was called with "sox"
         mock_check_dependency.assert_called_with(
-            "sox", "SoX not found in the system, can not generate samples"
+            "sox",
+            "The required 'SoX' software has not been found in the system, can not generate kit!",
         )
 
         # Verify that an error message was printed
