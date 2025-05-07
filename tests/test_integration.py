@@ -5,6 +5,7 @@
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-branches
 # pylint: disable=too-few-public-methods
+# pylint: disable=R0801 # code duplication
 """
 SPDX-License-Identifier: MIT
 SPDX-PackageName: DrumGizmo kits generator

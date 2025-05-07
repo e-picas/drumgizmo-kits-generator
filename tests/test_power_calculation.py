@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name
 # pylint: disable=unused-argument
+# pylint: disable=R0801 # code duplication
 """
 SPDX-License-Identifier: MIT
 SPDX-PackageName: DrumGizmo kits generator

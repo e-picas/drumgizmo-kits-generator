@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name
+# pylint: disable=R0801 # code duplication
 """
 SPDX-License-Identifier: MIT
 SPDX-PackageName: DrumGizmo kits generator

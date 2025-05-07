@@ -5,6 +5,7 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=unused-argument
 # pylint: disable=chained-comparison
+# pylint: disable=R0801 # code duplication
 """
 SPDX-License-Identifier: MIT
 SPDX-PackageName: DrumGizmo kits generator
