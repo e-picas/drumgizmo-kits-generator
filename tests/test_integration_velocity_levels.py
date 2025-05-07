@@ -8,6 +8,11 @@
 # pylint: disable=broad-exception-caught
 # pylint: disable=too-many-return-statements
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Integration tests for velocity levels in the DrumGizmo kit generator.
 This test suite verifies that the application correctly handles different velocity level configurations.
 """

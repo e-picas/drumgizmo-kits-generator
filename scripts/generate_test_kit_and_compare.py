@@ -7,6 +7,11 @@
 # pylint: disable=too-many-function-args
 # pylint: disable=subprocess-run-check
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Generate a test kit from `examples/sources/` to `tests/target_test/`
 with configuration `examples/drumgizmo-kit-example.ini`
 and compare its contents with those of `examples/target/`

@@ -2,6 +2,11 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=unused-argument
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Validation utilities for DrumGizmo kit generation.
 Contains functions to validate configuration entries.
 All methods should be named `validate_<configuration_entry_name>`.

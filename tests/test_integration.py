@@ -6,6 +6,11 @@
 # pylint: disable=too-many-branches
 # pylint: disable=too-few-public-methods
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Integration test for the DrumGizmo kit generator.
 This test performs a complete generation from examples/sources/ to a temporary directory
 and compares the results with examples/target/.

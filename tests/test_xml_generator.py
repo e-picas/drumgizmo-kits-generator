@@ -6,6 +6,11 @@
 # pylint: disable=unused-argument
 # pylint: disable=chained-comparison
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Tests for the xml_generator module of the DrumGizmo kit generator.
 """
 

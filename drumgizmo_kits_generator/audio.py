@@ -1,4 +1,13 @@
-"""Audio processing module for DrumGizmo kit generation."""
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
+Audio processing module for DrumGizmo kit generation.
+"""
 
 import os
 import shutil

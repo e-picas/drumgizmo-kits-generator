@@ -4,6 +4,11 @@
 # pylint: disable=too-many-arguments
 # pylint: disable=unused-argument
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Tests for the audio module of the DrumGizmo kit generator.
 """
 
