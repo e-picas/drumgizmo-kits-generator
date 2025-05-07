@@ -45,16 +45,20 @@ $ make
 This file is for development usage only
 To use this file, run: make <target>
 
-  all             Run all checks: `format`, `lint`, `test`, `coverage` and `generate`
-  check-env       Verify that required commands are installed in the system
-  clean           Cleanup Python's temporary files, cache and build
-  coverage        Get the coverage analysis with `pytest`
-  format          Format the code following the `.pre-commit-config.yaml` using `black` and `isort`
-  generate        Generate a test kit to `tests/target_test/` (excluded from VCS) from `examples/sources/` and compare it with `examples/target/`
-  install         Install the app's dependencies & git hooks
-  lint            Run the linter with `pylint`
-  test            Run the tests in `tests/` with `pytest`
-  version         Get the app's current version
+  all                  Run all checks: `format`, `lint`, `test`, `coverage` and `generate-and-compare`
+  check-env            Verify that required commands are installed in the system
+  clean                Cleanup Python's temporary files, cache and build
+  coverage             Get the coverage analysis with `pytest`
+  format               Format the code following the `.pre-commit-config.yaml` using `black` and `isort`
+  generate             Generate a test kit from `examples/sources/` to `tests/target_test/` (excluded from VCS)
+  generate-and-compare Run the test script to generate a test kit and compare it with `examples/target/`
+  generate-dry-run     Generate a test kit in DRY-RUN mode from `examples/sources/` to `tests/target_test/` (excluded from VCS)
+  generate-example     Re-generate the example kit from `examples/sources/` to `examples/target/` catching output in log files `examples/target-generation-output*.log`
+  install              Install the app's dependencies & git hooks
+  lint                 Run the linter with `pylint`
+  test                 Run the tests in `tests/` with `pytest`
+  version              Get the app's current version
+
 ```
 
 When developing, you should often run `make all` to execute all codebase formatters, linters and validations.

@@ -56,12 +56,6 @@ dev = [
     "python-semantic-release>=9.21.0",
 ]
 
-[tool.pylint.messages_control]
-disable = [
-    "broad-exception-caught",
-    "wrong-import-position",
-]
-
 [tool.pylint.format]
 max-line-length = 100
 

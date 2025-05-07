@@ -8,8 +8,8 @@ Using configuration file: examples/drumgizmo-kit-example.ini
 Name: Test Kit
 Version: 1.0
 Description: An example drum kit for DrumGizmo with dummy audio samples
-Notes: DrumGizmo kit generated for testing purpose
-Author: Picas
+Notes: Fake DrumGizmo kit generated for testing purpose. All sources (audio, logo, extra files) are free of use.
+Author: Anonymous
 License: CC-BY-SA 4.0
 Website: https://example.com/my-drumgizmo-kit
 Logo: pngtree-music-notes-png-image_8660757.png
