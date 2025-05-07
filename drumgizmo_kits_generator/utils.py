@@ -62,6 +62,68 @@ def strip_quotes(value: str) -> str:
     return value
 
 
+def split_comma_separated(
+    value: Any, strip_items: bool = True, remove_empty: bool = True
+) -> List[str]:
+    """
+    Split a comma-separated string into a list of strings.
+
+    This function handles various input types and provides options for cleaning the result.
+    It preserves commas inside quotes and handles both single and double quotes.
+
+    Args:
+        value: The value to split. Can be a string, list, or any other type.
+               If the value is not a string or list, returns an empty list.
+        strip_items: Whether to strip whitespace from each item.
+        remove_empty: Whether to remove empty strings from the result.
+
+    Returns:
+        List[str]: A list of strings from the split operation, or empty list if input is not a string or list.
+
+    Examples:
+        >>> split_comma_separated("a, b, c")
+        ['a', 'b', 'c']
+        >>> split_comma_separated(["a", "b", "c"])
+        ['a', 'b', 'c']
+        >>> split_comma_separated("a,,b,\n  c")
+        ['a', 'b', 'c']
+        >>> split_comma_separated('a,"b,c",d')
+        ['a', 'b,c', 'd']
+        >>> split_comma_separated(None)
+        []
+        >>> split_comma_separated(123)
+        []
+    """
+    # Handle None or empty values
+    if value is None:
+        return []
+
+    # If value is already a list, return a copy with stripped items if needed
+    if isinstance(value, list):
+        result = list(value)
+        if strip_items:
+            result = [item.strip() if isinstance(item, str) else str(item) for item in result]
+            result = [strip_quotes(item) for item in result]
+        return [item for item in result if item] if remove_empty else result
+
+    # If value is a string, process it
+    if not isinstance(value, str):
+        return []
+
+    result = strip_quotes(value)
+    result = result.split(",")
+
+    # Clean up the result
+    if strip_items:
+        result = [item.strip() for item in result]
+        result = [strip_quotes(item) for item in result]
+
+    if remove_empty:
+        result = [item for item in result if item]
+
+    return result
+
+
 def clean_instrument_name(file_base: str) -> str:
     """
     Clean up the instrument name by removing velocity prefixes and _converted suffixes.

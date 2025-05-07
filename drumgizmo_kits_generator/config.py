@@ -186,7 +186,7 @@ def validate_configuration(config_data: Dict[str, Any]) -> None:
                 validator = getattr(validators, validator_name)
                 validator(config_data[key], config_data)
 
-        # Validate the whole configuration for consistency
+        # Finally, validate the whole configuration for consistency
         validators.validate_whole_config(config_data)
     except Exception as e:
         if not isinstance(e, ValidationError):

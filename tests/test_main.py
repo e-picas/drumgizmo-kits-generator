@@ -321,9 +321,7 @@ class TestMain:
 
         # Verify that all mocks were used
         mock_parse_arguments.assert_called_once()
-        mock_validate_directories.assert_called_once_with(
-            "/path/to/source", "/path/to/target", True
-        )
+        mock_validate_directories.assert_called_once_with("/path/to/source", "/path/to/target")
         mock_load_configuration.assert_called_once_with(args)
 
         mock_print_metadata.assert_called_once_with(config_data)
@@ -539,7 +537,7 @@ class TestMainWithDependencies:
 
         # Assertions
         mock_parse_args.assert_called_once()
-        mock_validate_dirs.assert_called_once_with("/path/to/source", "/path/to/target", False)
+        mock_validate_dirs.assert_called_once_with("/path/to/source", "/path/to/target")
 
         # Vérifier que load_configuration a été appelé avec les bons arguments
         mock_load_config.assert_called_once_with(args)

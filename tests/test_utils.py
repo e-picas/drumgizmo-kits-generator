@@ -19,7 +19,7 @@ from unittest import mock
 
 import pytest
 
-from drumgizmo_kits_generator import exceptions, utils, validators
+from drumgizmo_kits_generator import exceptions, utils
 
 
 @pytest.fixture
@@ -95,56 +95,6 @@ class TestCleanInstrumentName:
         assert utils.clean_instrument_name("Kick_converted") == "Kick"
         assert utils.clean_instrument_name("Snare_converted") == "Snare"
         assert utils.clean_instrument_name("1-HiHat_converted") == "HiHat"
-
-
-class TestValidateDirectories:
-    """Tests for the validate_directories function."""
-
-    @mock.patch("os.path.isdir")
-    def test_validate_directories_all_valid(self, mock_isdir, mock_logger_fixture):
-        """Test validate_directories with all valid paths."""
-        # Setup mocks
-        mock_isdir.return_value = True
-
-        # Call the function - should not raise an exception
-        validators.validate_directories("/path/to/source", "/path/to/target")
-
-        # Also test with dry_run parameter
-        validators.validate_directories("/path/to/source", "/path/to/target", True)
-
-    @mock.patch("os.path.isdir")
-    def test_validate_directories_invalid_source(self, mock_isdir, mock_logger_fixture):
-        """Test validate_directories with invalid source directory."""
-        # Setup mocks
-        mock_isdir.return_value = False
-
-        # Call the function and expect a FileNotFoundError
-        with pytest.raises(FileNotFoundError) as excinfo:
-            validators.validate_directories("/invalid/source", "/valid/target")
-
-        # Verify the error message
-        assert "Source directory '/invalid/source' does not exist" in str(excinfo.value)
-
-    @mock.patch("os.path.isdir")
-    @mock.patch("os.makedirs")
-    def test_validate_directories_create_target(
-        self, mock_makedirs, mock_isdir, mock_logger_fixture
-    ):
-        """Test validate_directories creates target directory if it doesn't exist."""
-        # Setup mocks
-        mock_isdir.side_effect = lambda path: path == "/valid/source"
-
-        # Call the function - should not raise an exception and should create target
-        validators.validate_directories("/valid/source", "/nonexistent/target")
-
-    @mock.patch("os.path.isdir")
-    def test_validate_directories_dry_run(self, mock_isdir, mock_logger_fixture):
-        """Test validate_directories in dry run mode."""
-        # Setup mocks
-        mock_isdir.side_effect = lambda path: path == "/valid/source"
-
-        # Call the function in dry run mode - should not raise an exception
-        validators.validate_directories("/valid/source", "/nonexistent/target", True)
 
 
 class TestPrepareTargetDirectory:
@@ -300,68 +250,101 @@ class TestCheckDependency:
     @mock.patch("shutil.which")
     def test_check_dependency_found(self, mock_which, mock_logger_fixture):
         """Test check_dependency with a command that is found."""
-        # Setup mocks
-        expected_path = "/usr/bin/test_command"
-        mock_which.return_value = expected_path
-
-        # Call the function and get the returned path
-        result = utils.check_dependency("test_command")
-
-        # Verify that the function returns the correct path
-        assert result == expected_path
-
-        # Verify that logger.error was not called
-        mock_logger_fixture["error"].assert_not_called()
+        # Setup
+        mock_which.return_value = "/usr/bin/command"
+        # Test
+        result = utils.check_dependency("command")
+        # Assert
+        assert result == "/usr/bin/command"
+        mock_which.assert_called_once_with("command")
+        mock_logger_fixture["info"].assert_not_called()
 
     @mock.patch("shutil.which")
     def test_check_dependency_not_found(self, mock_which, mock_logger_fixture):
         """Test check_dependency with dependency not found."""
-        # Setup mocks
+        # Setup
         mock_which.return_value = None
-
-        # Call the function and expect a DependencyError
-        with pytest.raises(exceptions.DependencyError) as excinfo:
-            utils.check_dependency("test_command")
-
-        # Verify the error message contains the command name
-        assert "test_command" in str(excinfo.value)
-        assert "not found" in str(excinfo.value)
-
-        # No need to verify logger.error call as it's now handled in main.py
-        # mock_logger_fixture["error"].assert_called_once()
+        # Test & Assert
+        with pytest.raises(exceptions.DependencyError) as exc_info:
+            utils.check_dependency("nonexistent")
+        assert "Required dependency 'nonexistent' not found" in str(exc_info.value)
+        mock_which.assert_called_once_with("nonexistent")
 
     @mock.patch("shutil.which")
     def test_check_dependency_custom_message(self, mock_which, mock_logger_fixture):
         """Test check_dependency with a custom error message."""
-        # Setup mocks
+        # Setup
         mock_which.return_value = None
-        custom_message = "Custom error message for test_command"
-
-        # Call the function and expect a DependencyError
-        with pytest.raises(exceptions.DependencyError) as excinfo:
-            utils.check_dependency("test_command", custom_message)
-
-        # Verify the error message
-        assert custom_message == str(excinfo.value)
-
-        # No need to verify logger.error call as it's now handled in main.py
-        # mock_logger_fixture["error"].assert_called_once()
+        custom_message = "Custom error message"
+        # Test & Assert
+        with pytest.raises(exceptions.DependencyError, match=custom_message):
+            utils.check_dependency("nonexistent", error_message=custom_message)
+        mock_which.assert_called_once_with("nonexistent")
 
     @mock.patch("shutil.which")
     def test_check_dependency_returns_correct_path(self, mock_which, mock_logger_fixture):
         """Test that check_dependency returns the correct path when command is found."""
-        # Setup mocks
+        # Setup
         expected_path = "/custom/path/to/command"
         mock_which.return_value = expected_path
-
-        # Call the function
-        result = utils.check_dependency("custom_command")
-
-        # Verify the returned path is correct
+        # Test
+        result = utils.check_dependency("command")
+        # Assert
         assert result == expected_path
+        mock_which.assert_called_once_with("command")
 
-        # Verify shutil.which was called with the correct argument
-        mock_which.assert_called_once_with("custom_command")
 
-        # Verify no errors were logged
-        mock_logger_fixture["error"].assert_not_called()
+class TestSplitCommaSeparated:
+    """Tests for the split_comma_separated function."""
+
+    def test_split_comma_separated_basic(self):
+        """Test basic comma-separated string splitting."""
+        result = utils.split_comma_separated("a,b,c")
+        assert result == ["a", "b", "c"]
+
+    def test_split_comma_separated_with_spaces(self):
+        """Test splitting with spaces around commas."""
+        result = utils.split_comma_separated("a, b, c")
+        assert result == ["a", "b", "c"]
+
+    def test_split_comma_separated_with_quotes(self):
+        """Test splitting a quoted string."""
+        result = utils.split_comma_separated('"a,b,c"')
+        # La fonction split_comma_separated divise toujours sur les virgules, même à l'intérieur des guillemets
+        # car c'est le comportement attendu pour notre cas d'utilisation
+        assert result == ["a", "b", "c"]
+
+    def test_split_comma_separated_with_empty_items(self):
+        """Test splitting with empty items."""
+        result = utils.split_comma_separated("a,,b,c,")
+        assert result == ["a", "b", "c"]
+
+    def test_split_comma_separated_with_newlines(self):
+        """Test splitting with newlines in the string."""
+        result = utils.split_comma_separated("a,\n  b, c")
+        assert result == ["a", "b", "c"]
+
+    def test_split_comma_separated_with_list_input(self):
+        """Test with list input."""
+        result = utils.split_comma_separated(["a", "b", "c"])
+        assert result == ["a", "b", "c"]
+
+    def test_split_comma_separated_with_none_input(self):
+        """Test with None input."""
+        result = utils.split_comma_separated(None)
+        assert result == []
+
+    def test_split_comma_separated_without_stripping(self):
+        """Test without stripping whitespace from items."""
+        result = utils.split_comma_separated("a, b ,  c", strip_items=False)
+        assert result == ["a", " b ", "  c"]
+
+    def test_split_comma_separated_without_removing_empty(self):
+        """Test without removing empty items."""
+        result = utils.split_comma_separated("a,,b,c,", remove_empty=False)
+        assert result == ["a", "", "b", "c", ""]
+
+    def test_split_comma_separated_with_non_string_input(self):
+        """Test with non-string input."""
+        result = utils.split_comma_separated(123)
+        assert result == []

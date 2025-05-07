@@ -13,7 +13,7 @@ Contains functions for transforming configuration values.
 from typing import Any, List
 
 from drumgizmo_kits_generator import constants, logger
-from drumgizmo_kits_generator.utils import strip_quotes
+from drumgizmo_kits_generator.utils import split_comma_separated, strip_quotes
 
 
 def transform_velocity_levels(value: Any) -> int:
@@ -124,28 +124,20 @@ def transform_extensions(value: Any) -> List[str]:
     """
     # If value is None, return default extensions
     if value is None:
-        return constants.DEFAULT_EXTENSIONS.split(",")
+        value = constants.DEFAULT_EXTENSIONS
 
-    # If value is already a list, return it
-    if isinstance(value, list):
-        return value
-
-    # If not a string, use default
-    if not isinstance(value, str):
+    # If not a string or list, use default
+    if not isinstance(value, (str, list)):
         logger.warning(f"Invalid extensions type, using default: {constants.DEFAULT_EXTENSIONS}")
-        return constants.DEFAULT_EXTENSIONS.split(",")
+        value = constants.DEFAULT_EXTENSIONS
 
-    # Remove quotes if present
-    if value.startswith('"') and value.endswith('"'):
-        value = value[1:-1]
-
-    # Split by comma and strip whitespace
-    extensions = [ext.strip() for ext in value.split(",") if ext.strip()]
+    # Split the value and get the result
+    extensions = split_comma_separated(value)
 
     # If no extensions found, use default
     if not extensions:
         logger.warning(f"No valid extensions found, using default: {constants.DEFAULT_EXTENSIONS}")
-        return constants.DEFAULT_EXTENSIONS.split(",")
+        extensions = split_comma_separated(constants.DEFAULT_EXTENSIONS)
 
     return extensions
 
@@ -162,27 +154,19 @@ def transform_channels(value: Any) -> List[str]:
     """
     # If value is None, return default channels
     if value is None:
-        return constants.DEFAULT_CHANNELS.split(",")
+        value = constants.DEFAULT_CHANNELS
 
-    # If value is already a list, return it
-    if isinstance(value, list):
-        return value
-
-    # If not a string, use default
-    if not isinstance(value, str):
+    # If not a string or list, use default
+    if not isinstance(value, (str, list)):
         logger.warning(f"Invalid channels type, using default: {constants.DEFAULT_CHANNELS}")
-        return constants.DEFAULT_CHANNELS.split(",")
 
-    # Remove quotes if present
-    value = strip_quotes(value)
-
-    # Split by comma and strip whitespace
-    channels = [channel.strip() for channel in value.split(",") if channel.strip()]
+    # Split the value and get the result
+    channels = split_comma_separated(value)
 
     # If no channels found, use default
     if not channels:
         logger.warning(f"No valid channels found, using default: {constants.DEFAULT_CHANNELS}")
-        return constants.DEFAULT_CHANNELS.split(",")
+        channels = split_comma_separated(constants.DEFAULT_CHANNELS)
 
     return channels
 
@@ -199,27 +183,21 @@ def transform_main_channels(value: Any) -> List[str]:
     """
     # If value is None, return default main channels
     if value is None:
-        return constants.DEFAULT_MAIN_CHANNELS.split(",") if constants.DEFAULT_MAIN_CHANNELS else []
+        value = constants.DEFAULT_MAIN_CHANNELS
 
-    # If value is already a list, return it
-    if isinstance(value, list):
-        return value
+    # If not a string or list, use default
+    if not isinstance(value, (str, list)):
+        logger.warning(
+            f"Invalid main_channels type, using default: {constants.DEFAULT_MAIN_CHANNELS}"
+        )
+        value = constants.DEFAULT_MAIN_CHANNELS
 
-    # If not a string, return empty list (main channels can be empty)
-    if not isinstance(value, str):
-        logger.warning("Invalid main_channels type, using empty list")
+    # Split the value and get the result
+    main_channels = split_comma_separated(value)
+
+    # If no main_channels found, return empty list (main channels can be empty)
+    if not main_channels:
         return []
-
-    # Remove quotes if present
-    if value.startswith('"') and value.endswith('"'):
-        value = value[1:-1]
-
-    # If empty string, return empty list
-    if not value.strip():
-        return []
-
-    # Split by comma and strip whitespace
-    main_channels = [channel.strip() for channel in value.split(",") if channel.strip()]
     return main_channels
 
 
@@ -246,16 +224,8 @@ def transform_extra_files(value: Any) -> List[str]:
         logger.warning("Invalid extra_files type, using empty list")
         return []
 
-    # Remove quotes if present
-    if value.startswith('"') and value.endswith('"'):
-        value = value[1:-1]
-
-    # If empty string, return empty list
-    if not value.strip():
-        return []
-
     # Split by comma and strip whitespace
-    extra_files = [f.strip() for f in value.split(",") if f.strip()]
+    extra_files = split_comma_separated(value)
     return extra_files
 
 

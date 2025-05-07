@@ -83,6 +83,7 @@ validators.py
 : Validate configuration values
 : Custom validators for specific configuration options
 : Ensure data integrity and constraints
+: Validators must not return values but raise exceptions if the validation fails
 
 ### Utilities
 utils.py
