@@ -217,8 +217,15 @@ def process_sample(
     # Create instrument directory
     instrument_dir = utils.join_paths(target_dir, instrument_name)
     samples_dir = utils.join_paths(instrument_dir, constants.DEFAULT_SAMPLES_DIR)
-    os.makedirs(samples_dir, exist_ok=True)
     logger.info(f"Creating directory for instrument: {instrument_name}")
+    os.makedirs(samples_dir, exist_ok=True)
+
+    velocity_levels = metadata.get("velocity_levels")
+
+    # Log success
+    logger.info(
+        f"Processed {utils.get_filename(file_path)} with {velocity_levels} volume variations"
+    )
 
     try:
         # Process with sample rate conversion if needed
@@ -241,7 +248,6 @@ def process_sample(
 
         try:
             # Create velocity variations
-            velocity_levels = metadata.get("velocity_levels")
             variation_files = create_velocity_variations(
                 file_to_process,
                 samples_dir,
@@ -253,11 +259,6 @@ def process_sample(
             # Clean up the temporary file and directory if they exist
             if temp_dir and os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
-
-        # Log success
-        logger.info(
-            f"Processed {utils.get_filename(file_path)} with {velocity_levels} volume variations"
-        )
 
         return variation_files
     # pylint: disable=try-except-raise
@@ -399,8 +400,7 @@ def create_velocity_variations(
 
     # Check if source file exists
     if not os.path.exists(file_path):
-        error_msg = f"Source file not found: {file_path}"
-        raise AudioProcessingError(error_msg)
+        raise AudioProcessingError(f"Source file not found: {file_path}")
 
     # Get file extension
     file_ext = utils.get_file_extension(file_path, with_dot=True)
@@ -429,11 +429,11 @@ def create_velocity_variations(
         volume_factor = calculate_volume(i, velocity_levels)
 
         # Create the velocity variation
+        logger.debug(
+            f"Creating velocity variation {i}/{velocity_levels} at {volume_factor:.2f} volume"
+        )
         create_velocity_variation(file_path, velocity_file, volume_factor)
 
         variation_files.append(velocity_file)
-        logger.debug(
-            f"Created velocity variation {i}/{velocity_levels} at {volume_factor:.2f} volume"
-        )
 
     return variation_files

@@ -1,5 +1,5 @@
 
-=== Processing Directories ===
+=== Process Main Directories ===
 Source directory: examples/sources/
 Target directory: examples/target/
 Using configuration file: examples/drumgizmo-kit-example.ini

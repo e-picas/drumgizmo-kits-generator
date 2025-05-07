@@ -44,6 +44,7 @@ def load_configuration(args):
             "config": args.config,
             "verbose": args.verbose,
             "dry_run": args.dry_run,
+            "raw_output": args.raw_output,
         }
     )
 
@@ -185,10 +186,8 @@ def validate_configuration(config_data: Dict[str, Any]) -> None:
                 validator = getattr(validators, validator_name)
                 validator(config_data[key], config_data)
 
-        # Additional validation for MIDI note range
-        if config_data["midi_note_min"] > config_data["midi_note_max"]:
-            error_msg = f"MIDI note min ({config_data['midi_note_min']}) is greater than max ({config_data['midi_note_max']})"
-            raise ValidationError(error_msg)
+        # Validate the whole configuration for consistency
+        validators.validate_whole_config(config_data)
     except Exception as e:
         if not isinstance(e, ValidationError):
             error_msg = f"Failed to validate configuration: {e}"

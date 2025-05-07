@@ -507,6 +507,25 @@ def validate_variations_method(
     return value_str
 
 
+def validate_whole_config(config_data: Dict[str, Any]) -> None:
+    """
+    Validate the complete configuration for consistency.
+
+    Args:
+        config_data: The complete configuration dictionary
+
+    Raises:
+        ValidationError: If the configuration is not consistent
+    """
+    # Additional validation for MIDI note range
+    if config_data["midi_note_min"] > config_data["midi_note_max"]:
+        error_msg = (
+            f"MIDI note min ({config_data['midi_note_min']}) is greater than max "
+            f"({config_data['midi_note_max']})"
+        )
+        raise ValidationError(error_msg)
+
+
 def validate_directories(source_dir: str, target_dir: str, dry_run: bool = False) -> None:
     """
     Validate source and target directories.
@@ -523,8 +542,3 @@ def validate_directories(source_dir: str, target_dir: str, dry_run: bool = False
     if not os.path.isdir(source_dir):
         logger.error(f"Source directory '{source_dir}' does not exist")
         raise FileNotFoundError(f"Source directory '{source_dir}' does not exist")
-
-    # Create target directory if it doesn't exist
-    if not dry_run and not os.path.isdir(target_dir):
-        os.makedirs(target_dir, exist_ok=True)
-        logger.debug(f"Target directory '{target_dir}' created")

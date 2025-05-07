@@ -30,7 +30,7 @@ def transform_velocity_levels(value: Any) -> int:
         return constants.DEFAULT_VELOCITY_LEVELS
 
     try:
-        return int(value)
+        return int(strip_quotes(value))
     except (ValueError, TypeError):
         return constants.DEFAULT_VELOCITY_LEVELS
 

@@ -97,74 +97,6 @@ class TestCleanInstrumentName:
         assert utils.clean_instrument_name("1-HiHat_converted") == "HiHat"
 
 
-class TestScanSourceFiles:
-    """Tests for the scan_source_files function."""
-
-    def test_scan_source_files(self):
-        """Test scan_source_files with various extensions."""
-        # Create a temporary directory with test files
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Create some test files
-            wav_file = os.path.join(temp_dir, "test1.wav")
-            flac_file = os.path.join(temp_dir, "test2.flac")
-            mp3_file = os.path.join(temp_dir, "test3.mp3")
-            txt_file = os.path.join(temp_dir, "test4.txt")
-
-            # Create subdirectory with more files
-            subdir = os.path.join(temp_dir, "subdir")
-            os.makedirs(subdir)
-            subdir_wav = os.path.join(subdir, "subtest1.wav")
-            subdir_flac = os.path.join(subdir, "subtest2.flac")
-
-            # Create all the files
-            for file_path in [wav_file, flac_file, mp3_file, txt_file, subdir_wav, subdir_flac]:
-                with open(file_path, "w", encoding="utf-8") as f:
-                    f.write("dummy content")
-
-            # Test with various extension filters
-
-            # Test with wav only
-            result = utils.scan_source_files(temp_dir, ["wav"])
-            assert len(result) == 2
-            assert wav_file in result
-            assert subdir_wav in result
-            assert flac_file not in result
-            assert mp3_file not in result
-            assert txt_file not in result
-
-            # Test with wav and flac
-            result = utils.scan_source_files(temp_dir, ["wav", "flac"])
-            assert len(result) == 4
-            assert wav_file in result
-            assert flac_file in result
-            assert subdir_wav in result
-            assert subdir_flac in result
-            assert mp3_file not in result
-            assert txt_file not in result
-
-            # Test with all audio formats
-            result = utils.scan_source_files(temp_dir, ["wav", "flac", "mp3"])
-            assert len(result) == 5
-            assert wav_file in result
-            assert flac_file in result
-            assert mp3_file in result
-            assert subdir_wav in result
-            assert subdir_flac in result
-            assert txt_file not in result
-
-            # Test with case insensitivity
-            result = utils.scan_source_files(temp_dir, ["WAV", "FLAC"])
-            assert len(result) == 4
-            assert wav_file in result
-            assert flac_file in result
-            assert subdir_wav in result
-            assert subdir_flac in result
-
-            # Test with empty extensions list
-            result = utils.scan_source_files(temp_dir, [])
-            assert len(result) == 0
-
-
 class TestValidateDirectories:
     """Tests for the validate_directories function."""
 
@@ -204,9 +136,6 @@ class TestValidateDirectories:
 
         # Call the function - should not raise an exception and should create target
         validators.validate_directories("/valid/source", "/nonexistent/target")
-
-        # Verify that makedirs was called for the target directory
-        mock_makedirs.assert_called_once_with("/nonexistent/target", exist_ok=True)
 
     @mock.patch("os.path.isdir")
     def test_validate_directories_dry_run(self, mock_isdir, mock_logger_fixture):

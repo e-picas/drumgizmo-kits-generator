@@ -85,30 +85,6 @@ def clean_instrument_name(file_base: str) -> str:
     return instrument_name
 
 
-def scan_source_files(source_dir: str, extensions: List[str]) -> List[str]:
-    """
-    Scan source directory for audio files with specified extensions.
-
-    Args:
-        source_dir: Path to the source directory
-        extensions: List of file extensions to include
-
-    Returns:
-        List[str]: List of audio file paths, sorted alphabetically
-    """
-    audio_files = []
-    for root, _, files in os.walk(source_dir):
-        for file in files:
-            file_ext = os.path.splitext(file)[1].lower().lstrip(".")
-            if file_ext in [ext.lower() for ext in extensions]:
-                audio_files.append(os.path.join(root, file))
-
-    # Sort audio files alphabetically by filename
-    audio_files.sort(key=lambda x: os.path.basename(x).lower())
-
-    return audio_files
-
-
 def prepare_target_directory(target_dir: str) -> None:
     """
     Prepare the target directory by creating it if it doesn't exist

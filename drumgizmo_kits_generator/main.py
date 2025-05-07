@@ -120,6 +120,30 @@ def generate_xml_files(audio_files: List[str], target_dir: str, metadata: Dict[s
         raise XMLGenerationError(error_msg) from e
 
 
+def scan_source_files(source_dir: str, extensions: List[str]) -> List[str]:
+    """
+    Scan source directory for audio files with specified extensions.
+
+    Args:
+        source_dir: Path to the source directory
+        extensions: List of file extensions to include
+
+    Returns:
+        List[str]: List of audio file paths, sorted alphabetically
+    """
+    audio_files = []
+    for root, _, files in os.walk(source_dir):
+        for file in files:
+            file_ext = os.path.splitext(file)[1].lower().lstrip(".")
+            if file_ext in [ext.lower() for ext in extensions]:
+                audio_files.append(os.path.join(root, file))
+
+    # Sort audio files alphabetically by filename
+    audio_files.sort(key=lambda x: os.path.basename(x).lower())
+
+    return audio_files
+
+
 def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, Any]) -> None:
     """
     Copy logo and additional files to the target directory.
@@ -179,7 +203,7 @@ def main() -> None:
         validators.validate_directories(args.source, args.target, args.dry_run)
 
         # Display processing directories
-        logger.section("Processing Directories")
+        logger.section("Process Main Directories")
         logger.info(f"Source directory: {args.source}")
         logger.info(f"Target directory: {args.target}")
 
@@ -191,10 +215,7 @@ def main() -> None:
 
         # Scan source files
         extensions = metadata["extensions"]
-        # If extensions is already a list, use it directly
-        if isinstance(extensions, str):
-            extensions = extensions.split(",")
-        audio_files = utils.scan_source_files(args.source, extensions)
+        audio_files = scan_source_files(args.source, extensions)
 
         # Print samples information
         cli.print_samples_info(audio_files, metadata)

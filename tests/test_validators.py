@@ -430,6 +430,46 @@ def test_validate_license():
     assert validators.validate_license("BSD-3-Clause", {}) == "BSD-3-Clause"
 
 
+class TestValidateWholeConfig:
+    """Tests for the validate_whole_config function."""
+
+    def test_validate_whole_config_valid(self):
+        """Test validate_whole_config with valid MIDI note range."""
+        # Setup
+        config_data = {
+            "midi_note_min": 36,
+            "midi_note_max": 60,
+        }
+
+        # Test (should not raise)
+        validators.validate_whole_config(config_data)
+
+    def test_validate_whole_config_invalid_range(self):
+        """Test validate_whole_config with invalid MIDI note range."""
+        # Setup
+        config_data = {
+            "midi_note_min": 60,  # min > max
+            "midi_note_max": 36,
+        }
+
+        # Test & Assert
+        with pytest.raises(ValidationError) as excinfo:
+            validators.validate_whole_config(config_data)
+
+        assert "MIDI note min (60) is greater than max (36)" in str(excinfo.value)
+
+    def test_validate_whole_config_equal_notes(self):
+        """Test validate_whole_config with min and max MIDI notes equal."""
+        # Setup
+        config_data = {
+            "midi_note_min": 48,
+            "midi_note_max": 48,  # min == max
+        }
+
+        # Test (should not raise)
+        validators.validate_whole_config(config_data)
+
+
 class TestValidateDirectories:
     """Tests for the validate_directories function."""
 
@@ -445,8 +485,7 @@ class TestValidateDirectories:
         mock_makedirs.assert_not_called()
 
     @mock.patch("os.path.isdir")
-    @mock.patch("os.makedirs")
-    def test_validate_directories_nonexistent_target(self, mock_makedirs, mock_isdir):
+    def test_validate_directories_nonexistent_target(self, mock_isdir):
         """Test validate_directories with nonexistent target directory."""
         # Source exists, target doesn't
         mock_isdir.side_effect = lambda path: path == "/path/to/source"
@@ -454,8 +493,6 @@ class TestValidateDirectories:
         validators.validate_directories("/path/to/source", "/path/to/target")
 
         mock_isdir.assert_any_call("/path/to/source")
-        mock_isdir.assert_any_call("/path/to/target")
-        mock_makedirs.assert_called_once_with("/path/to/target", exist_ok=True)
 
     @mock.patch("os.path.isdir")
     def test_validate_directories_nonexistent_source(self, mock_isdir):

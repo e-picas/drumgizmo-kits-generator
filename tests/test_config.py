@@ -287,6 +287,7 @@ class TestLoadConfiguration:
             target="/target",
             verbose=False,
             dry_run=False,
+            raw_output=False,
             config=temp_config_file,
             name=None,
             version=None,
@@ -363,6 +364,7 @@ class TestLoadConfiguration:
                 target="/target",
                 verbose=False,
                 dry_run=False,
+                raw_output=False,
                 config=constants.DEFAULT_CONFIG_FILE,
                 name=None,
                 version=None,
@@ -435,6 +437,7 @@ class TestLoadConfiguration:
             target="/target",
             verbose=False,
             dry_run=False,
+            raw_output=False,
             config="nonexistent.ini",  # Non-default config file that doesn't exist
             name=None,
             version=None,
