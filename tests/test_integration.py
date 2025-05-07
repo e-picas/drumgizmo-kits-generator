@@ -209,7 +209,7 @@ class TestIntegration:
         # Get the absolute paths
         project_root = Path(__file__).parent.parent
         source_dir = os.path.join(project_root, "examples", "sources")
-        config_file = os.path.join(source_dir, "drumgizmo-kit.ini")
+        config_file = os.path.join(project_root, "examples", "drumgizmo-kit-example.ini")
         reference_dir = os.path.join(project_root, "examples", "target")
 
         # Run the generator directly with the appropriate arguments

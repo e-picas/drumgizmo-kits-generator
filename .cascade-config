@@ -37,8 +37,9 @@ The DrumGizmo Kit Generator is a Python tool that generates kits for [DrumGizmo]
 
 ## Reference models
 A reference kit has been generated in the `examples/target/` directory from the source `examples/sources/` directory.
-The command was `python create_drumgizmo_kit.py -s examples/sources/ -t examples/target/`.
-The output of that generation is stored in `examples/target-generation-output.txt`.
+The command was `python create_drumgizmo_kit.py -s examples/sources/ -t examples/target/ -c examples/drumgizmo-kit-example.ini -r`.
+The output of that generation is stored in `examples/target-generation-output.log`.
+The output of that generation in `dry-run` mode is stored in `examples/target-generation-output-dry-run.log`.
 The kit, source and output must be used as models.
 
 ## Modules
@@ -46,38 +47,31 @@ All the application modules are stored in the `drumgizmo_kits_generator` directo
 All the tests of the code are stored in the `tests` directory.
 
 ### Core Modules
-
 main.py
 : Entry point of the application
-: Common options transform and validate (`source`, `target` and `config`)
-: Options aggregation in the following order: defaults + configuration file + cli options
-: Options transformations and validations
 : Kit generation process
 
 cli.py
 : Command-line interface implementation
-: Argument parsing and validation
-: Command execution flow
+: Arguments parsing
+: Specific print methods
 
 config.py
 : Configuration management
-: Load and validate configuration from files and command line
-: Options aggregation and transformation
-
-metadata.py
-: Handle metadata processing and validation
-: Manage the metadata object that contains all configuration
+: Common options transform and validate (`source`, `target` and `config`)
+: Options aggregation in the following order: defaults + configuration file + cli options
+: Options transformations and validations
 
 ### Processing Modules
 audio.py
 : Audio file processing and manipulation
 : Sample rate conversion using SoX
-: Volume variation generation
-: Audio file format handling
+: Volume variations generation
+: Audio files format handling
 
 xml_generator.py
 : Generate DrumGizmo XML configuration files
-: Handle drumkit.xml, instrument.xml, and midimap.xml
+: Handle drumkit.xml, instrument(s).xml, and midimap.xml
 : XML structure and validation
 
 transformers.py
@@ -91,7 +85,6 @@ validators.py
 : Ensure data integrity and constraints
 
 ### Utilities
-
 utils.py
 : General utility functions
 : File operations and path handling
@@ -99,7 +92,7 @@ utils.py
 
 logger.py
 : Logging configuration and utilities
-: Methods `info`, `debug` (to output only in verbose mode), `warning`
+: Methods `info`, `debug` (to output only in verbose mode), `warning` and `error`
 : Log formatting and output control
 
 exceptions.py
@@ -120,7 +113,7 @@ source
 : type: string (path)
 : required: true
 : rule: If the directory does not exist, an error is raised
-: rule: A warning must be printed if the directory contains more than `midi_note_max - midi_note_min` audio files
+: rule: During the processing, a warning must be printed if the directory contains more than `midi_note_max - midi_note_min` audio files
 
 target
 : desc: The generated kit target directory
@@ -152,12 +145,11 @@ config
 : desc: Do not include ANSI characters in output (for automatic processing)
 
 ## Configuration entries
-Each of these configuration entries can be defined in the configuration file in a `drumgizmo_kit_generator` section or as a command line option (without prefix).
+Each of these configuration entries can be defined in the configuration file, in `INI` format, in a `drumgizmo_kit_generator` section or as a command line option (without prefix).
 They are loaded in the following precedence order: defaults then configuration file then command line options.
 All default values are stored as constants.
 
 ### Specifications
-
 name
 : desc: Kit name
 : type: string
@@ -204,7 +196,7 @@ logo
 
 samplerate
 : desc: Sample rate in Hz
-: type: number
+: type: integer
 : rule: Can not be empty
 : rule: If an empty value is set, the default value is used and a warning is printed
 : rule: Must be `> 0`
@@ -220,7 +212,7 @@ extra_files
 
 velocity_levels
 : desc: Number of velocity levels to generate
-: type: number
+: type: integer
 : rule: Can not be empty
 : rule: If an empty value is set, the default value is used and a warning is printed
 : rule: Must be `> 0`
@@ -228,7 +220,7 @@ velocity_levels
 
 midi_note_min
 : desc: Minimum MIDI note number allowed
-: type: number
+: type: integer
 : rule: Can not be empty
 : rule: If an empty value is set, the default value is used and a warning is printed
 : rule: Must be `>= 0`
@@ -239,7 +231,7 @@ midi_note_min
 
 midi_note_max
 : desc: Maximum MIDI note number allowed
-: type: number
+: type: integer
 : rule: Can not be empty
 : rule: If an empty value is set, the default value is used and a warning is printed
 : rule: Must be `>= 0`
@@ -250,7 +242,7 @@ midi_note_max
 
 midi_note_median
 : desc: Median MIDI note for distributing instruments
-: type: number
+: type: integer
 : rule: Can not be empty
 : rule: If an empty value is set, the default value is used and a warning is printed
 : rule: Must be `>= 0`
@@ -318,7 +310,6 @@ main_channels
 
 ### Memory Management
 - **Context Window**: Keep track of the last 10 files opened in the project
-- **Important Decisions**: Document architectural decisions in ARCHITECTURE.md
 - **Code Patterns**: Remember frequently used patterns in the codebase
 
 ### UI/UX

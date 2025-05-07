@@ -1,6 +1,7 @@
 exclude: |
   (?x)^(
       .*/.*\.txt|       # Exclude text files
+      .*/.*\.log|       # Exclude log files
   )$
 
 repos:

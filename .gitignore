@@ -1,10 +1,14 @@
-__pycache__/
+*.egg-info/
+*.pyc
 .pytest_cache/
-build/
 .venv/
 .coverage
-coverage.xml
-*.pyc
-tests/target_test/
-*.egg-info/
 NOTES.md
+build/
+coverage.xml
+tests/target_test/
+__pycache__/
+
+# Keep these at the end as they are negations
+!examples/target-generation-output.log
+!examples/target-generation-output-dry-run.log

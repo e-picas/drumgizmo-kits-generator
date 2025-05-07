@@ -194,6 +194,7 @@ The following "special" options can be used to manage process output and run:
 -  `-v` / `--verbose`: increase process verbosity with some debugging information
 -  `-x` / `--dry-run`: output the run data (options & audio samples found) but do not actually process the run - this can be used for validation
 -  `-V` / `--app-version`: show the application version number and exit
+-  `-r` / `--raw-output`: do not include ANSI characters in output (for automatic processing)
 
 #### Options
 
@@ -226,7 +227,7 @@ You can specify kit metadata and generation options in a configuration file, in 
 
 All command-line options have equivalent configuration file settings which must be defined in a `[drumgizmo_kit_generator]` header block replacing *dashes* by *underscores*. The configuration file takes precedence over default values but command-line arguments override configuration file settings.
 
->   **NOTE** - For a full example, please see the [`examples/drumgizmo-kit.sample.ini`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/examples/drumgizmo-kit.sample.ini) file.
+>   **NOTE** - For a full example, please see the [`examples/drumgizmo-kit-example.ini`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/examples/drumgizmo-kit-example.ini) file.
 
 ## Contributing
 

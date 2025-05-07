@@ -3,14 +3,14 @@
   <metadata>
     <title>Test Kit</title>
     <version>1.0</version>
-    <description>This is a description</description>
+    <description>An example drum kit for DrumGizmo with dummy audio samples</description>
     <notes>DrumGizmo kit generated for testing purpose</notes>
-    <author>Piero</author>
-    <license>CC-BY-SA</license>
+    <author>Picas</author>
+    <license>CC-BY-SA 4.0</license>
     <samplerate>48000</samplerate>
-    <website>https://picas.fr/</website>
+    <website>https://example.com/my-drumgizmo-kit</website>
     <logo src="pngtree-music-notes-png-image_8660757.png"/>
-    <created>Generated on 2025-05-07 00:36:02 with drumgizmo-kits-generator v1.6.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
+    <created>Generated on 2025-05-07 08:09:14 with drumgizmo-kits-generator v1.6.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
   </metadata>
   <channels>
     <channel name="AmbL"/>

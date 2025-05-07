@@ -8,8 +8,11 @@
 # pylint: disable=subprocess-run-check
 """
 Generate a test kit from `examples/sources/` to `tests/target_test/`
+with configuration `examples/drumgizmo-kit-example.ini`
 and compare its contents with those of `examples/target/`
-and the output with `examples/target-generation-output.txt`
+and the output with:
+* `examples/target-generation-output.log` for normal mode
+* `examples/target-generation-output-dry-run.log` for dry-run mode
 """
 
 import difflib
@@ -35,11 +38,12 @@ COLOR_RESET = "\033[0m"
 # Directory and file paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXAMPLES_DIR = os.path.join(BASE_DIR, "examples", "")
-TEMP_DIR = os.path.join(BASE_DIR, "tests", "target_test", "")
+TARGET_DIR = os.path.join(BASE_DIR, "tests", "target_test", "")
+CONFIG_SAMPLE = os.path.join(EXAMPLES_DIR, "drumgizmo-kit-example.ini")
 
 # Input paths
-SOURCES_DIR = os.path.join(EXAMPLES_DIR, "sources", "")
-TARGET_DIR = os.path.join(EXAMPLES_DIR, "target", "")
+SOURCES_REF_DIR = os.path.join(EXAMPLES_DIR, "sources", "")
+TARGET_REF_DIR = os.path.join(EXAMPLES_DIR, "target", "")
 
 # Output file names
 DRY_RUN_LOG = "output_dry_run.log"
@@ -47,8 +51,8 @@ NORMAL_LOG = "output.log"
 NORMALIZED_OUTPUT = "normalized_output.log"
 
 # Expected output files
-EXPECTED_DRY_RUN_OUTPUT = os.path.join(EXAMPLES_DIR, "target-generation-output-dry-run.txt")
-EXPECTED_NORMAL_OUTPUT = os.path.join(EXAMPLES_DIR, "target-generation-output.txt")
+EXPECTED_DRY_RUN_OUTPUT = os.path.join(EXAMPLES_DIR, "target-generation-output-dry-run.log")
+EXPECTED_NORMAL_OUTPUT = os.path.join(EXAMPLES_DIR, "target-generation-output.log")
 
 # =============================================================================
 # Utility Functions
@@ -308,6 +312,10 @@ def normalize_and_compare(actual_file: str, expected_file: str) -> bool:
         with open(expected_file, "r", encoding="utf-8") as f:
             expected_content = f.read()
 
+        # Remove single trailing newline if present
+        if expected_content.endswith("\n"):
+            expected_content = expected_content[:-1]
+
         if normalized_content == expected_content:
             print_green("OK", f" - {normalize_path_for_display(actual_file)}")
             return True
@@ -339,10 +347,10 @@ def generate_and_compare_dry_run() -> str:
         str: Path to the generated log file
     """
     # Create output directory and log file
-    os.makedirs(TEMP_DIR, exist_ok=True)
-    output_log = os.path.join(TEMP_DIR, DRY_RUN_LOG)
+    os.makedirs(TARGET_DIR, exist_ok=True)
+    output_log = os.path.join(TARGET_DIR, DRY_RUN_LOG)
 
-    print_gray(f"Generating kit in directory: {normalize_path_for_display(TEMP_DIR)}")
+    print_gray(f"Generating kit in directory: {normalize_path_for_display(TARGET_DIR)}")
     print_gray(f"Output will be saved to: {normalize_path_for_display(output_log)}")
     print_gray(f"Log file will be saved to: {normalize_path_for_display(output_log)}")
 
@@ -359,9 +367,11 @@ def generate_and_compare_dry_run() -> str:
             sys.executable,
             os.path.join(BASE_DIR, "create_drumgizmo_kit.py"),
             "-s",
-            SOURCES_DIR,
+            SOURCES_REF_DIR,
             "-t",
-            TEMP_DIR,
+            TARGET_DIR,
+            "-c",
+            CONFIG_SAMPLE,
             "-r",
             "--dry-run",
         ]
@@ -404,8 +414,8 @@ def generate_and_compare() -> str:
         str: Path to the generated log file
     """
     # Create output directory and log file
-    os.makedirs(TEMP_DIR, exist_ok=True)
-    output_log = os.path.join(TEMP_DIR, NORMAL_LOG)
+    os.makedirs(TARGET_DIR, exist_ok=True)
+    output_log = os.path.join(TARGET_DIR, NORMAL_LOG)
 
     # Store content in memory first
     output_content = []
@@ -416,11 +426,11 @@ def generate_and_compare() -> str:
 
     try:
         # Clean up previous run
-        if os.path.exists(TEMP_DIR):
-            shutil.rmtree(TEMP_DIR)
-        os.makedirs(TEMP_DIR, exist_ok=True)
+        if os.path.exists(TARGET_DIR):
+            shutil.rmtree(TARGET_DIR)
+        os.makedirs(TARGET_DIR, exist_ok=True)
 
-        print_gray(f"Generating kit in directory: {normalize_path_for_display(TEMP_DIR)}")
+        print_gray(f"Generating kit in directory: {normalize_path_for_display(TARGET_DIR)}")
         print_gray(f"Output will be saved to: {normalize_path_for_display(output_log)}")
         print_gray(f"Log file will be saved to: {normalize_path_for_display(output_log)}")
 
@@ -429,9 +439,11 @@ def generate_and_compare() -> str:
             sys.executable,
             os.path.join(BASE_DIR, "create_drumgizmo_kit.py"),
             "-s",
-            SOURCES_DIR,
+            SOURCES_REF_DIR,
             "-t",
-            TEMP_DIR,
+            TARGET_DIR,
+            "-c",
+            CONFIG_SAMPLE,
             "-r",
         ]
 
@@ -457,13 +469,13 @@ def generate_and_compare() -> str:
         print_gray(
             "Audio files are binary contents and may always differ. Samplerate differences will be written."
         )
-        compare_directories(TEMP_DIR, TARGET_DIR)
+        compare_directories(TARGET_DIR, TARGET_REF_DIR)
 
         # Compare output with expected
         print_green("\nComparing output with expected ...")
         normalize_and_compare(output_log, EXPECTED_NORMAL_OUTPUT)
 
-        print_gray(f"\nKit generated in: {normalize_path_for_display(TEMP_DIR)}")
+        print_gray(f"\nKit generated in: {normalize_path_for_display(TARGET_DIR)}")
         print_gray(f"Log file saved to: {normalize_path_for_display(output_log)}")
 
         return output_log

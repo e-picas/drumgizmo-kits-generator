@@ -2,25 +2,25 @@
 === Processing Directories ===
 Source directory: examples/sources/
 Target directory: examples/target/
-Using configuration file: examples/sources/drumgizmo-kit.ini
+Using configuration file: examples/drumgizmo-kit-example.ini
 
 === Kit Metadata ===
 Name: Test Kit
 Version: 1.0
-Description: This is a description
+Description: An example drum kit for DrumGizmo with dummy audio samples
 Notes: DrumGizmo kit generated for testing purpose
-Author: Piero
-License: CC-BY-SA
-Website: https://picas.fr/
+Author: Picas
+License: CC-BY-SA 4.0
+Website: https://example.com/my-drumgizmo-kit
 Logo: pngtree-music-notes-png-image_8660757.png
 Sample rate: 48000 Hz
 Velocity levels: 4
-MIDI note range: [0, 127]
+MIDI note range: [20, 107]
 MIDI note median: 60
 Audio extensions: ['wav', 'WAV', 'flac', 'FLAC', 'ogg', 'OGG']
 Audio channels: ['AmbL', 'AmbR', 'Hihat', 'Kdrum_back', 'Kdrum_front', 'OHL', 'OHR', 'Ride', 'Snare_bottom', 'Snare_top', 'Tom1', 'Tom2', 'Tom3']
 Main channels: ['AmbL', 'AmbR', 'OHL', 'OHR']
-Extra files: ['Lorem Ipsum.pdf']
+Extra files: ['Lorem Ipsum.pdf', 'license.txt']
 
 === Source Audio Samples ===
 Found 3 audio files:
@@ -57,6 +57,7 @@ Copying logo: pngtree-music-notes-png-image_8660757.png
 
 === Copying Additional Files ===
 Copying extra file: Lorem Ipsum.pdf
+Copying extra file: license.txt
 
 === Summary ===
 Processing complete. DrumGizmo kit successfully created in: examples/target/
@@ -68,12 +69,12 @@ Main files:
 Kit metadata summary:
 Name: Test Kit
 Version: 1.0
-Description: This is a description
+Description: An example drum kit for DrumGizmo with dummy audio samples
 Notes: DrumGizmo kit generated for testing purpose
-Author: Piero
-License: CC-BY-SA
+Author: Picas
+License: CC-BY-SA 4.0
 Sample rate: 48000 Hz
-Website: https://picas.fr/
+Website: https://example.com/my-drumgizmo-kit
 Logo: pngtree-music-notes-png-image_8660757.png
 
 Instrument to sample mapping:
@@ -84,5 +85,6 @@ Instrument to sample mapping:
 Extra files copied:
   pngtree-music-notes-png-image_8660757.png
   Lorem Ipsum.pdf
+  license.txt
 
 Kit generation completed successfully!

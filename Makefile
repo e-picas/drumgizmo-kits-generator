@@ -6,7 +6,7 @@
 #		source .venv/bin/activate;
 #
 SHELL := /bin/bash
-.PHONY: help install lint test coverage generate check-env install-ci test-ci coverage-ci lint-ci default
+.PHONY: help install-ci test-ci coverage-ci lint-ci check-env install format lint test coverage generate generate-dry-run generate-test-kit generate-test-kit-dry-run clean version default
 default: help
 
 install-ci:
@@ -52,15 +52,34 @@ coverage:
 
 ## Generate a test kit from `examples/sources/` to `tests/target_test/` (excluded from VCS)
 generate:
-	python3 create_drumgizmo_kit.py -s examples/sources/ -t tests/target_test/
+	python3 create_drumgizmo_kit.py \
+		-s examples/sources/ \
+		-t tests/target_test/ \
+		-c examples/drumgizmo-kit-example.ini
 
 ## Generate a test kit in DRY-RUN mode from `examples/sources/` to `tests/target_test/` (excluded from VCS)
 generate-dry-run:
-	python3 create_drumgizmo_kit.py -s examples/sources/ -t tests/target_test/ --dry-run
+	python3 create_drumgizmo_kit.py \
+		-s examples/sources/ \
+		-t tests/target_test/ \
+		-c examples/drumgizmo-kit-example.ini --dry-run
 
 ## Run the test script to generate a test kit and compare it with `examples/target/`
 generate-and-compare:
-	./scripts/generate_test_kit.py
+	./scripts/generate_test_kit_and_compare.py
+
+## Re-generate the example kit from `examples/sources/` to `examples/target/` catching output in log files `examples/target-generation-output*.log`
+generate-example:
+	python3 create_drumgizmo_kit.py \
+		-s examples/sources/ \
+		-t examples/target/ \
+		-c examples/drumgizmo-kit-example.ini \
+		-r > examples/target-generation-output.log 2>&1;
+	python3 create_drumgizmo_kit.py \
+		-s examples/sources/ \
+		-t examples/target/ \
+		-c examples/drumgizmo-kit-example.ini \
+		-x -r > examples/target-generation-output-dry-run.log 2>&1;
 
 ## Cleanup Python's temporary files, cache and build
 clean:
