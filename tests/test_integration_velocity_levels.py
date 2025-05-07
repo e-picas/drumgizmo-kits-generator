@@ -200,7 +200,7 @@ class TestIntegrationVelocityLevels:
         # Get the absolute paths
         project_root = Path(__file__).parent.parent
         source_dir = os.path.join(project_root, "examples", "sources")
-        config_file = os.path.join(source_dir, "drumgizmo-kit.ini")
+        config_file = os.path.join(project_root, "examples", "drumgizmo-kit-example.ini")
 
         # Run the generator with the specified number of velocity levels
         with mock.patch(

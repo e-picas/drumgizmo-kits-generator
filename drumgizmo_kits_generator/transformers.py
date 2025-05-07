@@ -377,3 +377,22 @@ def transform_logo(value: Any) -> str:
     if value is None:
         return ""
     return str(strip_quotes(value)).strip()
+
+
+def transform_variations_method(value: Any) -> str:
+    """
+    Transform variations_method to a valid value (linear or logarithmic).
+
+    Args:
+        value: The variations_method value to transform
+
+    Returns:
+        str: The transformed variations_method value, or default if invalid
+
+    Raises:
+        InvalidConfigurationError: If the value is not 'linear' or 'logarithmic'
+    """
+    if value is None:
+        value = constants.DEFAULT_VARIATIONS_METHOD
+
+    return str(strip_quotes(value)).strip().lower()

@@ -118,6 +118,11 @@ def parse_arguments() -> argparse.Namespace:
         "--main-channels",
         help=f"Main audio channels, comma-separated (default: `{constants.DEFAULT_MAIN_CHANNELS}`)",
     )
+    parser.add_argument(
+        "--variations-method",
+        choices=constants.ALLOWED_VARIATIONS_METHOD,
+        help=f"Mathematical formula to use to generate volume variations (default: `{constants.DEFAULT_VARIATIONS_METHOD}`)",
+    )
 
     return parser.parse_args()
 
@@ -153,6 +158,7 @@ def print_metadata(metadata: Dict[str, Any]) -> None:
 
     logger.info(f"Sample rate: {metadata['samplerate']} Hz")
     logger.info(f"Velocity levels: {metadata['velocity_levels']}")
+    logger.info(f"Volume variations method: {metadata['variations_method']}")
     logger.info(f"MIDI note range: [{metadata['midi_note_min']}, {metadata['midi_note_max']}]")
     logger.info(f"MIDI note median: {metadata['midi_note_median']}")
     logger.info(f"Audio extensions: {metadata['extensions']}")
@@ -186,6 +192,10 @@ def print_samples_info(audio_files: List[str], metadata: Dict[str, Any]) -> None
     # Print the list of audio files
     for file in audio_files:
         logger.info(f"- {os.path.basename(file)}")
+
+    logger.info(
+        f"Audio samples will be generated with a '{metadata['variations_method']}' volume variations method."
+    )
 
 
 def print_midi_mapping(audio_files: List[str], metadata: Dict[str, Any]) -> None:

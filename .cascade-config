@@ -218,6 +218,13 @@ velocity_levels
 : rule: Must be `> 0`
 : default: `10`
 
+variations_method
+: desc: Mathematical formula to use to generate volume variations
+: type: string in list `[ linear , logarithmic ]`
+: rule: Can not be empty
+: rule: If an empty or unknown value is set, an error is raised
+: default: `linear`
+
 midi_note_min
 : desc: Minimum MIDI note number allowed
 : type: integer

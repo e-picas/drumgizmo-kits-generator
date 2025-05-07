@@ -15,6 +15,7 @@ Website: https://example.com/my-drumgizmo-kit
 Logo: pngtree-music-notes-png-image_8660757.png
 Sample rate: 48000 Hz
 Velocity levels: 4
+Volume variations method: logarithmic
 MIDI note range: [20, 107]
 MIDI note median: 60
 Audio extensions: ['wav', 'WAV', 'flac', 'FLAC', 'ogg', 'OGG']
@@ -27,6 +28,7 @@ Found 3 audio files:
 - E-Mu-Proteus-FX-Wacky-Snare.wav
 - Example.ogg
 - gs-16b-1c-44100hz.flac
+Audio samples will be generated with a 'logarithmic' volume variations method.
 
 === MIDI Mapping Preview ===
 MIDI mapping preview (alphabetical order):

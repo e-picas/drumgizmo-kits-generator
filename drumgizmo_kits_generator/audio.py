@@ -9,6 +9,7 @@ SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
 Audio processing module for DrumGizmo kit generation.
 """
 
+import math
 import os
 import shutil
 import subprocess
@@ -77,9 +78,6 @@ def convert_sample_rate(
             capture_output=True,
             text=True,
         )
-
-        # Log success
-        logger.debug(f"Successfully converted sample rate to {target_sample_rate} Hz")
 
         # Return the path to the converted file
         return output_file
@@ -253,6 +251,7 @@ def process_sample(
                 samples_dir,
                 velocity_levels,
                 instrument_name,
+                variations_method=metadata.get("variations_method", "linear"),
             )
         finally:
             # Clean up the temporary file and directory if they exist
@@ -271,11 +270,109 @@ def process_sample(
         raise
 
 
+def _calculate_linear_volume(level: int, total_levels: int) -> float:
+    """
+    Calculate the volume factor for a given velocity level using a linear scale.
+
+    Args:
+        level: Current velocity level (1-based)
+        total_levels: Total number of velocity levels
+
+    Returns:
+        float: Volume factor between 0.0 and 1.0
+    """
+    if level == 1:
+        return constants.DEFAULT_VELOCITY_VOLUME_MAX  # 100% volume for level 1
+
+    # Linear decrease from MAX to MIN for velocity levels
+    return constants.DEFAULT_VELOCITY_VOLUME_MAX - ((level - 1) / (total_levels - 1)) * (
+        constants.DEFAULT_VELOCITY_VOLUME_MAX - constants.DEFAULT_VELOCITY_VOLUME_MIN
+    )
+
+
+def _calculate_logarithmic_volume(level: int, total_levels: int) -> float:
+    """
+    Calculate the volume factor for a given velocity level using a logarithmic scale.
+
+    This creates a more natural-sounding volume curve where lower velocities
+    have more variation in volume than higher velocities.
+
+    Args:
+        level: Current velocity level (1-based)
+        total_levels: Total number of velocity levels
+
+    Returns:
+        float: Volume factor between 0.0 and 1.0
+    """
+    if level == 1:
+        return constants.DEFAULT_VELOCITY_VOLUME_MAX  # 100% volume for level 1
+    if level == total_levels:
+        return constants.DEFAULT_VELOCITY_VOLUME_MIN  # MIN volume for last level
+
+    # Calculate position in the range [0, 1] (inverted so higher levels = lower volume)
+    position = 1.0 - ((level - 1) / (total_levels - 1))
+
+    # Apply logarithmic scaling (base 10)
+    # We map [0,1] to [1,10] to get a nice logarithmic curve
+    log_value = math.log10(1 + (9 * position))
+
+    # Scale to the desired range [MIN, MAX]
+    return constants.DEFAULT_VELOCITY_VOLUME_MIN + (
+        log_value * (constants.DEFAULT_VELOCITY_VOLUME_MAX - constants.DEFAULT_VELOCITY_VOLUME_MIN)
+    )
+
+
+def create_velocity_variation(
+    file_path: str,
+    target_file: str,
+    volume_factor: float,
+) -> None:
+    """
+    Create a single velocity variation with the specified volume factor.
+
+    Args:
+        file_path: Path to the source audio file
+        target_file: Path where to save the velocity variation
+        volume_factor: Volume factor (0.0 to 1.0)
+
+    Raises:
+        AudioProcessingError: If creating the variation fails
+        DependencyError: If SoX is not found
+    """
+    # Check if source file exists
+    if not os.path.exists(file_path):
+        raise AudioProcessingError(f"Source file not found: {file_path}")
+
+    try:
+        # Convert volume factor to dB
+        db_adjustment = 20 * (volume_factor - 1)
+
+        # Create a copy with adjusted volume using SoX
+        cmd = [
+            "sox",
+            file_path,
+            target_file,
+            "gain",
+            f"{db_adjustment:.2f}",
+        ]
+        subprocess.run(
+            cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as e:
+        raise AudioProcessingError(f"Error creating velocity variation: {e}") from e
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        raise AudioProcessingError(f"Error creating velocity variation: {e}") from e
+
+
 def create_velocity_variations(
     file_path: str,
     target_dir: str,
     velocity_levels: int,
     instrument_name: str,
+    variations_method: str = "linear",
 ) -> List[str]:
     """
     Create velocity variations of an audio file.
@@ -285,6 +382,7 @@ def create_velocity_variations(
         target_dir: Path to the target directory
         velocity_levels: Number of velocity levels to create
         instrument_name: Name of the instrument (used for file naming)
+        variations_method: Type of volume curve to use ("linear" or "logarithmic")
 
     Returns:
         List[str]: List of paths to the created velocity variation files
@@ -292,8 +390,11 @@ def create_velocity_variations(
     Raises:
         AudioProcessingError: If creating velocity variations fails
         DependencyError: If SoX is not found
+        ValueError: If an invalid volume curve type is specified
     """
-    logger.debug(f"Creating {velocity_levels} velocity variations for {file_path}")
+    logger.debug(
+        f"Creating {velocity_levels} velocity variations for {file_path} with {variations_method} curve"
+    )
 
     # Check if source file exists
     if not os.path.exists(file_path):
@@ -305,6 +406,14 @@ def create_velocity_variations(
 
     # Get file extension
     file_ext = utils.get_file_extension(file_path, with_dot=True)
+
+    # Select volume calculation function based on curve type
+    if variations_method == "linear":
+        calculate_volume = _calculate_linear_volume
+    elif variations_method == "logarithmic":
+        calculate_volume = _calculate_logarithmic_volume
+    else:
+        raise ValueError(f"Invalid variations method: {variations_method}")
 
     variation_files = []
     for i in range(1, velocity_levels + 1):
@@ -318,48 +427,15 @@ def create_velocity_variations(
             ),
         )
 
-        # Calculate volume adjustment based on velocity level
-        # Level 1 = 100% volume (0 dB)
-        # Other levels decrease in volume
-        if i == 1:
-            volume_factor = constants.DEFAULT_VELOCITY_VOLUME_MAX  # 100% volume
-        else:
-            # Linear decrease from MAX to MIN for velocity levels
-            volume_factor = constants.DEFAULT_VELOCITY_VOLUME_MAX - (
-                (i - 1) / (velocity_levels - 1)
-            ) * (constants.DEFAULT_VELOCITY_VOLUME_MAX - constants.DEFAULT_VELOCITY_VOLUME_MIN)
+        # Calculate volume factor for this level
+        volume_factor = calculate_volume(i, velocity_levels)
 
-        # Use SoX to adjust volume and save to the new file
-        try:
-            # Convert volume factor to dB
-            db_adjustment = 20 * (volume_factor - 1)
+        # Create the velocity variation
+        create_velocity_variation(file_path, velocity_file, volume_factor)
 
-            # Create a copy with adjusted volume
-            cmd = [
-                "sox",
-                file_path,
-                velocity_file,
-                "gain",
-                f"{db_adjustment:.2f}",
-            ]
-            subprocess.run(
-                cmd,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-
-            variation_files.append(velocity_file)
-            logger.debug(
-                f"Created velocity variation {i}/{velocity_levels} at {volume_factor:.2f} volume"
-            )
-        except subprocess.CalledProcessError as e:
-            # This will raise an exception, so it will never return
-            utils.handle_subprocess_error(e, "creating velocity variation")
-            return []  # pragma: no cover
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            # This will raise an exception, so it will never return
-            utils.handle_subprocess_error(e, "creating velocity variation")
-            return []  # pragma: no cover
+        variation_files.append(velocity_file)
+        logger.debug(
+            f"Created velocity variation {i}/{velocity_levels} at {volume_factor:.2f} volume"
+        )
 
     return variation_files

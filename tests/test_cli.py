@@ -192,6 +192,7 @@ class TestPrintFunctions:
             "samplerate": "44100",
             "extra_files": ["file1.txt", "file2.txt"],
             "velocity_levels": 5,
+            "variations_method": "linear",
             "midi_note_min": 30,
             "midi_note_max": 90,
             "midi_note_median": 60,
@@ -218,10 +219,12 @@ class TestPrintFunctions:
             "midi_note_min": 30,
             "midi_note_max": 90,
             "midi_note_median": 60,
+            "variations_method": "linear",
         }
 
         cli.print_samples_info(audio_files, metadata)
 
         # Verify that section and info were called with appropriate arguments
         mock_logger["section"].assert_called_with("Source Audio Samples")
-        assert mock_logger["info"].call_count >= 4  # Should call info for count and each sample
+        # Should call info for count, each sample, and variations method
+        assert mock_logger["info"].call_count >= 5

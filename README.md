@@ -52,7 +52,7 @@ The kit will follow the [DrumGizmo file format documentation](https://drumgizmo.
 >   └── ...
 >   ```
 
->   **NOTE** - A full generated kit is available in the [`examples/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/target) directory, based on the [`examples/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/sources) sources.
+>   **NOTE** - A full generated kit is available in the [`examples/target/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/target) directory, based on the [`examples/sources/`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/sources) sources and using the [`examples/drumgizmo-kit-example.ini`](https://github.com/e-picas/drumgizmo-kits-generator/tree/master/examples/drumgizmo-kit-example.ini) configuration file.
 
 ### Original audio samples
 
@@ -87,7 +87,7 @@ You may use the following [`metadata` options](#options) or [configuration](#con
 
 ### Audio samples treatments
 
-Each original audio sample is duplicated X times to finally get the [`velocity-levels`](#options) number of volume variations, assigned to corresponding "velocity" variations by setting the `power` entry of each sample on a linear basis (from 1 to near 0).
+Each original audio sample is duplicated X times to finally get the [`velocity-levels`](#options) number of volume variations, assigned to corresponding "velocity" variations by setting the `power` entry of each sample.
 
 >   For example, for a value of `velocity_levels=4`, we will have:
 >   ```xml
@@ -96,6 +96,27 @@ Each original audio sample is duplicated X times to finally get the [`velocity-l
 >       <sample name="Sample-Volume-0.5" power="0.500000" />
 >       <sample name="Sample-Volume-0.25" power="0.250000" />
 >   ```
+
+The [`variations-method`](#options) option defines how the volume variations are calculated and can be one of the following:
+
+*   **`linear`** (default): the volume variations are calculated on a linear basis: `1 - (actual_volume / total_levels) * 0.75`
+    >   For example, for a value of `velocity_levels=4`, we would have:
+    >   ```
+    >   DEBUG: Created velocity variation 1/4 at 1.00 volume
+    >   DEBUG: Created velocity variation 2/4 at 0.75 volume
+    >   DEBUG: Created velocity variation 3/4 at 0.50 volume
+    >   DEBUG: Created velocity variation 4/4 at 0.25 volume
+    >   ```
+
+*   **`logarithmic`**: the volume variations are calculated on a logarithmic basis: `0.25 + (log10(1 + 9 * (1 - actual_volume / total_levels)) * 0.75)`; this method is recommended for a more natural volume variation to human ears but may not be the best choice for all kits (it is not the default one)
+    >   For example, for a value of `velocity_levels=4`, we would have:
+    >   ```
+    >   DEBUG: Created velocity variation 1/4 at 1.00 volume
+    >   DEBUG: Created velocity variation 2/4 at 0.82 volume
+    >   DEBUG: Created velocity variation 3/4 at 0.57 volume
+    >   DEBUG: Created velocity variation 4/4 at 0.25 volume
+    >   ```
+
 
 ### Samplerate
 
@@ -217,6 +238,7 @@ The following "special" options can be used to manage process output and run:
 | `--name` | The name of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | `DrumGizmo Kit` |
 | `--notes` | Additional notes about the kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 | `--samplerate` | [Sample rate](#samplerate) of the kit's samples (in *Hz*) - [`drumkit.xml`](#kit-metadata) metadata | `44100` |
+| `--variations-method` | [Variations method](#audio-samples-treatments) to generate velocity variations in `[ linear , logarithmic ]` | `linear` |
 | `--velocity-levels` | Total number of [velocity levels](#audio-samples-treatments) to generate in the target (including original sample) | `10` |
 | `--version` | The version of the generated kit - You may use it to manage your kit's versions over time - [`drumkit.xml`](#kit-metadata) metadata | `1.0` |
 | `--website` | The website of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |

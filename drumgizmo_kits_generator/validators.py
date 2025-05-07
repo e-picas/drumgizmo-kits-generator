@@ -479,6 +479,34 @@ def validate_license(value: Optional[str], config: Dict[str, Any]) -> str:  # NO
     return value or constants.DEFAULT_LICENSE
 
 
+def validate_variations_method(
+    value: Optional[str], config: Dict[str, Any]
+) -> str:  # NOSONAR python:S1172
+    """
+    Validate the variations method.
+
+    Args:
+        value: The variations method to validate (must be 'linear' or 'logarithmic')
+        config: The complete configuration dictionary
+
+    Returns:
+        The validated variations method
+
+    Raises:
+        ValidationError: If the value is not 'linear' or 'logarithmic'
+    """
+    if not value:
+        return constants.DEFAULT_VARIATIONS_METHOD
+
+    value_str = str(value).strip().lower()
+    if value_str not in constants.ALLOWED_VARIATIONS_METHOD:
+        raise ValidationError(
+            f"Invalid variations_method: '{value}'. Must be '{', '.join(constants.ALLOWED_VARIATIONS_METHOD)}'"
+        )
+
+    return value_str
+
+
 def validate_directories(source_dir: str, target_dir: str, dry_run: bool = False) -> None:
     """
     Validate source and target directories.
