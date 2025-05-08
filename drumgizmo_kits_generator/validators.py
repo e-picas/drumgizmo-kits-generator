@@ -161,7 +161,7 @@ def validate_midi_note_median(value: Any, config: Dict[str, Any]) -> None:  # NO
     _validate_midi_note(value, config)
 
 
-def validate_extensions(value: Any, config: Dict[str, Any]) -> None:
+def validate_extensions(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the audio file extensions.
 
@@ -372,7 +372,7 @@ def validate_license(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR pyt
         raise ValidationError("License must be a string or None")
 
 
-def validate_variations_method(value: Any, config: Dict[str, Any]) -> None:
+def validate_variations_method(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the variations method.
 
