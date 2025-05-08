@@ -23,6 +23,9 @@ def parse_arguments() -> argparse.Namespace:
 
     Returns:
         argparse.Namespace: Parsed command line arguments
+
+    Notes:
+    * we should not define a default value as cli parameters have the top precedence (they are loaded last)
     """
     # Create a parent parser for version display
     parent_parser = argparse.ArgumentParser(add_help=False)
