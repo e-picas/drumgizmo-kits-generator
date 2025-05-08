@@ -35,8 +35,19 @@ def mock_logger():
         "drumgizmo_kits_generator.logger.warning"
     ) as mock_warning, mock.patch(
         "drumgizmo_kits_generator.logger.error"
-    ) as mock_error:
-        yield {"info": mock_info, "debug": mock_debug, "warning": mock_warning, "error": mock_error}
+    ) as mock_error, mock.patch(
+        "drumgizmo_kits_generator.logger.print_action_start"
+    ) as mock_print_action_start, mock.patch(
+        "drumgizmo_kits_generator.logger.print_action_end"
+    ) as mock_print_action_end:
+        yield {
+            "info": mock_info,
+            "debug": mock_debug,
+            "warning": mock_warning,
+            "error": mock_error,
+            "print_action_start": mock_print_action_start,
+            "print_action_end": mock_print_action_end,
+        }
 
 
 @pytest.fixture
@@ -147,7 +158,6 @@ class TestGenerateDrumkitXml:
 
         # Check logger calls
         assert mock_logger["debug"].call_count >= 1
-        assert mock_logger["info"].call_count >= 1
 
     def test_generate_drumkit_xml_minimal(self, temp_dir, mock_logger):
         """Test generate_drumkit_xml with minimal metadata."""
@@ -254,7 +264,6 @@ class TestGenerateInstrumentXml:
 
         # Check logger calls
         assert mock_logger["debug"].call_count >= 1
-        assert mock_logger["info"].call_count >= 1
 
     @mock.patch("os.path.splitext")
     def test_generate_instrument_xml_with_extension(
@@ -330,7 +339,6 @@ class TestGenerateMidimapXml:
 
         # Check logger calls
         assert mock_logger["debug"].call_count >= 1
-        assert mock_logger["info"].call_count >= 1
 
     def test_generate_midimap_xml_no_instruments(self, temp_dir, mock_logger):
         """Test generate_midimap_xml with no instruments."""

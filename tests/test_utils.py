@@ -33,13 +33,19 @@ def mock_logger_fixture():
         "drumgizmo_kits_generator.logger.error"
     ) as mock_error, mock.patch(
         "drumgizmo_kits_generator.logger.section"
-    ) as mock_section:
+    ) as mock_section, mock.patch(
+        "drumgizmo_kits_generator.logger.print_action_start"
+    ) as mock_print_action_start, mock.patch(
+        "drumgizmo_kits_generator.logger.print_action_end"
+    ) as mock_print_action_end:
         yield {
             "info": mock_info,
             "debug": mock_debug,
             "warning": mock_warning,
             "error": mock_error,
             "section": mock_section,
+            "print_action_start": mock_print_action_start,
+            "print_action_end": mock_print_action_end,
         }
 
 
@@ -113,7 +119,7 @@ class TestPrepareTargetDirectory:
         # Assertions
         mock_makedirs.assert_called_once_with("/path/to/target")
         assert mock_logger_fixture["section"].call_count >= 1
-        assert mock_logger_fixture["info"].call_count >= 1
+        assert mock_logger_fixture["print_action_start"].call_count >= 1
 
     @mock.patch("os.path.exists")
     @mock.patch("os.path.isdir")
@@ -153,7 +159,7 @@ class TestPrepareTargetDirectory:
 
         # Assertions
         assert mock_logger_fixture["section"].call_count >= 1
-        assert mock_logger_fixture["info"].call_count >= 1
+        assert mock_logger_fixture["print_action_start"].call_count >= 1
         assert mock_listdir.call_count == 1
 
         # Check that directories are removed with rmtree

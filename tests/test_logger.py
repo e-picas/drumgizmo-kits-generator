@@ -271,3 +271,24 @@ def test_raw_output_section(capsys):
 
     # Disable raw output for other tests
     logger.set_raw_output(False)
+
+
+def test_print_action_start(capsys):
+    """Test print_action_start outputs the correct message with ellipsis."""
+    logger.print_action_start("Traitement")
+    captured = capsys.readouterr()
+    assert captured.out == "Traitement...\n"
+
+
+def test_print_action_end_default(capsys):
+    """Test print_action_end outputs OK by default."""
+    logger.print_action_end()
+    captured = capsys.readouterr()
+    assert captured.out == "OK\n"
+
+
+def test_print_action_end_custom(capsys):
+    """Test print_action_end outputs a custom message."""
+    logger.print_action_end("Terminé")
+    captured = capsys.readouterr()
+    assert captured.out == "Terminé\n"

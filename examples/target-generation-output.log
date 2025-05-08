@@ -31,62 +31,61 @@ Found 3 audio files:
 Audio samples will be generated with a 'logarithmic' volume variations method.
 
 === Preparing Target Directory ===
-Cleaning target directory: examples/target/
+Cleaning target directory 'examples/target/'...
+OK
 
 === Processing Audio Files ===
-Processing E-Mu-Proteus-FX-Wacky-Snare.wav
-Creating directory for instrument: E-Mu-Proteus-FX-Wacky-Snare
-Processed E-Mu-Proteus-FX-Wacky-Snare.wav with 4 volume variations
-Processing Example.ogg
-Creating directory for instrument: Example
-Processed Example.ogg with 4 volume variations
-Processing gs-16b-1c-44100hz.flac
-Creating directory for instrument: gs-16b-1c-44100hz
-Processed gs-16b-1c-44100hz.flac with 4 volume variations
+Processing 'E-Mu-Proteus-FX-Wacky-Snare.wav' with 4 volume variations at 48000 Hz...
+OK
+Processing 'Example.ogg' with 4 volume variations at 48000 Hz...
+OK
+Processing 'gs-16b-1c-44100hz.flac' with 4 volume variations at 48000 Hz...
+OK
 
 === Generating XML Files ===
-Generating drumkit.xml
-Generated drumkit.xml at examples/target/drumkit.xml
-Generating instrument XML files
-Generated instrument XML at examples/target/E-Mu-Proteus-FX-Wacky-Snare/E-Mu-Proteus-FX-Wacky-Snare.xml
-Generated instrument XML at examples/target/Example/Example.xml
-Generated instrument XML at examples/target/gs-16b-1c-44100hz/gs-16b-1c-44100hz.xml
-Generating midimap.xml
-Generated midimap.xml at examples/target/midimap.xml
+Generating 'drumkit.xml'...
+OK
+Generating instruments XML files...
+OK
+Generating 'midimap.xml'...
+OK
 
 === Copying Logo ===
-Copying logo: pngtree-music-notes-png-image_8660757.png
+Copying logo file 'pngtree-music-notes-png-image_8660757.png'...
+OK
 
 === Copying Additional Files ===
-Copying extra file: Lorem Ipsum.pdf
-Copying extra file: license.txt
+Copying extra file 'Lorem Ipsum.pdf'...
+OK
+Copying extra file 'license.txt'...
+OK
 
 === Summary ===
-Processing complete. DrumGizmo kit successfully created in: examples/target/
+Processing complete. DrumGizmo kit successfully created in examples/target/
 Number of instruments created: 3
 Main files:
-- examples/target/drumkit.xml
-- examples/target/midimap.xml
+  - examples/target/drumkit.xml
+  - examples/target/midimap.xml
 
 Kit metadata summary:
-Name: Test Kit
-Version: 1.0
-Description: An example drum kit for DrumGizmo with dummy audio samples
-Notes: Fake DrumGizmo kit generated for testing purpose. All sources (audio, logo, extra files) are free of use.
-Author: Anonymous
-License: CC-BY-SA 4.0
-Sample rate: 48000 Hz
-Website: https://example.com/my-drumgizmo-kit
-Logo: pngtree-music-notes-png-image_8660757.png
+  - Name: Test Kit
+  - Version: 1.0
+  - Description: An example drum kit for DrumGizmo with dummy audio samples
+  - Notes: Fake DrumGizmo kit generated for testing purpose. All sources (audio, logo, extra files) are free of use.
+  - Author: Anonymous
+  - License: CC-BY-SA 4.0
+  - Sample rate: 48000 Hz
+  - Website: https://example.com/my-drumgizmo-kit
+  - Logo: pngtree-music-notes-png-image_8660757.png
 
-Instrument to sample mapping:
-  (MIDI Note 59) E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare.wav
-  (MIDI Note 60) Example: Example.ogg
-  (MIDI Note 61) gs-16b-1c-44100hz: gs-16b-1c-44100hz.flac
+Instrument samples MIDI mapping:
+  - MIDI note 59: E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare.wav
+  - MIDI note 60: Example: Example.ogg
+  - MIDI note 61: gs-16b-1c-44100hz: gs-16b-1c-44100hz.flac
 
 Extra files copied:
-  pngtree-music-notes-png-image_8660757.png
-  Lorem Ipsum.pdf
-  license.txt
+  - pngtree-music-notes-png-image_8660757.png
+  - Lorem Ipsum.pdf
+  - license.txt
 
 Kit generation completed successfully!

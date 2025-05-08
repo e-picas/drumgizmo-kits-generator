@@ -90,7 +90,8 @@ def generate_drumkit_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
         target_dir: Path to the target directory
         metadata: Metadata for the drumkit
     """
-    logger.debug("Generating drumkit.xml")
+    xml_path = os.path.join(target_dir, "drumkit.xml")
+    logger.debug(f"Generating drumkit XML at {xml_path}")
 
     # Create the root element
     root = ET.Element("drumkit")
@@ -127,17 +128,12 @@ def generate_drumkit_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
             if channel in metadata["main_channels"]:
                 channelmap_elem.set("main", "true")
 
-    # Write the XML to a file
-    xml_path = os.path.join(target_dir, "drumkit.xml")
-
     # Pretty print the XML
     xml_string = ET.tostring(root, encoding="utf-8")
     pretty_xml = xml.dom.minidom.parseString(xml_string).toprettyxml(indent="  ")
 
     with open(xml_path, "w", encoding="utf-8") as f:
         f.write(pretty_xml)
-
-    logger.info(f"Generated drumkit.xml at {xml_path}")
 
 
 def _add_instrument_samples(
@@ -189,10 +185,11 @@ def generate_instrument_xml(
         metadata: Metadata for the instrument
         audio_files: List of audio file paths
     """
-    logger.debug(f"Generating instrument XML for {instrument_name}")
+    instrument_dir = os.path.join(target_dir, instrument_name)
+    xml_path = os.path.join(instrument_dir, f"{instrument_name}.xml")
+    logger.debug(f"Generating instrument XML for '{instrument_name}' at {xml_path}")
 
     # Create instrument directory if it doesn't exist
-    instrument_dir = os.path.join(target_dir, instrument_name)
     os.makedirs(instrument_dir, exist_ok=True)
 
     # Create the root element
@@ -214,17 +211,12 @@ def generate_instrument_xml(
     # Add samples
     _add_instrument_samples(samples_elem, metadata, instrument_name, original_ext)
 
-    # Write the XML to a file
-    xml_path = os.path.join(instrument_dir, f"{instrument_name}.xml")
-
     # Pretty print the XML
     xml_string = ET.tostring(root, encoding="utf-8")
     pretty_xml = xml.dom.minidom.parseString(xml_string).toprettyxml(indent="  ")
 
     with open(xml_path, "w", encoding="utf-8") as f:
         f.write(pretty_xml)
-
-    logger.info(f"Generated instrument XML at {xml_path}")
 
 
 def _add_midimap_elements(
@@ -273,7 +265,8 @@ def generate_midimap_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
         target_dir: Path to the target directory
         metadata: Metadata for the midimap
     """
-    logger.debug("Generating midimap.xml")
+    xml_path = os.path.join(target_dir, "midimap.xml")
+    logger.debug(f"Generating midimap XML at {xml_path}")
 
     # Create the root element
     root = ET.Element("midimap")
@@ -295,17 +288,12 @@ def generate_midimap_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
     # Add mapping elements
     midi_mapping = _add_midimap_elements(root, instruments, midi_params)
 
-    # Write the XML to a file
-    xml_path = os.path.join(target_dir, "midimap.xml")
-
     # Pretty print the XML
     xml_string = ET.tostring(root, encoding="utf-8")
     pretty_xml = xml.dom.minidom.parseString(xml_string).toprettyxml(indent="  ")
 
     with open(xml_path, "w", encoding="utf-8") as f:
         f.write(pretty_xml)
-
-    logger.info(f"Generated midimap.xml at {xml_path}")
 
     # Display MIDI mapping
     logger.debug("MIDI mapping (alphabetical order):")

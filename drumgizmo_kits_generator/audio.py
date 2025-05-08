@@ -40,16 +40,16 @@ def convert_sample_rate(
         DependencyError: If SoX is not found
         AudioProcessingError: If sample rate conversion fails
     """
-    logger.debug(f"Converting {file_path} to {target_sample_rate} Hz")
+    # Get file name components
+    file_basename = utils.get_file_basename(file_path)
+    file_extension = utils.get_file_extension(file_path, with_dot=True)
+
+    logger.debug(f"Converting '{file_basename}{file_extension}' to {target_sample_rate} Hz")
 
     # Check if SoX is available and get its path
     sox_path = utils.check_dependency(
         "sox", "SoX not found in the system, can not generate samples"
     )
-
-    # Get file name components
-    file_basename = utils.get_file_basename(file_path)
-    file_extension = utils.get_file_extension(file_path, with_dot=True)
 
     # Define the output file name
     output_filename = f"{file_basename}{file_extension}"
@@ -114,7 +114,7 @@ def get_audio_info(file_path: str) -> Dict[str, Any]:
         DependencyError: If SoX (soxi) is not found
         AudioProcessingError: If getting audio information fails
     """
-    logger.debug(f"Getting audio information for {file_path}")
+    logger.debug(f"Getting audio information for '{file_path}'")
 
     # Check if the file exists
     if not os.path.isfile(file_path):
@@ -174,7 +174,7 @@ def get_audio_info(file_path: str) -> Dict[str, Any]:
         )
         audio_info["duration"] = float(result.stdout.strip())
 
-        logger.debug(f"Audio info for {file_path}: {audio_info}")
+        logger.debug(f"Audio info for '{file_path}': {audio_info}")
     except subprocess.CalledProcessError as e:
         utils.handle_subprocess_error(e, "getting audio information")
         return {}  # pragma: no cover
@@ -214,18 +214,18 @@ def process_sample(
     # Clean up the instrument name
     instrument_name = utils.clean_instrument_name(file_basename)
 
+    velocity_levels = metadata.get("velocity_levels")
+
+    logger.print_action_start(
+        f"Processing '{utils.get_filename(file_path)}' with {velocity_levels} volume variations"
+        f" at {metadata.get('samplerate')} Hz"
+    )
+
     # Create instrument directory
     instrument_dir = utils.join_paths(target_dir, instrument_name)
     samples_dir = utils.join_paths(instrument_dir, constants.DEFAULT_SAMPLES_DIR)
-    logger.info(f"Creating directory for instrument: {instrument_name}")
+    logger.debug(f"Creating directory for instrument '{instrument_name}' at '{samples_dir}'")
     os.makedirs(samples_dir, exist_ok=True)
-
-    velocity_levels = metadata.get("velocity_levels")
-
-    # Log success
-    logger.info(
-        f"Processed {utils.get_filename(file_path)} with {velocity_levels} volume variations"
-    )
 
     try:
         # Process with sample rate conversion if needed
@@ -260,6 +260,7 @@ def process_sample(
             if temp_dir and os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
 
+        logger.print_action_end()
         return variation_files
     # pylint: disable=try-except-raise
     except (AudioProcessingError, DependencyError):
@@ -395,7 +396,7 @@ def create_velocity_variations(
         ValueError: If an invalid volume curve type is specified
     """
     logger.debug(
-        f"Creating {velocity_levels} velocity variations for {file_path} with {variations_method} curve"
+        f"Creating {velocity_levels} velocity variations for '{utils.get_filename(file_path)}' with {variations_method} curve"
     )
 
     # Check if source file exists

@@ -53,9 +53,6 @@ def process_audio_files(
 
     try:
         for file_path in audio_files:
-            file_name = os.path.basename(file_path)
-            logger.info(f"Processing {file_name}")
-
             # Process the sample with sample rate conversion if needed
             processed_files = audio.process_sample(file_path, target_dir, metadata)
 
@@ -95,10 +92,11 @@ def generate_xml_files(audio_files: List[str], target_dir: str, metadata: Dict[s
         # Add instrument names to metadata
         metadata["instruments"] = instrument_names
 
-        logger.info("Generating drumkit.xml")
+        logger.print_action_start("Generating 'drumkit.xml'")
         generate_drumkit_xml(target_dir, metadata)
+        logger.print_action_end()
 
-        logger.info("Generating instrument XML files")
+        logger.print_action_start("Generating instruments XML files")
         for instrument_name in instrument_names:
             instrument_files = []
             for f in audio_files:
@@ -112,9 +110,11 @@ def generate_xml_files(audio_files: List[str], target_dir: str, metadata: Dict[s
                     instrument_files.append(f)
 
             generate_instrument_xml(target_dir, instrument_name, metadata, instrument_files)
+        logger.print_action_end()
 
-        logger.info("Generating midimap.xml")
+        logger.print_action_start("Generating 'midimap.xml'")
         generate_midimap_xml(target_dir, metadata)
+        logger.print_action_end()
     except Exception as e:
         error_msg = f"Failed to generate XML files: {e}"
         raise XMLGenerationError(error_msg) from e
@@ -162,8 +162,9 @@ def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, 
             logger.section("Copying Logo")
             logo_path = os.path.join(source_dir, metadata["logo"])
             if os.path.isfile(logo_path):
-                logger.info(f"Copying logo: {metadata['logo']}")
+                logger.print_action_start(f"Copying logo file '{metadata['logo']}'")
                 shutil.copy2(logo_path, target_dir)
+                logger.print_action_end()
             else:
                 logger.warning(f"Logo file not found: {logo_path}")
 
@@ -178,10 +179,12 @@ def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, 
                 extra_file = extra_file.strip()
                 extra_file_path = os.path.join(source_dir, extra_file)
                 if os.path.isfile(extra_file_path):
-                    logger.info(f"Copying extra file: {extra_file}")
+                    logger.print_action_start(f"Copying extra file '{extra_file}'")
                     shutil.copy2(extra_file_path, target_dir)
+                    logger.print_action_end()
                 else:
                     logger.warning(f"Extra file not found: {extra_file_path}")
+
     except Exception as e:
         error_msg = f"Failed to copy additional files: {e}"
         raise DirectoryError(error_msg) from e

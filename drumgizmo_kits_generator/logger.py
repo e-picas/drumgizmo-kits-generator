@@ -132,6 +132,24 @@ class Logger:
         """
         return self.verbose_mode
 
+    def print_action_start(self, msg: str) -> None:
+        """
+        Print the start of an action with ellipsis.
+
+        Args:
+            msg: The message to display (e.g., "Génération du XML")
+        """
+        print(f"{msg}...", flush=True)
+
+    def print_action_end(self, msg: str = "OK") -> None:
+        """
+        Print the end of an action (default: OK).
+
+        Args:
+            msg: The message to display (default: "OK")
+        """
+        print(msg, flush=True)
+
 
 # Create a singleton instance of the Logger
 _logger = Logger()
@@ -146,3 +164,5 @@ error = _logger.error
 section = _logger.section
 message = _logger.message
 is_verbose = _logger.is_verbose
+print_action_start = _logger.print_action_start
+print_action_end = _logger.print_action_end

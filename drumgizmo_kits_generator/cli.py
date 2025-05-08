@@ -239,49 +239,42 @@ def print_summary(
     """
     logger.section("Summary")
 
-    logger.info(f"Processing complete. DrumGizmo kit successfully created in: {target_dir}")
+    logger.info(f"Processing complete. DrumGizmo kit successfully created in {target_dir}")
     logger.info(f"Number of instruments created: {len(processed_audio_files)}")
     logger.info("Main files:")
-    logger.info(f"- {os.path.join(target_dir, 'drumkit.xml')}")
-    logger.info(f"- {os.path.join(target_dir, 'midimap.xml')}")
+    logger.info(f"  - {os.path.join(target_dir, 'drumkit.xml')}")
+    logger.info(f"  - {os.path.join(target_dir, 'midimap.xml')}")
 
     logger.info("\nKit metadata summary:")
-    logger.info(f"Name: {metadata.get('name', '')}")
-    logger.info(f"Version: {metadata.get('version', '')}")
-    logger.info(f"Description: {metadata.get('description', '')}")
-    logger.info(f"Notes: {metadata.get('notes', '')}")
-    logger.info(f"Author: {metadata.get('author', '')}")
-    logger.info(f"License: {metadata.get('license', '')}")
-    logger.info(f"Sample rate: {metadata.get('samplerate', '')} Hz")
-    logger.info(f"Website: {metadata.get('website', '')}")
-    logger.info(f"Logo: {metadata.get('logo', '')}")
+    logger.info(f"  - Name: {metadata.get('name', '')}")
+    logger.info(f"  - Version: {metadata.get('version', '')}")
+    logger.info(f"  - Description: {metadata.get('description', '')}")
+    logger.info(f"  - Notes: {metadata.get('notes', '')}")
+    logger.info(f"  - Author: {metadata.get('author', '')}")
+    logger.info(f"  - License: {metadata.get('license', '')}")
+    logger.info(f"  - Sample rate: {metadata.get('samplerate', '')} Hz")
+    logger.info(f"  - Website: {metadata.get('website', '')}")
+    logger.info(f"  - Logo: {metadata.get('logo', '')}")
 
-    logger.info("\nInstrument to sample mapping:")
-    if isinstance(processed_audio_files, dict):
-        # If processed_audio_files is a dictionary (new format)
+    logger.info("\nInstrument samples MIDI mapping:")
 
-        # Get MIDI parameters
-        midi_params = {
-            "min": metadata.get("midi_note_min"),
-            "max": metadata.get("midi_note_max"),
-            "median": metadata.get("midi_note_median"),
-        }
+    # Get MIDI parameters
+    midi_params = {
+        "min": metadata.get("midi_note_min"),
+        "max": metadata.get("midi_note_max"),
+        "median": metadata.get("midi_note_median"),
+    }
 
-        # Get instrument names
-        instruments = list(processed_audio_files.keys())
+    # Get instrument names
+    instruments = list(processed_audio_files.keys())
 
-        # Calculate MIDI mapping
-        midi_mapping = utils.calculate_midi_mapping(instruments, midi_params)
+    # Calculate MIDI mapping
+    midi_mapping = utils.calculate_midi_mapping(instruments, midi_params)
 
-        # Display mapping with MIDI notes
-        for instrument, audio_file in zip(processed_audio_files.keys(), audio_files):
-            midi_note = midi_mapping.get(instrument, "N/A")
-            logger.info(f"  (MIDI Note {midi_note}) {instrument}: {os.path.basename(audio_file)}")
-    else:
-        # If processed_audio_files is a list (old format used in tests)
-        for audio_file in audio_files:
-            instrument_name = os.path.basename(audio_file)
-            logger.info(f"  {instrument_name}: {instrument_name}")
+    # Display mapping with MIDI notes
+    for instrument, audio_file in zip(processed_audio_files.keys(), audio_files):
+        midi_note = midi_mapping.get(instrument, "N/A")
+        logger.info(f"  - MIDI note {midi_note}: {instrument}: {os.path.basename(audio_file)}")
 
     extra_files = []
     if metadata.get("logo"):
@@ -292,7 +285,7 @@ def print_summary(
     if extra_files:
         logger.info("\nExtra files copied:")
         for extra_file in extra_files:
-            logger.info(f"  {extra_file}")
+            logger.info(f"  - {extra_file}")
 
 
 if __name__ == "__main__":
