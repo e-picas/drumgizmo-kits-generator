@@ -676,6 +676,46 @@ class TestProcessSample:
     """Tests for the process_sample function."""
 
     @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
+    @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
+    @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
+    @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
+    @mock.patch("os.makedirs")
+    def test_process_sample_without_conversion_if_samplerate_matches(
+        self,
+        mock_makedirs,
+        mock_create_velocity,
+        mock_convert_sample_rate,
+        mock_get_audio_info,
+        mock_clean_name,
+        tmp_dir,
+        sample_file,
+    ):
+        """Test process_sample n'appelle pas la conversion si le sample rate est déjà correct."""
+        mock_clean_name.return_value = "test_instrument"
+        mock_create_velocity.return_value = ["file1.wav", "file2.wav", "file3.wav"]
+        # Simuler un sample rate déjà correct
+        metadata = {
+            "name": "Test Kit",
+            "version": "1.0",
+            "description": "Test description",
+            "velocity_levels": 3,
+            "samplerate": 44100,
+        }
+        mock_get_audio_info.return_value = {"samplerate": 44100}
+
+        result = audio.process_sample(sample_file, tmp_dir, metadata)
+
+        assert result == ["file1.wav", "file2.wav", "file3.wav"]
+        mock_create_velocity.assert_called_once_with(
+            sample_file,
+            os.path.join(tmp_dir, "test_instrument", "samples"),
+            metadata["velocity_levels"],
+            "test_instrument",
+            variations_method="linear",
+        )
+        mock_convert_sample_rate.assert_not_called()
+
+    @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
     @mock.patch("os.makedirs")
@@ -742,16 +782,19 @@ class TestProcessSample:
         mock_clean_name.return_value = "test_instrument"
         mock_create_velocity.return_value = ["file1.wav", "file2.wav", "file3.wav"]
 
-        # Create metadata without samplerate
-        metadata_without_samplerate = {
+        # Create metadata with samplerate
+        metadata_with_samplerate = {
             "name": "Test Kit",
             "version": "1.0",
             "description": "Test description",
             "velocity_levels": 3,
+            "samplerate": 44100,
         }
 
-        # Call the function
-        result = audio.process_sample(sample_file, tmp_dir, metadata_without_samplerate)
+        # Patch get_audio_info pour simuler le même sample rate
+        with mock.patch("drumgizmo_kits_generator.audio.get_audio_info") as mock_get_audio_info:
+            mock_get_audio_info.return_value = {"samplerate": 44100}
+            result = audio.process_sample(sample_file, tmp_dir, metadata_with_samplerate)
 
         # Assertions
         assert result == ["file1.wav", "file2.wav", "file3.wav"]
@@ -763,7 +806,7 @@ class TestProcessSample:
         mock_create_velocity.assert_called_once_with(
             sample_file,
             os.path.join(tmp_dir, "test_instrument", "samples"),
-            metadata_without_samplerate["velocity_levels"],
+            metadata_with_samplerate["velocity_levels"],
             "test_instrument",
             variations_method="linear",
         )
@@ -825,16 +868,19 @@ class TestProcessSample:
         mock_clean_name.return_value = "test_instrument"
         mock_create_velocity.return_value = ["file1.wav", "file2.wav", "file3.wav"]
 
-        # Create metadata without velocity_levels
-        metadata_without_velocity = {
+        # Create metadata with samplerate and without velocity_levels
+        metadata_with_samplerate = {
             "name": "Test Kit",
             "version": "1.0",
             "description": "Test description",
             "velocity_levels": constants.DEFAULT_VELOCITY_LEVELS,
+            "samplerate": 44100,
         }
 
-        # Call the function
-        result = audio.process_sample(sample_file, tmp_dir, metadata_without_velocity)
+        # Patch get_audio_info pour simuler le même sample rate
+        with mock.patch("drumgizmo_kits_generator.audio.get_audio_info") as mock_get_audio_info:
+            mock_get_audio_info.return_value = {"samplerate": 44100}
+            result = audio.process_sample(sample_file, tmp_dir, metadata_with_samplerate)
 
         # Assertions
         assert result == ["file1.wav", "file2.wav", "file3.wav"]

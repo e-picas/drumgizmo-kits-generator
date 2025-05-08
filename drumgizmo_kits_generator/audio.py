@@ -228,23 +228,30 @@ def process_sample(
     os.makedirs(samples_dir, exist_ok=True)
 
     try:
-        # Process with sample rate conversion if needed
-        if "samplerate" in metadata and metadata["samplerate"]:
-            # Convert the sample rate to a temporary file
+        requested_sr = str(metadata["samplerate"])
+        # Utiliser get_audio_info pour lire le sample rate
+        try:
+            audio_info = get_audio_info(file_path)
+            input_sr = str(audio_info.get("samplerate"))
+        # pylint: disable=broad-exception-caught
+        except Exception:
+            input_sr = None
+        # Si le sample rate est connu et correct, pas de conversion
+        if input_sr == requested_sr:
+            file_to_process = file_path
+            temp_dir = None
+            logger.debug(f"Sample '{file_path}' already at {requested_sr} Hz, skipping conversion")
+        else:
             temp_dir = tempfile.mkdtemp(prefix=constants.DEFAULT_TEMP_DIR_PREFIX)
             try:
-                converted_file = convert_sample_rate(
-                    file_path, metadata["samplerate"], target_dir=temp_dir
-                )
+                converted_file = convert_sample_rate(file_path, requested_sr, target_dir=temp_dir)
                 file_to_process = converted_file
+            # pylint: disable=broad-exception-caught
             except Exception:
                 # Clean up temp dir if something goes wrong
                 if os.path.exists(temp_dir):
                     shutil.rmtree(temp_dir)
                 raise
-        else:
-            file_to_process = file_path
-            temp_dir = None
 
         try:
             # Create velocity variations
