@@ -227,6 +227,7 @@ def print_summary(
     metadata: Dict[str, Any],
     processed_audio_files: Dict[str, List[str]],
     audio_files: List[str],
+    generation_duration: float = None,
 ) -> None:
     """
     Print a summary of the generated kit.
@@ -239,7 +240,9 @@ def print_summary(
     """
     logger.section("Summary")
 
-    logger.info(f"Processing complete. DrumGizmo kit successfully created in {target_dir}")
+    logger.info(
+        f"Processing complete in {generation_duration:.2f} seconds. DrumGizmo kit successfully created in {target_dir}"
+    )
     logger.info(f"Number of instruments created: {len(processed_audio_files)}")
     logger.info("Main files:")
     logger.info(f"  - {os.path.join(target_dir, 'drumkit.xml')}")

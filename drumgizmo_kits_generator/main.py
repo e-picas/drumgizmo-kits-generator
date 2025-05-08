@@ -11,6 +11,7 @@ DrumGizmo Kit Generator - Main module
 
 import os
 import shutil
+import time
 import traceback
 from typing import Any, Dict, List
 
@@ -235,6 +236,9 @@ def main() -> None:
             "The required 'SoX' software has not been found in the system, can not generate kit!",
         )
 
+        # GENERATION PROCESS START
+        start_time = time.perf_counter()
+
         # Prepare target directory
         utils.prepare_target_directory(args.target)
 
@@ -247,8 +251,14 @@ def main() -> None:
         # Copy additional files
         copy_additional_files(args.source, args.target, metadata)
 
+        end_time = time.perf_counter()
+        generation_process_duration = end_time - start_time
+        # GENERATION PROCESS END
+
         # Print summary
-        cli.print_summary(args.target, metadata, processed_audio_files, audio_files)
+        cli.print_summary(
+            args.target, metadata, processed_audio_files, audio_files, generation_process_duration
+        )
 
         logger.message("\nKit generation completed successfully!")
     except DrumGizmoError as e:
