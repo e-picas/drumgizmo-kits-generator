@@ -192,6 +192,7 @@ def process_sample(
     file_path: str,
     target_dir: str,
     metadata: Dict[str, Any],
+    audio_info: dict = None,
 ) -> List[str]:
     """
     Process an audio sample: copy to target directory and create velocity variations.
@@ -200,6 +201,7 @@ def process_sample(
         file_path: Path to the audio file
         target_dir: Path to the target directory
         metadata: Metadata with processing parameters
+        audio_info: Optional precomputed audio info dict (to avoid duplicate get_audio_info call)
 
     Returns:
         List[str]: List of paths to the created velocity variation files
@@ -229,9 +231,10 @@ def process_sample(
 
     try:
         requested_sr = str(metadata["samplerate"])
-        # Utiliser get_audio_info pour lire le sample rate
+        # Utiliser audio_info fourni ou get_audio_info
         try:
-            audio_info = get_audio_info(file_path)
+            if audio_info is None:
+                audio_info = get_audio_info(file_path)
             input_sr = str(audio_info.get("samplerate"))
         # pylint: disable=broad-exception-caught
         except Exception:

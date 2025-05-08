@@ -74,7 +74,9 @@ def process_audio_files(
     try:
         for file_path in audio_files:
             # Process the sample with sample rate conversion if needed
-            processed_files = audio.process_sample(file_path, target_dir, metadata)
+            processed_files = audio.process_sample(
+                file_path, target_dir, metadata, audio_files[file_path]
+            )
 
             # Get the instrument name from the first processed file
             if processed_files:
@@ -142,16 +144,16 @@ def generate_xml_files(audio_files: List[str], target_dir: str, metadata: Dict[s
         raise XMLGenerationError(error_msg) from e
 
 
-def scan_source_files(source_dir: str, extensions: List[str]) -> List[str]:
+def scan_source_files(source_dir: str, extensions: List[str]) -> Dict[str, Any]:
     """
-    Scan source directory for audio files with specified extensions.
+    Scan source directory for audio files with specified extensions, with audio info for each audio file.
 
     Args:
         source_dir: Path to the source directory
         extensions: List of file extensions to include
 
     Returns:
-        List[str]: List of audio file paths, sorted alphabetically
+        Dict[str, Any]: List of audio file paths, sorted alphabetically and audio infos: {file_path: audio_info}
     """
     audio_files = []
     for root, _, files in os.walk(source_dir):
@@ -163,7 +165,12 @@ def scan_source_files(source_dir: str, extensions: List[str]) -> List[str]:
     # Sort audio files alphabetically by filename
     audio_files.sort(key=lambda x: os.path.basename(x).lower())
 
-    return audio_files
+    result = {}
+    for file_path in audio_files:
+        info = audio.get_audio_info(file_path)
+        result[file_path] = info
+
+    return result
 
 
 def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, Any]) -> None:

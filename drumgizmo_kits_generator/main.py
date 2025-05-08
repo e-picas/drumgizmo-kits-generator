@@ -27,6 +27,7 @@ from drumgizmo_kits_generator.exceptions import DrumGizmoError
 def main() -> None:
     """Main entry point for the DrumGizmo Kit Generator."""
     try:
+        start_time = time.perf_counter()
         args = cli.parse_arguments()
 
         # Initialize logger with verbosity level and raw output
@@ -69,8 +70,8 @@ def main() -> None:
             "The required 'SoX' software has not been found in the system, can not generate kit!",
         )
 
-        # GENERATION PROCESS START
-        start_time = time.perf_counter()
+        # !! - GENERATION PROCESS START - !!
+        # Nothing should be actually done in the system before this point
 
         # Prepare target directory
         kit_generator.prepare_target_directory(args.target)

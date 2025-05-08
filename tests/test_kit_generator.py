@@ -290,69 +290,47 @@ class TestPrepareTargetDirectory:
 
 
 class TestScanSourceFiles:
-    """Tests for the scan_source_files function in main module."""
+    """Tests for the scan_source_files function in kit_generator module (returns dict)."""
 
-    def test_scan_source_files(self):
-        """Test scan_source_files with various extensions."""
-        # Create a temporary directory with test files
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Create some test files
-            wav_file = os.path.join(temp_dir, "test1.wav")
-            flac_file = os.path.join(temp_dir, "test2.flac")
-            mp3_file = os.path.join(temp_dir, "test3.mp3")
-            txt_file = os.path.join(temp_dir, "test4.txt")
-
-            # Create subdirectory with more files
-            subdir = os.path.join(temp_dir, "subdir")
-            os.makedirs(subdir)
-            subdir_wav = os.path.join(subdir, "subtest1.wav")
-            subdir_flac = os.path.join(subdir, "subtest2.flac")
-
-            # Create all the files
-            for file_path in [wav_file, flac_file, mp3_file, txt_file, subdir_wav, subdir_flac]:
-                with open(file_path, "w", encoding="utf-8") as f:
-                    f.write("dummy content")
-
-            # Test with wav only
-            result = kit_generator.scan_source_files(temp_dir, ["wav"])
-            assert len(result) == 2
-            assert wav_file in result
-            assert subdir_wav in result
-            assert flac_file not in result
-            assert mp3_file not in result
-            assert txt_file not in result
-
-            # Test with wav and flac
-            result = kit_generator.scan_source_files(temp_dir, ["wav", "flac"])
-            assert len(result) == 4
-            assert wav_file in result
-            assert flac_file in result
-            assert subdir_wav in result
-            assert subdir_flac in result
-            assert mp3_file not in result
-            assert txt_file not in result
-
-            # Test with all audio formats
-            result = kit_generator.scan_source_files(temp_dir, ["wav", "flac", "mp3"])
-            assert len(result) == 5
-            assert wav_file in result
-            assert flac_file in result
-            assert mp3_file in result
-            assert subdir_wav in result
-            assert subdir_flac in result
-            assert txt_file not in result
-
-            # Test with case insensitivity
-            result = kit_generator.scan_source_files(temp_dir, ["WAV", "FLAC"])
-            assert len(result) == 4
-            assert wav_file in result
-            assert flac_file in result
-            assert subdir_wav in result
-            assert subdir_flac in result
-
-            # Test with empty extensions list
-            result = kit_generator.scan_source_files(temp_dir, [])
-            assert len(result) == 0
+    @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
+    def test_scan_source_files(self, mock_get_info, temp_dir):
+        """Test scan_source_files with valid input."""
+        # Setup
+        wav_file = os.path.join(temp_dir, "test1.wav")
+        flac_file = os.path.join(temp_dir, "test2.flac")
+        mp3_file = os.path.join(temp_dir, "test3.mp3")
+        txt_file = os.path.join(temp_dir, "test4.txt")
+        for f in [wav_file, flac_file, mp3_file, txt_file]:
+            with open(f, "w"):
+                pass
+        # Sous-répertoire
+        subdir = os.path.join(temp_dir, "subdir")
+        os.makedirs(subdir)
+        subdir_wav = os.path.join(subdir, "test5.wav")
+        subdir_flac = os.path.join(subdir, "test6.flac")
+        with open(subdir_wav, "w"):
+            pass
+        with open(subdir_flac, "w"):
+            pass
+        # Mock audio info
+        mock_get_info.side_effect = lambda path: {"mocked": os.path.basename(path)}
+        # Test extensions .wav/.flac
+        result = kit_generator.scan_source_files(temp_dir, ["wav", "flac"])
+        assert isinstance(result, dict)
+        expected = {wav_file, flac_file, subdir_wav, subdir_flac}
+        assert set(result.keys()) == expected
+        for k in expected:
+            assert result[k] == {"mocked": os.path.basename(k)}
+        assert mp3_file not in result
+        assert txt_file not in result
+        # Test insensibilité à la casse
+        result2 = kit_generator.scan_source_files(temp_dir, ["WAV", "FLAC"])
+        assert set(result2.keys()) == expected
+        for k in expected:
+            assert result2[k] == {"mocked": os.path.basename(k)}
+        # Test extensions vides
+        result3 = kit_generator.scan_source_files(temp_dir, [])
+        assert not result3
 
 
 if __name__ == "__main__":

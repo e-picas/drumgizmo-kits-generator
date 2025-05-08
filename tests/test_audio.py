@@ -693,7 +693,6 @@ class TestProcessSample:
         """Test process_sample n'appelle pas la conversion si le sample rate est déjà correct."""
         mock_clean_name.return_value = "test_instrument"
         mock_create_velocity.return_value = ["file1.wav", "file2.wav", "file3.wav"]
-        # Simuler un sample rate déjà correct
         metadata = {
             "name": "Test Kit",
             "version": "1.0",
@@ -703,8 +702,8 @@ class TestProcessSample:
         }
         mock_get_audio_info.return_value = {"samplerate": 44100}
 
+        # Cas classique (audio_info non fourni, get_audio_info appelé)
         result = audio.process_sample(sample_file, tmp_dir, metadata)
-
         assert result == ["file1.wav", "file2.wav", "file3.wav"]
         mock_create_velocity.assert_called_once_with(
             sample_file,
@@ -714,6 +713,19 @@ class TestProcessSample:
             variations_method="linear",
         )
         mock_convert_sample_rate.assert_not_called()
+        assert mock_get_audio_info.call_count == 1
+
+        # Cas où audio_info est fourni (get_audio_info NE DOIT PAS être appelé)
+        mock_get_audio_info.reset_mock()
+        mock_create_velocity.reset_mock()
+        mock_convert_sample_rate.reset_mock()
+        result2 = audio.process_sample(
+            sample_file, tmp_dir, metadata, audio_info={"samplerate": 44100}
+        )
+        assert result2 == ["file1.wav", "file2.wav", "file3.wav"]
+        mock_create_velocity.assert_called_once()
+        mock_convert_sample_rate.assert_not_called()
+        mock_get_audio_info.assert_not_called()
 
     @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
