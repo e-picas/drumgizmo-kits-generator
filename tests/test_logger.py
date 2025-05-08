@@ -58,6 +58,19 @@ def test_set_verbose():
     assert not logger._logger.verbose_mode
 
 
+def test_is_raw_output():
+    """Test the is_raw_output function."""
+    test_logger = logger.Logger()
+    # By défaut, raw_output doit être désactivé
+    assert test_logger.is_raw_output() is False
+    # Active raw_output
+    test_logger.set_raw_output(True)
+    assert test_logger.is_raw_output() is True
+    # Désactive raw_output
+    test_logger.set_raw_output(False)
+    assert test_logger.is_raw_output() is False
+
+
 def test_is_verbose():
     """Test the is_verbose function."""
     # Create a new Logger instance to avoid affecting other tests
@@ -73,6 +86,19 @@ def test_is_verbose():
     # Disable verbose mode
     test_logger.set_verbose(False)
     assert test_logger.is_verbose() is False
+
+
+def test_is_raw_output_module_function():
+    """Test the is_raw_output function at the module level."""
+    # Sauvegarde l'état courant
+    original_state = logger.is_raw_output()
+    try:
+        logger.set_raw_output(False)
+        assert logger.is_raw_output() is False
+        logger.set_raw_output(True)
+        assert logger.is_raw_output() is True
+    finally:
+        logger.set_raw_output(original_state)
 
 
 def test_is_verbose_module_function():

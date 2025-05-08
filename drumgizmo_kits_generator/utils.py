@@ -17,7 +17,7 @@ import tempfile
 from contextlib import contextmanager
 from typing import Any, Dict, List
 
-from drumgizmo_kits_generator import constants, logger
+from drumgizmo_kits_generator import constants
 from drumgizmo_kits_generator.exceptions import AudioProcessingError, DependencyError
 
 
@@ -145,33 +145,6 @@ def clean_instrument_name(file_base: str) -> str:
     instrument_name = instrument_name.replace("_converted", "")
 
     return instrument_name
-
-
-def prepare_target_directory(target_dir: str) -> None:
-    """
-    Prepare the target directory by creating it if it doesn't exist
-    or cleaning it if it does.
-
-    Args:
-        target_dir: Path to the target directory
-    """
-    logger.section("Preparing Target Directory")
-
-    # Create directory if it doesn't exist
-    if not os.path.exists(target_dir):
-        logger.print_action_start(f"Creating target directory '{target_dir}'")
-        os.makedirs(target_dir)
-    else:
-        # Clean directory if it exists
-        logger.print_action_start(f"Cleaning target directory '{target_dir}'")
-        for item in os.listdir(target_dir):
-            item_path = os.path.join(target_dir, item)
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)
-            else:
-                os.remove(item_path)
-
-    logger.print_action_end()
 
 
 def is_instrument_file(base_name: str, instrument_name: str, extensions: List[str] = None) -> bool:

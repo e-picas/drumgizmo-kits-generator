@@ -132,6 +132,15 @@ class Logger:
         """
         return self.verbose_mode
 
+    def is_raw_output(self) -> bool:
+        """
+        Check if raw output mode is enabled.
+
+        Returns:
+            bool: True if raw output mode is enabled, False otherwise
+        """
+        return self.raw_output
+
     def print_action_start(self, msg: str) -> None:
         """
         Print the start of an action with ellipsis.
@@ -164,5 +173,6 @@ error = _logger.error
 section = _logger.section
 message = _logger.message
 is_verbose = _logger.is_verbose
+is_raw_output = _logger.is_raw_output
 print_action_start = _logger.print_action_start
 print_action_end = _logger.print_action_end
