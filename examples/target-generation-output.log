@@ -61,7 +61,7 @@ Copying extra file 'license.txt'...
 OK
 
 === Summary ===
-Processing complete in 1.22 seconds. DrumGizmo kit successfully created in examples/target/
+Processing complete. DrumGizmo kit successfully created in examples/target/
 Number of instruments created: 3
 Main files:
   - examples/target/drumkit.xml

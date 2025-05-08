@@ -6,6 +6,7 @@
 # pylint: disable=unused-argument
 # pylint: disable=chained-comparison
 # pylint: disable=R0801 # code duplication
+# pylint: disable=invalid-name
 """
 SPDX-License-Identifier: MIT
 SPDX-PackageName: DrumGizmo kits generator
@@ -86,6 +87,16 @@ def basic_metadata():
 def audio_files():
     """Create a list of audio file paths for testing."""
     return ["/path/to/Kick.wav", "/path/to/Snare.wav", "/path/to/HiHat.wav"]
+
+
+@pytest.fixture
+def audio_files_dict():
+    """Create a dictionary of audio file paths and their channels for testing."""
+    return {
+        "/path/to/Kick.wav": {"channels": 2},
+        "/path/to/Snare.wav": {"channels": 2},
+        "/path/to/HiHat.wav": {"channels": 2},
+    }
 
 
 class TestGenerateDrumkitXml:
@@ -205,13 +216,15 @@ class TestGenerateDrumkitXml:
 class TestGenerateInstrumentXml:
     """Tests for the generate_instrument_xml function."""
 
-    def test_generate_instrument_xml(self, temp_dir, basic_metadata, audio_files, mock_logger):
+    def test_generate_instrument_xml(
+        self, temp_dir, basic_metadata, audio_files, audio_files_dict, mock_logger
+    ):
         """Test generate_instrument_xml with basic metadata."""
         instrument_name = "Snare"
 
         # Call the function
         xml_generator.generate_instrument_xml(
-            temp_dir, instrument_name, basic_metadata, audio_files
+            temp_dir, instrument_name, basic_metadata, audio_files, audio_files_dict
         )
 
         # Check that the directories were created
@@ -258,8 +271,19 @@ class TestGenerateInstrumentXml:
                 assert audiofile.get("channel") in basic_metadata["channels"]
                 assert audiofile.get("file").startswith(f"samples/{i}-{instrument_name}")
 
-                # Check filechannel alternates between 1 and 2
-                expected_filechannel = "1" if j % 2 == 0 else "2"
+                # Check filechannel cycles between 1 and N (N = number of source channels)
+                if (
+                    "audio_files_dict" in locals()
+                    and isinstance(audio_files_dict, dict)
+                    and audio_files_dict
+                ):
+                    # Use the number of channels from the first audio file in the dict
+                    first_file = list(audio_files_dict.keys())[0]
+                    N = audio_files_dict[first_file]["channels"]
+                else:
+                    # Fallback: use metadata if audio_files is not present
+                    N = 1
+                expected_filechannel = str((j % N) + 1)
                 assert audiofile.get("filechannel") == expected_filechannel
 
         # Check logger calls
@@ -267,7 +291,7 @@ class TestGenerateInstrumentXml:
 
     @mock.patch("os.path.splitext")
     def test_generate_instrument_xml_with_extension(
-        self, mock_splitext, temp_dir, basic_metadata, audio_files, mock_logger
+        self, mock_splitext, temp_dir, basic_metadata, audio_files, audio_files_dict, mock_logger
     ):
         """Test generate_instrument_xml preserves file extension."""
         instrument_name = "Snare"
@@ -277,7 +301,7 @@ class TestGenerateInstrumentXml:
 
         # Call the function
         xml_generator.generate_instrument_xml(
-            temp_dir, instrument_name, basic_metadata, audio_files
+            temp_dir, instrument_name, basic_metadata, audio_files, audio_files_dict
         )
 
         # Check that the file was created

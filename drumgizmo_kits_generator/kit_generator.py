@@ -132,7 +132,7 @@ def generate_xml_files(audio_files: List[str], target_dir: str, metadata: Dict[s
                     instrument_files.append(f)
 
             xml_generator.generate_instrument_xml(
-                target_dir, instrument_name, metadata, instrument_files
+                target_dir, instrument_name, metadata, instrument_files, audio_files
             )
         logger.print_action_end()
 

@@ -137,7 +137,11 @@ def generate_drumkit_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
 
 
 def _add_instrument_samples(
-    samples_elem: ET.Element, metadata: Dict[str, Any], instrument_name: str, original_ext: str
+    samples_elem: ET.Element,
+    metadata: Dict[str, Any],
+    instrument_name: str,
+    original_ext: str,
+    instrument_channels: int = 1,
 ) -> None:
     """
     Add sample elements to the samples element of an instrument XML.
@@ -147,6 +151,7 @@ def _add_instrument_samples(
         metadata: Metadata dictionary
         instrument_name: Name of the instrument
         original_ext: File extension for audio files
+        instrument_channels: Number of channels of the original sample
     """
     # Get velocity levels
     velocity_levels = metadata.get("velocity_levels")
@@ -168,13 +173,17 @@ def _add_instrument_samples(
             audiofile_elem.set("channel", channel)
             audiofile_elem.set("file", f"samples/{i}-{instrument_name}{original_ext}")
 
-            # Alternate between channel 1 and 2 for each line
-            filechannel = "1" if j % 2 == 0 else "2"
+            # Set filechannel index based on position in instrument_channels (starting from 1)
+            filechannel = str((j % instrument_channels) + 1)
             audiofile_elem.set("filechannel", filechannel)
 
 
 def generate_instrument_xml(
-    target_dir: str, instrument_name: str, metadata: Dict[str, Any], audio_files: List[str]
+    target_dir: str,
+    instrument_name: str,
+    metadata: Dict[str, Any],
+    instrument_files: List[str],
+    audio_files: dict = None,
 ) -> None:
     """
     Generate the instrument.xml file for a DrumGizmo instrument.
@@ -183,10 +192,16 @@ def generate_instrument_xml(
         target_dir: Path to the target directory
         instrument_name: Name of the instrument
         metadata: Metadata for the instrument
-        audio_files: List of audio file paths
+        instrument_files: List of audio file paths for this instrument
+        audio_files: Dict mapping all audio file paths to their info (as in scan_source_files)
     """
     instrument_dir = os.path.join(target_dir, instrument_name)
     xml_path = os.path.join(instrument_dir, f"{instrument_name}.xml")
+    if audio_files is not None:
+        instrument_channels = audio_files.get(instrument_files[0])["channels"]
+    else:
+        instrument_channels = 1
+
     logger.debug(f"Generating instrument XML for '{instrument_name}' at {xml_path}")
 
     # Create instrument directory if it doesn't exist
@@ -202,14 +217,16 @@ def generate_instrument_xml(
 
     # Get the original file extension from the first audio file
     original_ext = ".wav"  # Default extension
-    if audio_files:
-        for file_path in audio_files:
+    if instrument_files:
+        for file_path in instrument_files:
             if instrument_name in os.path.basename(file_path):
                 _, original_ext = os.path.splitext(file_path)
                 break
 
     # Add samples
-    _add_instrument_samples(samples_elem, metadata, instrument_name, original_ext)
+    _add_instrument_samples(
+        samples_elem, metadata, instrument_name, original_ext, instrument_channels
+    )
 
     # Pretty print the XML
     xml_string = ET.tostring(root, encoding="utf-8")
