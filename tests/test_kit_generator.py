@@ -237,6 +237,29 @@ class TestEvaluateMidiMapping:
             assert result == {"Kick": 60}
 
 
+def test_print_samples_info(mock_logger):
+    """Test print_samples_info function."""
+    audio_files = [
+        "/path/to/kick.wav",
+        "/path/to/snare.wav",
+        "/path/to/hihat.wav",
+    ]
+
+    metadata = {
+        "midi_note_min": 30,
+        "midi_note_max": 90,
+        "midi_note_median": 60,
+        "variations_method": "linear",
+    }
+
+    kit_generator.print_samples_info(audio_files, metadata)
+
+    # Verify that section and info were called with appropriate arguments
+    mock_logger["section"].assert_called_with("Source Audio Samples")
+    # Should call info for count, each sample, and variations method
+    assert mock_logger["info"].call_count >= 5
+
+
 class TestPrepareTargetDirectory:
     """Tests for the prepare_target_directory function (main.py)."""
 
@@ -331,6 +354,35 @@ class TestScanSourceFiles:
         # Test extensions vides
         result3 = kit_generator.scan_source_files(temp_dir, [])
         assert not result3
+
+
+def test_print_metadata(mock_logger):
+    """Test print_metadata function (déplacée dans kit_generator)."""
+    metadata = {
+        "name": "Test Kit",
+        "version": "1.0.0",
+        "description": "Test description",
+        "notes": "Test notes",
+        "author": "Test Author",
+        "license": "Test License",
+        "website": "https://example.com",
+        "logo": "logo.png",
+        "samplerate": "44100",
+        "extra_files": ["file1.txt", "file2.txt"],
+        "velocity_levels": 5,
+        "variations_method": "linear",
+        "midi_note_min": 30,
+        "midi_note_max": 90,
+        "midi_note_median": 60,
+        "extensions": ["wav", "flac"],
+        "channels": ["Left", "Right"],
+        "main_channels": ["Left", "Right"],
+    }
+
+    kit_generator.print_metadata(metadata)
+
+    mock_logger["section"].assert_called_with("Kit Metadata")
+    assert mock_logger["info"].call_count >= 10  # Should call info for each metadata item
 
 
 if __name__ == "__main__":

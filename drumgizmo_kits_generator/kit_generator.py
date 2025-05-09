@@ -49,6 +49,169 @@ def prepare_target_directory(target_dir: str) -> None:
     logger.print_action_end()
 
 
+def print_samples_info(audio_files: List[str], metadata: Dict[str, Any]) -> None:
+    """
+    Print information about the source audio samples.
+
+    Args:
+        audio_files: List of audio file paths
+        metadata: Metadata with MIDI note range
+    """
+    logger.section("Source Audio Samples")
+
+    logger.info(f"Found {len(audio_files)} audio files:")
+
+    # Check if the number of files exceeds the MIDI note range
+    midi_range = metadata["midi_note_max"] - metadata["midi_note_min"] + 1
+    if len(audio_files) > midi_range:
+        logger.warning(
+            f"Number of audio files ({len(audio_files)}) exceeds MIDI note range "
+            f"({metadata['midi_note_min']} - {metadata['midi_note_max']}, {midi_range} notes)"
+        )
+
+    # Print the list of audio files
+    for file in audio_files:
+        logger.info(f"- {os.path.basename(file)}")
+
+    logger.info(
+        f"Audio samples will be generated with a '{metadata['variations_method']}' volume variations method."
+    )
+
+
+def print_metadata(metadata: Dict[str, Any]) -> None:
+    """
+    Print metadata information.
+
+    Args:
+        metadata: Metadata to print
+    """
+    logger.section("Kit Metadata")
+
+    logger.info(f"Name: {metadata['name']}")
+    logger.info(f"Version: {metadata['version']}")
+
+    if metadata["description"]:
+        logger.info(f"Description: {metadata['description']}")
+
+    if metadata["notes"]:
+        logger.info(f"Notes: {metadata['notes']}")
+
+    if metadata["author"]:
+        logger.info(f"Author: {metadata['author']}")
+
+    logger.info(f"License: {metadata['license']}")
+
+    if metadata["website"]:
+        logger.info(f"Website: {metadata['website']}")
+
+    if metadata["logo"]:
+        logger.info(f"Logo: {metadata['logo']}")
+
+    logger.info(f"Sample rate: {metadata['samplerate']} Hz")
+    logger.info(f"Velocity levels: {metadata['velocity_levels']}")
+    logger.info(f"Volume variations method: {metadata['variations_method']}")
+    logger.info(f"MIDI note range: [{metadata['midi_note_min']}, {metadata['midi_note_max']}]")
+    logger.info(f"MIDI note median: {metadata['midi_note_median']}")
+    logger.info(f"Audio extensions: {metadata['extensions']}")
+    logger.info(f"Audio channels: {metadata['channels']}")
+    logger.info(f"Main channels: {metadata['main_channels']}")
+
+    if metadata["extra_files"]:
+        logger.info(f"Extra files: {metadata['extra_files']}")
+
+
+def print_midi_mapping(audio_files: List[str], metadata: Dict[str, Any]) -> None:
+    """
+    Print the MIDI mapping for the given audio files and metadata.
+
+    Args:
+        audio_files: List of audio file paths
+        metadata: Dictionary containing metadata for MIDI mapping
+    """
+    logger.info("\n=== MIDI Mapping Preview ===")
+    midi_mapping = utils.evaluate_midi_mapping(audio_files, metadata)
+
+    if not midi_mapping:
+        logger.warning("No instruments found for MIDI mapping")
+        return
+
+    # Display MIDI mapping
+    logger.info("MIDI mapping preview (alphabetical order):")
+    for instrument, note in sorted(midi_mapping.items(), key=lambda x: x[0]):
+        logger.info(f"  MIDI Note {note}: {instrument}")
+
+
+def print_summary(
+    target_dir: str,
+    metadata: Dict[str, Any],
+    processed_audio_files: Dict[str, List[str]],
+    audio_files: List[str],
+    generation_duration: float = None,
+) -> None:
+    """
+    Print a summary of the generated kit.
+
+    Args:
+        target_dir: The target directory where the kit was generated
+        metadata: The metadata of the kit
+        processed_audio_files: The processed audio files
+        audio_files: The original audio files
+    """
+    logger.section("Summary")
+
+    if logger.is_raw_output():
+        msg = f"Processing complete. DrumGizmo kit successfully created in {target_dir}"
+    else:
+        msg = f"Processing complete in {generation_duration:.2f} seconds. DrumGizmo kit successfully created in {target_dir}"
+    logger.info(msg)
+    logger.info(f"Number of instruments created: {len(processed_audio_files)}")
+    logger.info("Main files:")
+    logger.info(f"  - {os.path.join(target_dir, 'drumkit.xml')}")
+    logger.info(f"  - {os.path.join(target_dir, 'midimap.xml')}")
+
+    logger.info("\nKit metadata summary:")
+    logger.info(f"  - Name: {metadata.get('name', '')}")
+    logger.info(f"  - Version: {metadata.get('version', '')}")
+    logger.info(f"  - Description: {metadata.get('description', '')}")
+    logger.info(f"  - Notes: {metadata.get('notes', '')}")
+    logger.info(f"  - Author: {metadata.get('author', '')}")
+    logger.info(f"  - License: {metadata.get('license', '')}")
+    logger.info(f"  - Sample rate: {metadata.get('samplerate', '')} Hz")
+    logger.info(f"  - Website: {metadata.get('website', '')}")
+    logger.info(f"  - Logo: {metadata.get('logo', '')}")
+
+    logger.info("\nInstrument samples MIDI mapping:")
+
+    # Get MIDI parameters
+    midi_params = {
+        "min": metadata.get("midi_note_min"),
+        "max": metadata.get("midi_note_max"),
+        "median": metadata.get("midi_note_median"),
+    }
+
+    # Get instrument names
+    instruments = list(processed_audio_files.keys())
+
+    # Calculate MIDI mapping
+    midi_mapping = utils.calculate_midi_mapping(instruments, midi_params)
+
+    # Display mapping with MIDI notes
+    for instrument, audio_file in zip(processed_audio_files.keys(), audio_files):
+        midi_note = midi_mapping.get(instrument, "N/A")
+        logger.info(f"  - MIDI note {midi_note}: {instrument}: {os.path.basename(audio_file)}")
+
+    extra_files = []
+    if metadata.get("logo"):
+        extra_files.append(metadata["logo"])
+    if metadata.get("extra_files"):
+        extra_files.extend(metadata["extra_files"])
+
+    if extra_files:
+        logger.info("\nExtra files copied:")
+        for extra_file in extra_files:
+            logger.info(f"  - {extra_file}")
+
+
 def process_audio_files(
     audio_files: List[str], target_dir: str, metadata: Dict[str, Any]
 ) -> Dict[str, List[str]]:
@@ -155,6 +318,9 @@ def scan_source_files(source_dir: str, extensions: List[str]) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: List of audio file paths, sorted alphabetically and audio infos: {file_path: audio_info}
     """
+    logger.debug(
+        f"Scanning source directory '{source_dir}' for audio files with extensions {extensions}"
+    )
     audio_files = []
     for root, _, files in os.walk(source_dir):
         for file in files:

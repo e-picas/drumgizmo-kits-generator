@@ -49,18 +49,18 @@ def main() -> None:
         metadata = config.load_configuration(args)
 
         # Print metadata
-        cli.print_metadata(metadata)
+        kit_generator.print_metadata(metadata)
 
         # Scan source files
         extensions = metadata["extensions"]
         audio_files = kit_generator.scan_source_files(args.source, extensions)
 
-        # Print samples information
-        cli.print_samples_info(audio_files, metadata)
+        # Scan samples & rint information
+        kit_generator.print_samples_info(audio_files, metadata)
 
         # Preview MIDI mapping in dry run mode
         if args.dry_run:
-            cli.print_midi_mapping(audio_files, metadata)
+            kit_generator.print_midi_mapping(audio_files, metadata)
             logger.message("\nDry run mode enabled, stopping here")
             return
 
@@ -92,7 +92,7 @@ def main() -> None:
         # GENERATION PROCESS END
 
         # Print summary
-        cli.print_summary(
+        kit_generator.print_summary(
             args.target, metadata, processed_audio_files, audio_files, generation_process_duration
         )
 

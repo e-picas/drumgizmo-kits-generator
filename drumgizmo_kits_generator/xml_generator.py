@@ -91,7 +91,7 @@ def generate_drumkit_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
         metadata: Metadata for the drumkit
     """
     xml_path = os.path.join(target_dir, "drumkit.xml")
-    logger.debug(f"Generating drumkit XML at {xml_path}")
+    logger.debug(f"Generating drumkit XML at '{xml_path}'")
 
     # Create the root element
     root = ET.Element("drumkit")
@@ -202,7 +202,10 @@ def generate_instrument_xml(
     else:
         instrument_channels = 1
 
-    logger.debug(f"Generating instrument XML for '{instrument_name}' at {xml_path}")
+    logger.debug(
+        f"Generating instrument XML for '{instrument_name}' at '{xml_path}'"
+        f" with {instrument_channels} channels"
+    )
 
     # Create instrument directory if it doesn't exist
     os.makedirs(instrument_dir, exist_ok=True)
@@ -283,7 +286,7 @@ def generate_midimap_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
         metadata: Metadata for the midimap
     """
     xml_path = os.path.join(target_dir, "midimap.xml")
-    logger.debug(f"Generating midimap XML at {xml_path}")
+    logger.debug(f"Generating midimap XML at '{xml_path}'")
 
     # Create the root element
     root = ET.Element("midimap")

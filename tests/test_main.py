@@ -192,24 +192,24 @@ class TestMain:
         }
 
     # pylint: disable=too-many-arguments
+    @mock.patch("drumgizmo_kits_generator.kit_generator.print_metadata")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.print_midi_mapping")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.print_samples_info")
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
     @mock.patch("drumgizmo_kits_generator.validators.validate_directories")
     @mock.patch("drumgizmo_kits_generator.config.load_configuration")
-    @mock.patch("drumgizmo_kits_generator.cli.print_metadata")
     @mock.patch("drumgizmo_kits_generator.kit_generator.scan_source_files")
-    @mock.patch("drumgizmo_kits_generator.cli.print_samples_info")
-    @mock.patch("drumgizmo_kits_generator.cli.print_midi_mapping")
     @mock.patch("drumgizmo_kits_generator.logger.message")
     def test_main_dry_run(
         self,
         mock_message,
-        mock_print_midi_mapping,
-        mock_print_samples_info,
         mock_scan_source_files,
-        mock_print_metadata,
         mock_load_configuration,
         mock_validate_directories,
         mock_parse_arguments,
+        mock_print_samples_info,
+        mock_print_midi_mapping,
+        mock_print_metadata,
     ):
         """Test main function in dry run mode."""
         # Setup mocks
@@ -340,10 +340,10 @@ class TestMainWithDependencies:
     @mock.patch("drumgizmo_kits_generator.config.load_configuration")
     @mock.patch("drumgizmo_kits_generator.config.transform_configuration")
     @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
-    @mock.patch("drumgizmo_kits_generator.cli.print_metadata")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.print_metadata")
     @mock.patch("drumgizmo_kits_generator.kit_generator.scan_source_files")
-    @mock.patch("drumgizmo_kits_generator.cli.print_samples_info")
-    @mock.patch("drumgizmo_kits_generator.cli.print_midi_mapping")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.print_samples_info")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.print_midi_mapping")
     @mock.patch("sys.stderr", new_callable=io.StringIO)
     def test_main_sox_dependency_check(
         self,
@@ -407,22 +407,22 @@ class TestMainWithDependencies:
     @mock.patch("drumgizmo_kits_generator.kit_generator.copy_additional_files")
     @mock.patch("drumgizmo_kits_generator.validators.validate_directories")
     @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.print_metadata")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.print_samples_info")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.print_midi_mapping")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.prepare_target_directory")
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
     @mock.patch("drumgizmo_kits_generator.config.load_configuration")
     @mock.patch("drumgizmo_kits_generator.config.transform_configuration")
-    @mock.patch("drumgizmo_kits_generator.cli.print_metadata")
-    @mock.patch("drumgizmo_kits_generator.cli.print_samples_info")
-    @mock.patch("drumgizmo_kits_generator.cli.print_midi_mapping")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.prepare_target_directory")
     def test_main_with_valid_args(
         self,
+        mock_transform_config,
+        mock_load_config,
+        mock_parse_args,
         mock_prepare_target,
         mock_print_midi_mapping,  # pylint: disable=unused-argument
         mock_print_samples,
         mock_print_metadata,
-        mock_transform_config,
-        mock_load_config,
-        mock_parse_args,
         mock_validate_config,
         mock_validate_dirs,
         mock_copy,
