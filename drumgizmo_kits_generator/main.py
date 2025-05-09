@@ -10,7 +10,6 @@ DrumGizmo Kit Generator - Main module
 """
 
 import time
-import traceback
 
 from drumgizmo_kits_generator import cli, config, constants, kit_generator, logger, utils
 from drumgizmo_kits_generator.exceptions import DrumGizmoError
@@ -90,12 +89,10 @@ def main() -> None:
 
         logger.message("\nKit generation completed successfully!")
     except DrumGizmoError as e:
-        logger.error(f"Error: {e}")
+        logger.error(f"{e}", e)
     # pylint: disable=broad-exception-caught
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        if logger.is_verbose():
-            logger.error(traceback.format_exc())
+        logger.error(f"Unexpected error: {e}", e)
 
 
 if __name__ == "__main__":

@@ -199,7 +199,7 @@ def test_error(capsys):
 
     # Output should include ERROR prefix with ANSI color codes
     captured = capsys.readouterr()
-    assert "ERROR: Test error message" in captured.err
+    assert "ERROR - Test error message" in captured.err
 
 
 def test_message(capsys):
@@ -267,7 +267,7 @@ def test_raw_output_error(capsys):
     logger.error("Test error")
     captured = capsys.readouterr()
     # Vérifie que le message d'erreur commence par "ERROR: Test error"
-    assert captured.err.startswith("ERROR: Test error\n")
+    assert captured.err.startswith("ERROR - Test error\n")
 
     # Disable raw output for other tests
     logger.set_raw_output(False)

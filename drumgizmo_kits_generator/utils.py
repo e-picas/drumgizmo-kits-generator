@@ -37,7 +37,7 @@ def check_dependency(command: str, error_message: str = None) -> str:
     """
     cmd_path = shutil.which(command)
     if not cmd_path:
-        msg = error_message or f"Required dependency '{command}' not found in the system"
+        msg = error_message or f"Dependency '{command}' not found in the system"
         raise DependencyError(msg)
     return cmd_path
 

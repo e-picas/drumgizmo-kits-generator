@@ -205,7 +205,7 @@ class TestCheckDependency:
         # Test & Assert
         with pytest.raises(exceptions.DependencyError) as exc_info:
             utils.check_dependency("nonexistent")
-        assert "Required dependency 'nonexistent' not found" in str(exc_info.value)
+        assert "Dependency 'nonexistent' not found" in str(exc_info.value)
         mock_which.assert_called_once_with("nonexistent")
 
     @mock.patch("shutil.which")

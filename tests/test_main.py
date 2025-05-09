@@ -292,7 +292,7 @@ class TestMain:
         main.main()
 
         # Verify that an error message was printed
-        mock_error.assert_called_with("Unexpected error: Unexpected test error")
+        mock_error.assert_called_with("Unexpected error: Unexpected test error", mock.ANY)
 
         # Reset mocks
         mock_error.reset_mock()
@@ -304,8 +304,8 @@ class TestMain:
         main.main()
 
         # Verify that an error message was printed with traceback in verbose mode
-        mock_error.assert_any_call("Unexpected error: Unexpected test error")
-        mock_error.assert_any_call(mock_format_exc.return_value)
+        mock_error.assert_any_call("Unexpected error: Unexpected test error", mock.ANY)
+        # Le traceback n'est plus loggé séparément, donc on ne vérifie plus mock_format_exc
 
 
 class TestMainWithDependencies:
@@ -379,7 +379,7 @@ class TestMainWithDependencies:
 
         # Verify that an error message was printed
         stderr_output = mock_stderr.getvalue()
-        assert "ERROR: " in stderr_output
+        assert "DependencyError: " in stderr_output
         assert "SoX not found" in stderr_output
 
     @mock.patch("sys.exit")

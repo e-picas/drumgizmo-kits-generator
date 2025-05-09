@@ -75,7 +75,7 @@ class TestIntegrationErrors:
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
             # Check that the error message contains the expected text, ignoring ANSI color codes
-            assert "ERROR:" in stderr_output
+            assert "ValidationError: " in stderr_output
             assert f"Source directory '{nonexistent_dir}' does not exist" in stderr_output.replace(
                 "\x1b[91m", ""
             ).replace("\x1b[0m", "")
@@ -135,7 +135,7 @@ class TestIntegrationErrors:
 
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
-            assert "ERROR: " in stderr_output
+            assert "ConfigurationError: " in stderr_output
             assert "Error parsing configuration file" in stderr_output
 
     def test_missing_required_config_values(
@@ -262,7 +262,7 @@ class TestIntegrationErrors:
 
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
-            assert "ERROR: " in stderr_output
+            assert "DependencyError: " in stderr_output
             assert "soxi (part of SoX) not found in the system" in stderr_output
 
     def test_dry_run_mode(self, temp_output_dir, temp_source_dir, temp_config_file):
@@ -339,7 +339,7 @@ class TestIntegrationErrors:
 
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
-            assert "ERROR: " in stderr_output
+            assert "AudioProcessingError: " in stderr_output
             assert "Failed to process audio file" in stderr_output
 
 

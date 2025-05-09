@@ -85,19 +85,27 @@ class Logger:
             print(f"{RED}WARNING: {msg}{RESET}", end=end, file=sys.stderr)
         sys.stderr.flush()
 
-    def error(self, msg: str) -> None:
+    def error(self, msg: str, exc: Exception = None) -> None:
         """
-        Print an error message to stderr in red color.
+        Print an error message to stderr in red color. Optionally print exception traceback.
 
         Args:
             msg: The error message to print
+            exc: The exception object to print (optional)
         """
-        if self.raw_output:
-            print(f"ERROR: {msg}", file=sys.stderr)
+        if exc is not None:
+            error_type = type(exc).__name__ + ": "
         else:
-            print(f"{RED}ERROR: {msg}{RESET}", file=sys.stderr)
+            error_type = ""
+
+        if self.raw_output:
+            print(f"ERROR - {error_type}{msg}", file=sys.stderr)
+        else:
+            print(f"{RED}ERROR - {error_type}{msg}{RESET}", file=sys.stderr)
+
         if self.verbose_mode:
             traceback.print_exc(file=sys.stderr)
+
         sys.stderr.flush()
 
     def section(self, title: str) -> None:
