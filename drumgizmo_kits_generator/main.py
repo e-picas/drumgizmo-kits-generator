@@ -26,7 +26,8 @@ def main() -> None:
         logger.set_raw_output(args.raw_output)
 
         # Display application information in verbose mode
-        logger.debug(f"{constants.APP_NAME} v{constants.APP_VERSION} - {constants.APP_LINK}")
+        if not logger.is_raw_output():
+            logger.debug(f"{constants.APP_NAME} v{constants.APP_VERSION} - {constants.APP_LINK}")
 
         # Validate directories
         kit_generator.validate_directories(args.source, args.target)

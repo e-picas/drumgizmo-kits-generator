@@ -79,6 +79,11 @@ generate-example:
 		-s examples/sources/ \
 		-t examples/target/ \
 		-c examples/drumgizmo-kit-example.ini \
+		-r -v > examples/target-generation-output-verbose.log 2>&1;
+	python3 create_drumgizmo_kit.py \
+		-s examples/sources/ \
+		-t examples/target/ \
+		-c examples/drumgizmo-kit-example.ini \
 		-x -r > examples/target-generation-output-dry-run.log 2>&1;
 
 ## Cleanup Python's temporary files, cache and build

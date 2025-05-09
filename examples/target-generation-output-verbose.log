@@ -1,0 +1,128 @@
+
+=== Process Main Directories ===
+Source directory: examples/sources/
+Target directory: examples/target/
+Using configuration file: examples/drumgizmo-kit-example.ini
+
+=== Kit Metadata ===
+Name: Test Kit
+Version: 1.0
+Description: An example drum kit for DrumGizmo with dummy audio samples
+Notes: Fake DrumGizmo kit generated for testing purpose. All sources (audio, logo, extra files) are free of use.
+Author: Anonymous
+License: CC-BY-SA 4.0
+Website: https://example.com/my-drumgizmo-kit
+Logo: pngtree-music-notes-png-image_8660757.png
+Sample rate: 48000 Hz
+Velocity levels: 4
+Volume variations method: logarithmic
+MIDI note range: [20, 107]
+MIDI note median: 60
+Audio extensions: ['wav', 'WAV', 'flac', 'FLAC', 'ogg', 'OGG']
+Audio channels: ['AmbL', 'AmbR', 'Hihat', 'Kdrum_back', 'Kdrum_front', 'OHL', 'OHR', 'Ride', 'Snare_bottom', 'Snare_top', 'Tom1', 'Tom2', 'Tom3']
+Main channels: ['AmbL', 'AmbR', 'OHL', 'OHR']
+Extra files: ['Lorem Ipsum.pdf', 'license.txt']
+
+=== Scanning Source Directory ===
+DEBUG: Scanning source directory 'examples/sources/' for audio files with extensions ['wav', 'WAV', 'flac', 'FLAC', 'ogg', 'OGG']
+DEBUG: Getting audio information for 'examples/sources/E-Mu-Proteus-FX-Wacky-Snare.wav'
+DEBUG: Audio info for 'examples/sources/E-Mu-Proteus-FX-Wacky-Snare.wav': {'channels': 2, 'samplerate': 44100, 'bits': 16, 'duration': 0.411134}
+DEBUG: Getting audio information for 'examples/sources/Example.ogg'
+DEBUG: Audio info for 'examples/sources/Example.ogg': {'channels': 2, 'samplerate': 44100, 'bits': 0, 'duration': 6.104036}
+DEBUG: Getting audio information for 'examples/sources/gs-16b-1c-44100hz.flac'
+DEBUG: Audio info for 'examples/sources/gs-16b-1c-44100hz.flac': {'channels': 1, 'samplerate': 44100, 'bits': 16, 'duration': 15.832063}
+Found 3 audio files:
+- E-Mu-Proteus-FX-Wacky-Snare.wav
+- Example.ogg
+- gs-16b-1c-44100hz.flac
+
+=== Preparing Target Directory ===
+Cleaning target directory 'examples/target/'...
+OK
+
+=== Processing Audio Files ===
+Processing 'E-Mu-Proteus-FX-Wacky-Snare.wav' with 4 volume variations at 48000 Hz...
+DEBUG: Creating directory for instrument 'E-Mu-Proteus-FX-Wacky-Snare' at 'examples/target/E-Mu-Proteus-FX-Wacky-Snare/samples'
+DEBUG: Converting 'E-Mu-Proteus-FX-Wacky-Snare.wav' to 48000 Hz
+DEBUG: Creating 4 velocity variations for 'E-Mu-Proteus-FX-Wacky-Snare.wav' with logarithmic curve
+DEBUG: Creating velocity variation 1/4 at 1.00 volume
+DEBUG: Creating velocity variation 2/4 at 0.88 volume
+DEBUG: Creating velocity variation 3/4 at 0.70 volume
+DEBUG: Creating velocity variation 4/4 at 0.25 volume
+OK
+Processing 'Example.ogg' with 4 volume variations at 48000 Hz...
+DEBUG: Creating directory for instrument 'Example' at 'examples/target/Example/samples'
+DEBUG: Converting 'Example.ogg' to 48000 Hz
+DEBUG: Creating 4 velocity variations for 'Example.ogg' with logarithmic curve
+DEBUG: Creating velocity variation 1/4 at 1.00 volume
+DEBUG: Creating velocity variation 2/4 at 0.88 volume
+DEBUG: Creating velocity variation 3/4 at 0.70 volume
+DEBUG: Creating velocity variation 4/4 at 0.25 volume
+OK
+Processing 'gs-16b-1c-44100hz.flac' with 4 volume variations at 48000 Hz...
+DEBUG: Creating directory for instrument 'gs-16b-1c-44100hz' at 'examples/target/gs-16b-1c-44100hz/samples'
+DEBUG: Converting 'gs-16b-1c-44100hz.flac' to 48000 Hz
+DEBUG: Creating 4 velocity variations for 'gs-16b-1c-44100hz.flac' with logarithmic curve
+DEBUG: Creating velocity variation 1/4 at 1.00 volume
+DEBUG: Creating velocity variation 2/4 at 0.88 volume
+DEBUG: Creating velocity variation 3/4 at 0.70 volume
+DEBUG: Creating velocity variation 4/4 at 0.25 volume
+OK
+
+=== Generating XML Files ===
+Generating 'drumkit.xml'...
+DEBUG: Generating drumkit XML at 'examples/target/drumkit.xml'
+OK
+Generating instruments XML files...
+DEBUG: Generating instrument XML for 'E-Mu-Proteus-FX-Wacky-Snare' at 'examples/target/E-Mu-Proteus-FX-Wacky-Snare/E-Mu-Proteus-FX-Wacky-Snare.xml' with 2 channels
+DEBUG: Generating instrument XML for 'Example' at 'examples/target/Example/Example.xml' with 2 channels
+DEBUG: Generating instrument XML for 'gs-16b-1c-44100hz' at 'examples/target/gs-16b-1c-44100hz/gs-16b-1c-44100hz.xml' with 1 channels
+OK
+Generating 'midimap.xml'...
+DEBUG: Generating midimap XML at 'examples/target/midimap.xml'
+DEBUG: MIDI mapping (alphabetical order):
+DEBUG:   MIDI Note 59: E-Mu-Proteus-FX-Wacky-Snare
+DEBUG:   MIDI Note 60: Example
+DEBUG:   MIDI Note 61: gs-16b-1c-44100hz
+OK
+
+=== Copying Logo ===
+Copying logo file 'pngtree-music-notes-png-image_8660757.png'...
+OK
+
+=== Copying Additional Files ===
+Copying extra file 'Lorem Ipsum.pdf'...
+OK
+Copying extra file 'license.txt'...
+OK
+
+=== Summary ===
+Processing complete. DrumGizmo kit successfully created in examples/target/
+Number of instruments created: 3
+
+Main files:
+  - examples/target/drumkit.xml
+  - examples/target/midimap.xml
+
+Kit metadata summary:
+  - Name: Test Kit
+  - Version: 1.0
+  - Description: An example drum kit for DrumGizmo with dummy audio samples
+  - Notes: Fake DrumGizmo kit generated for testing purpose. All sources (audio, logo, extra files) are free of use.
+  - Author: Anonymous
+  - License: CC-BY-SA 4.0
+  - Sample rate: 48000 Hz
+  - Website: https://example.com/my-drumgizmo-kit
+  - Logo: pngtree-music-notes-png-image_8660757.png
+
+Instrument samples MIDI mapping:
+  - MIDI note 59: E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare.wav
+  - MIDI note 60: Example: Example.ogg
+  - MIDI note 61: gs-16b-1c-44100hz: gs-16b-1c-44100hz.flac
+
+Extra files copied:
+  - pngtree-music-notes-png-image_8660757.png
+  - Lorem Ipsum.pdf
+  - license.txt
+
+Kit generation completed successfully!

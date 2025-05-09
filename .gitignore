@@ -12,3 +12,4 @@ __pycache__/
 # Keep these at the end as they are negations
 !examples/target-generation-output.log
 !examples/target-generation-output-dry-run.log
+!examples/target-generation-output-verbose.log

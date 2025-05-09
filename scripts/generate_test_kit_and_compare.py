@@ -53,11 +53,13 @@ TARGET_REF_DIR = os.path.join(EXAMPLES_DIR, "target", "")
 # Output file names
 DRY_RUN_LOG = "output_dry_run.log"
 NORMAL_LOG = "output.log"
+VERBOSE_LOG = "output_verbose.log"
 NORMALIZED_OUTPUT = "normalized_output.log"
 
 # Expected output files
 EXPECTED_DRY_RUN_OUTPUT = os.path.join(EXAMPLES_DIR, "target-generation-output-dry-run.log")
 EXPECTED_NORMAL_OUTPUT = os.path.join(EXAMPLES_DIR, "target-generation-output.log")
+EXPECTED_VERBOSE_OUTPUT = os.path.join(EXAMPLES_DIR, "target-generation-output-verbose.log")
 
 # =============================================================================
 # Utility Functions
@@ -412,6 +414,85 @@ def generate_and_compare_dry_run() -> str:
         raise
 
 
+def generate_and_compare_verbose() -> str:
+    """Generate test kit in verbose mode and compare with expected verbose output.
+
+    Returns:
+        str: Path to the generated log file
+    """
+    # Create output directory and log file
+    os.makedirs(TARGET_DIR, exist_ok=True)
+    output_log = os.path.join(TARGET_DIR, "output_verbose.log")
+
+    # Store content in memory first
+    output_content = []
+
+    # Also create the output file
+    with open(output_log, "w", encoding="utf-8") as f:
+        pass  # Just create the file
+
+    try:
+        # Clean up previous run
+        if os.path.exists(TARGET_DIR):
+            shutil.rmtree(TARGET_DIR)
+        os.makedirs(TARGET_DIR, exist_ok=True)
+
+        print_gray(f"Generating kit in directory: {normalize_path_for_display(TARGET_DIR)}")
+        print_gray(f"Output will be saved to: {normalize_path_for_display(output_log)}")
+        print_gray(f"Log file will be saved to: {normalize_path_for_display(output_log)}")
+
+        # Generate the kit in verbose mode
+        cmd = [
+            sys.executable,
+            os.path.join(BASE_DIR, "create_drumgizmo_kit.py"),
+            "-s",
+            SOURCES_REF_DIR,
+            "-t",
+            TARGET_DIR,
+            "-c",
+            CONFIG_SAMPLE,
+            "-r",
+            "-v",
+        ]
+
+        # Run the command and capture output
+        print_green("\nGenerating kit in verbose mode ...")
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+
+        # Stream output to both console and file
+        for line in process.stdout:
+            # Remove base_dir from the output
+            clean_line = line.replace(BASE_DIR + os.sep, "")
+            sys.stdout.write(clean_line)
+            output_content.append(clean_line)
+
+        process.wait()
+
+        # Write all content to file
+        with open(output_log, "w", encoding="utf-8") as f:
+            f.writelines(output_content)
+
+        # Compare directory structure
+        print_green("\nComparing directory structure with expected ...")
+        print_gray(
+            "Audio files are binary contents and may always differ. Samplerate differences will be written."
+        )
+        compare_directories(TARGET_DIR, TARGET_REF_DIR)
+
+        # Compare output with expected verbose output
+        print_green("\nComparing output with expected verbose log ...")
+        normalize_and_compare(output_log, EXPECTED_VERBOSE_OUTPUT)
+
+        print_gray(f"\nKit generated in: {normalize_path_for_display(TARGET_DIR)}")
+        print_gray(f"Log file saved to: {normalize_path_for_display(output_log)}")
+
+        return output_log
+
+    except Exception as e:
+        print_red(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def generate_and_compare() -> str:
     """Generate test kit and compare with expected output.
 
@@ -502,8 +583,17 @@ def main() -> None:
         # Save dry-run log to a temporary file outside the target directory
         if dry_run_log and os.path.exists(dry_run_log):
             temp_dir = tempfile.gettempdir()
-            temp_log = os.path.join(temp_dir, f"drumgizmo_kit_{os.getpid()}.log")
-            shutil.copy2(dry_run_log, temp_log)
+            temp_dry_run_log = os.path.join(temp_dir, f"drumgizmo_kit_{os.getpid()}_dry_run.log")
+            shutil.copy2(dry_run_log, temp_dry_run_log)
+
+        print_green("\n=== Running in verbose mode ===")
+        verbose_log = generate_and_compare_verbose()
+
+        # Save verbose log to a temporary file outside the target directory
+        if verbose_log and os.path.exists(verbose_log):
+            temp_dir = tempfile.gettempdir()
+            temp_log_verbose = os.path.join(temp_dir, f"drumgizmo_kit_{os.getpid()}_verbose.log")
+            shutil.copy2(verbose_log, temp_log_verbose)
 
         print_green("\n=== Running in normal mode ===")
         generate_and_compare()
@@ -512,13 +602,19 @@ def main() -> None:
         print_red(f"Error: {e}")
         sys.exit(1)
     finally:
-        # If we have a temporary log file, copy it to the final location
-        if temp_log and os.path.exists(temp_log):
-            shutil.copy2(temp_log, dry_run_log)
-            print_gray(f"Dry-run log saved to: {normalize_path_for_display(dry_run_log)}")
-
-            # Clean up temporary log file if it exists
-            if temp_log and os.path.exists(temp_log):
+        # Move all temp logs to their final location and clean up
+        log_moves = []
+        try:
+            log_moves = [
+                (locals().get("temp_dry_run_log"), locals().get("dry_run_log")),
+                (locals().get("temp_log_verbose"), os.path.join(TARGET_DIR, "output_verbose.log")),
+            ]
+        except Exception:
+            pass
+        for temp_log, final_log in log_moves:
+            if temp_log and final_log and os.path.exists(temp_log):
+                shutil.copy2(temp_log, final_log)
+                print_gray(f"Log file saved to: {normalize_path_for_display(final_log)}")
                 try:
                     os.unlink(temp_log)
                 except Exception as e:
