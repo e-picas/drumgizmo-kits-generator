@@ -9,6 +9,7 @@
 # pylint: disable=attribute-defined-outside-init
 # pylint: disable=unused-argument
 # pylint: disable=R0801 # code duplication
+# pylint: disable=unused-variable
 """
 SPDX-License-Identifier: MIT
 SPDX-PackageName: DrumGizmo kits generator
@@ -198,8 +199,10 @@ class TestMain:
     @mock.patch("drumgizmo_kits_generator.config.load_configuration")
     @mock.patch("drumgizmo_kits_generator.kit_generator.scan_source_files")
     @mock.patch("drumgizmo_kits_generator.logger.message")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.print_summary")
     def test_main_dry_run(
         self,
+        mock_print_summary,
         mock_message,
         mock_scan_source_files,
         mock_load_configuration,
@@ -230,6 +233,9 @@ class TestMain:
                 "raw_output": False,
                 "dry_run": True,
                 "extensions": ["wav", "flac"],
+                "midi_note_min": 0,
+                "midi_note_max": 127,
+                "midi_note_median": 60,
             }
         )
         mock_load_configuration.return_value = config_data
@@ -244,7 +250,13 @@ class TestMain:
         main.main()
 
         # Check that dry run message was displayed
-        mock_print_midi_mapping.assert_called_once_with(audio_files, config_data)
+        # Nouvelle signature : prkit_generator.evaluate_midi_mapping({'audio_files': audio_files, 'config': config_data})
+        expected_run_data = {
+            "config": config_data,
+            "audio_files": audio_files,
+            "midi_mapping": mock.ANY,
+        }
+        mock_print_midi_mapping.assert_called_once_with(expected_run_data)
         mock_message.assert_called_with("\nDry run mode enabled, stopping here")
 
         # Verify that all mocks were used
@@ -253,7 +265,10 @@ class TestMain:
         mock_load_configuration.assert_called_once_with(args)
 
         mock_print_metadata.assert_called_once_with(config_data)
-        mock_scan_source_files.assert_called_once_with("/path/to/source", config_data)
+        args, kwargs = mock_scan_source_files.call_args
+        assert args[0] == "/path/to/source"
+        assert "config" in args[1]
+        assert args[1]["config"] == config_data
 
 
 @mock.patch("drumgizmo_kits_generator.logger.is_verbose")
@@ -310,23 +325,25 @@ class TestMainWithDependencies:
     def setup_method(self):
         """Initialize test data."""
         self.config_data = {
-            "name": "Test Kit",
-            "version": "1.0.0",
-            "description": "Test description",
-            "notes": "Test notes",
-            "author": "Test Author",
-            "license": "Test License",
-            "website": "https://example.com",
-            "logo": "logo.png",
-            "samplerate": "44100",
-            "extra_files": "file1.txt,file2.txt",
-            "velocity_levels": "5",
-            "midi_note_min": "30",
-            "midi_note_max": "90",
-            "midi_note_median": "60",
-            "extensions": "wav,flac",
-            "channels": "Left,Right",
-            "main_channels": "Left,Right",
+            "config": {
+                "name": "Test Kit",
+                "version": "1.0.0",
+                "description": "Test description",
+                "notes": "Test notes",
+                "author": "Test Author",
+                "license": "Test License",
+                "website": "https://example.com",
+                "logo": "logo.png",
+                "samplerate": "44100",
+                "extra_files": "file1.txt,file2.txt",
+                "velocity_levels": "5",
+                "midi_note_min": "30",
+                "midi_note_max": "90",
+                "midi_note_median": "60",
+                "extensions": "wav,flac",
+                "channels": "Left,Right",
+                "main_channels": "Left,Right",
+            }
         }
 
     # pylint: disable=too-many-arguments
@@ -472,10 +489,14 @@ class TestMainWithDependencies:
 
         # Vérifier les autres appels
         mock_print_metadata.assert_called_once_with(transformed_config)
-        mock_scan_source.assert_called_once_with("/path/to/source", transformed_config)
+        args, kwargs = mock_scan_source.call_args
+        assert args[0] == "/path/to/source"
+        assert "config" in args[1]
+        assert args[1]["config"] == transformed_config
+        # En mode non-dry_run, prepare_target_directory doit être appelé
         mock_prepare_target.assert_called_once_with("/path/to/target")
-        mock_process.assert_called_once_with(audio_files, "/path/to/target", transformed_config)
-        mock_generate.assert_called_once_with(audio_files, "/path/to/target", transformed_config)
+        mock_process.assert_called_once_with("/path/to/target", mock.ANY)
+        mock_generate.assert_called_once_with("/path/to/target", mock.ANY)
         mock_copy.assert_called_once_with("/path/to/source", "/path/to/target", transformed_config)
 
 

@@ -13,7 +13,7 @@ import os
 import shutil
 from typing import Any, Dict, List
 
-from drumgizmo_kits_generator import audio, logger, utils, xml_generator
+from drumgizmo_kits_generator import audio, constants, logger, utils, xml_generator
 from drumgizmo_kits_generator.exceptions import (
     AudioProcessingError,
     DependencyError,
@@ -92,16 +92,68 @@ def print_metadata(metadata: Dict[str, Any]) -> None:
         logger.info(f"Extra files: {metadata['extra_files']}")
 
 
-def print_midi_mapping(audio_files: List[str], metadata: Dict[str, Any]) -> None:
+def evaluate_midi_mapping(run_data: Dict[str, Any]) -> Dict[str, int]:
     """
-    Print the MIDI mapping for the given audio files and metadata.
+    Calculate MIDI mapping for given run_data dict.
 
     Args:
-        audio_files: List of audio file paths
-        metadata: Dictionary containing metadata for MIDI mapping
+        run_data: Dictionary containing at least 'audio_files' and 'config' keys
+
+    Returns:
+        Dict[str, int]: Mapping of instrument names to MIDI note numbers
+    """
+    audio_files = run_data.get("audio_files", [])
+    metadata = run_data.get("config", {})
+    # Extract instrument names from audio files
+    instrument_names = utils.extract_instrument_names(audio_files)
+
+    if not instrument_names:
+        return {}
+
+    # Get MIDI note range
+    min_note = metadata.get("midi_note_min")
+    if min_note is None:
+        min_note = constants.DEFAULT_MIDI_NOTE_MIN
+    max_note = metadata.get("midi_note_max")
+    if max_note is None:
+        max_note = constants.DEFAULT_MIDI_NOTE_MAX
+    median_note = metadata.get("midi_note_median")
+    if median_note is None:
+        median_note = constants.DEFAULT_MIDI_NOTE_MEDIAN
+
+    instruments_count = len(instrument_names)
+    note_range = max_note - min_note + 1
+
+    midi_mapping = {}
+    if instruments_count == note_range and instruments_count > 0:
+        # Cas spécial : chaque instrument couvre toute la plage
+        for i, instrument_name in enumerate(instrument_names):
+            midi_mapping[instrument_name] = min_note + i
+    else:
+        left_count = instruments_count // 2
+        for i, instrument_name in enumerate(instrument_names):
+            # Algo médian classique
+            if i < left_count:
+                offset = left_count - i
+                note = median_note - offset
+            else:
+                offset = i - left_count
+                note = median_note + offset
+            note = max(min_note, min(note, max_note))
+            midi_mapping[instrument_name] = note
+
+    return midi_mapping
+
+
+def print_midi_mapping(run_data: Dict[str, Any]) -> None:
+    """
+    Print the MIDI mapping for the given run_data dict.
+
+    Args:
+        run_data: Dictionary containing at least 'audio_files' and 'config' keys
     """
     logger.info("\n=== MIDI Mapping Preview ===")
-    midi_mapping = utils.evaluate_midi_mapping(audio_files, metadata)
+    midi_mapping = run_data.get("midi_mapping", {})
 
     if not midi_mapping:
         logger.warning("No instruments found for MIDI mapping")
@@ -115,9 +167,7 @@ def print_midi_mapping(audio_files: List[str], metadata: Dict[str, Any]) -> None
 
 def print_summary(
     target_dir: str,
-    metadata: Dict[str, Any],
-    processed_audio_files: Dict[str, List[str]],
-    audio_files: List[str],
+    run_data: Dict[str, Any],
     generation_duration: float = None,
 ) -> None:
     """
@@ -125,11 +175,15 @@ def print_summary(
 
     Args:
         target_dir: The target directory where the kit was generated
-        metadata: The metadata of the kit
-        processed_audio_files: The processed audio files
-        audio_files: The original audio files
+        run_data: Dict containing at least 'config', 'audio_files', 'audio_files_processed', 'midi_mapping' keys
+        generation_duration: (optional) Duration of the generation process
     """
     logger.section("Summary")
+
+    metadata = run_data.get("config", {})
+    processed_audio_files = run_data.get("audio_files_processed", {})
+    audio_files = run_data.get("audio_files", [])
+    midi_mapping = run_data.get("midi_mapping", {})
 
     if logger.is_raw_output():
         msg = f"Processing complete. DrumGizmo kit successfully created in {target_dir}"
@@ -154,18 +208,7 @@ def print_summary(
 
     logger.info("\nInstrument samples MIDI mapping:")
 
-    # Get MIDI parameters
-    midi_params = {
-        "min": metadata.get("midi_note_min"),
-        "max": metadata.get("midi_note_max"),
-        "median": metadata.get("midi_note_median"),
-    }
-
-    # Get instrument names
-    instruments = list(processed_audio_files.keys())
-
-    # Calculate MIDI mapping
-    midi_mapping = utils.calculate_midi_mapping(instruments, midi_params)
+    midi_mapping = run_data.get("midi_mapping", {})
 
     # Display mapping with MIDI notes
     for instrument, audio_file in zip(processed_audio_files.keys(), audio_files):
@@ -184,16 +227,13 @@ def print_summary(
             logger.info(f"  - {extra_file}")
 
 
-def process_audio_files(
-    audio_files: List[str], target_dir: str, metadata: Dict[str, Any]
-) -> Dict[str, List[str]]:
+def process_audio_files(target_dir: str, run_data: Dict[str, Any]) -> Dict[str, List[str]]:
     """
     Process audio files by creating velocity variations.
 
     Args:
-        audio_files: List of audio file paths
         target_dir: Path to the target directory
-        metadata: Metadata for audio processing
+        run_data: Dict containing at least 'audio_files' and 'config' keys
 
     Returns:
         Dict[str, List[str]]: Dictionary mapping instrument names to processed audio files
@@ -202,6 +242,8 @@ def process_audio_files(
         AudioProcessingError: If processing audio files fails
         DependencyError: If SoX is not found
     """
+    audio_files = run_data["audio_files"]
+    metadata = run_data["config"]
     logger.section("Processing Audio Files")
 
     processed_audio_files = {}
@@ -228,19 +270,21 @@ def process_audio_files(
         raise
 
 
-def generate_xml_files(audio_files: List[str], target_dir: str, metadata: Dict[str, Any]) -> None:
+def generate_xml_files(target_dir: str, run_data: Dict[str, Any]) -> None:
     """
     Generate XML files for the DrumGizmo kit.
 
     Args:
-        audio_files: List of audio file paths
         target_dir: Path to the target directory
-        metadata: Metadata for XML generation
+        run_data: Dict containing at least 'audio_files' and 'config' keys
 
     Raises:
         XMLGenerationError: If generating XML files fails
     """
     logger.section("Generating XML Files")
+
+    audio_files = run_data["audio_files"]
+    metadata = run_data["config"]
 
     try:
         # Extract instrument names from audio files
@@ -279,20 +323,21 @@ def generate_xml_files(audio_files: List[str], target_dir: str, metadata: Dict[s
         raise XMLGenerationError(error_msg) from e
 
 
-def scan_source_files(source_dir: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+def scan_source_files(source_dir: str, run_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Scan source directory for audio files with extensions from metadata, with audio info for each audio file.
+    Scan source directory for audio files with extensions from config in run_data, with audio info for each audio file.
 
     Args:
         source_dir: Path to the source directory
-        metadata: Metadata containing the list of extensions
+        run_data: Dict containing at least 'config' with the metadata
 
     Returns:
         Dict[str, Any]: List of audio file paths, sorted alphabetically and audio infos: {file_path: audio_info}
     """
     logger.section("Scanning Source Directory")
 
-    extensions = metadata["extensions"]
+    metadata = run_data.get("config", {})
+    extensions = metadata.get("extensions", [])
     logger.debug(
         f"Scanning source directory '{source_dir}' for audio files with extensions {extensions}"
     )

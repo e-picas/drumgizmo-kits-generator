@@ -26,7 +26,7 @@ from unittest import mock
 
 import pytest
 
-from drumgizmo_kits_generator import constants, kit_generator, utils
+from drumgizmo_kits_generator import constants, kit_generator
 
 
 @pytest.fixture
@@ -167,6 +167,34 @@ main_channels = Left,Right
 class TestEvaluateMidiMapping:
     """Tests for the evaluate_midi_mapping function."""
 
+    def test_evaluate_midi_mapping_full_range(self, mock_logger):
+        """Test evaluate_midi_mapping with as many instruments as MIDI notes (mapping exhaustif)."""
+        min_note = 10
+        max_note = 14
+        instruments = [f"Instr{i}" for i in range(min_note, max_note + 1)]
+        audio_files = [f"/src/{name}.wav" for name in instruments]
+        metadata = {"midi_note_min": min_note, "midi_note_max": max_note, "midi_note_median": 12}
+        with mock.patch("drumgizmo_kits_generator.utils.extract_instrument_names") as mock_extract:
+            mock_extract.return_value = instruments
+            run_data = {"audio_files": audio_files, "config": metadata}
+            result = kit_generator.evaluate_midi_mapping(run_data)
+            expected = dict(zip(instruments, range(min_note, max_note + 1)))
+            assert result == expected
+
+    def test_evaluate_midi_mapping_not_full_range(self, mock_logger):
+        """Test evaluate_midi_mapping with fewer instruments than notes (algo médian classique)."""
+        min_note = 10
+        max_note = 14
+        instruments = ["Kick", "Snare", "HiHat"]
+        audio_files = [f"/src/{name}.wav" for name in instruments]
+        metadata = {"midi_note_min": min_note, "midi_note_max": max_note, "midi_note_median": 12}
+        with mock.patch("drumgizmo_kits_generator.utils.extract_instrument_names") as mock_extract:
+            mock_extract.return_value = instruments
+            run_data = {"audio_files": audio_files, "config": metadata}
+            result = kit_generator.evaluate_midi_mapping(run_data)
+            # Pour 3 instruments autour de 12 : [11, 12, 13]
+            assert list(result.values()) == [11, 12, 13]
+
     def test_evaluate_midi_mapping_with_valid_input(self, mock_logger):
         """Test evaluate_midi_mapping with valid input."""
         # Setup
@@ -179,24 +207,18 @@ class TestEvaluateMidiMapping:
         metadata = {"midi_note_min": 30, "midi_note_max": 90, "midi_note_median": 60}
 
         # Mock utils functions
-        with mock.patch(
-            "drumgizmo_kits_generator.utils.extract_instrument_names"
-        ) as mock_extract, mock.patch(
-            "drumgizmo_kits_generator.utils.calculate_midi_mapping"
-        ) as mock_calculate:
+        with mock.patch("drumgizmo_kits_generator.utils.extract_instrument_names") as mock_extract:
             # Configure mocks
             mock_extract.return_value = ["Kick", "Snare", "HiHat"]
-            mock_calculate.return_value = {"Kick": 30, "Snare": 60, "HiHat": 90}
 
             # Call the function
-            result = utils.evaluate_midi_mapping(audio_files, metadata)
+            run_data = {"audio_files": audio_files, "config": metadata}
+            result = kit_generator.evaluate_midi_mapping(run_data)
 
             # Assertions
             mock_extract.assert_called_once_with(audio_files)
-            mock_calculate.assert_called_once_with(
-                ["Kick", "Snare", "HiHat"], {"min": 30, "max": 90, "median": 60}
-            )
-            assert result == {"Kick": 30, "Snare": 60, "HiHat": 90}
+            expected_mapping = {"Kick": 59, "Snare": 60, "HiHat": 61}
+            assert result == expected_mapping
 
     def test_evaluate_midi_mapping_with_empty_files(self, mock_logger):
         """Test evaluate_midi_mapping with empty input list."""
@@ -205,7 +227,8 @@ class TestEvaluateMidiMapping:
         metadata = {"midi_note_min": 30, "midi_note_max": 90, "midi_note_median": 60}
 
         # Call the function
-        result = utils.evaluate_midi_mapping(audio_files, metadata)
+        run_data = {"audio_files": audio_files, "config": metadata}
+        result = kit_generator.evaluate_midi_mapping(run_data)
 
         # Assertions
         assert not result
@@ -217,23 +240,18 @@ class TestEvaluateMidiMapping:
         metadata = {}  # Missing required metadata keys
 
         # Mock utils functions
-        with mock.patch(
-            "drumgizmo_kits_generator.utils.extract_instrument_names"
-        ) as mock_extract, mock.patch(
-            "drumgizmo_kits_generator.utils.calculate_midi_mapping"
-        ) as mock_calculate:
+        with mock.patch("drumgizmo_kits_generator.utils.extract_instrument_names") as mock_extract:
             # Configure mocks
             mock_extract.return_value = ["Kick"]
-            mock_calculate.return_value = {"Kick": 60}  # Default value when min/max not specified
 
             # Call the function
-            result = utils.evaluate_midi_mapping(audio_files, metadata)
+            run_data = {"audio_files": audio_files, "config": metadata}
+            result = kit_generator.evaluate_midi_mapping(run_data)
 
             # Assertions
             mock_extract.assert_called_once_with(audio_files)
-            mock_calculate.assert_called_once_with(
-                ["Kick"], {"min": None, "max": None, "median": None}
-            )
+            expected_mapping = {"Kick": 60}
+            assert result == expected_mapping
             assert result == {"Kick": 60}
 
 
@@ -293,6 +311,37 @@ class TestScanSourceFiles:
     """Tests for the scan_source_files function in kit_generator module (returns dict)."""
 
     @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
+    def test_scan_source_files_no_extensions(self, mock_get_info, temp_dir):
+        """Test scan_source_files returns empty dict if extensions missing."""
+        metadata = {"midi_note_min": 10, "midi_note_max": 20}
+        # Crée un fichier
+        path = os.path.join(temp_dir, "sample.wav")
+        with open(path, "w"):
+            pass
+        result = kit_generator.scan_source_files(temp_dir, {"config": metadata})
+        assert not result
+
+    @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
+    def test_scan_source_files_missing_midi_min(self, mock_get_info, temp_dir):
+        """Test scan_source_files lève KeyError si midi_note_min absent."""
+        metadata = {"extensions": ["wav"], "midi_note_max": 20}
+        path = os.path.join(temp_dir, "sample.wav")
+        with open(path, "w"):
+            pass
+        with pytest.raises(KeyError):
+            kit_generator.scan_source_files(temp_dir, {"config": metadata})
+
+    @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
+    def test_scan_source_files_missing_midi_max(self, mock_get_info, temp_dir):
+        """Test scan_source_files lève KeyError si midi_note_max absent."""
+        metadata = {"extensions": ["wav"], "midi_note_min": 10}
+        path = os.path.join(temp_dir, "sample.wav")
+        with open(path, "w"):
+            pass
+        with pytest.raises(KeyError):
+            kit_generator.scan_source_files(temp_dir, {"config": metadata})
+
+    @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
     def test_scan_source_files_too_many_files(self, mock_get_info, temp_dir, mock_logger):
         """Test scan_source_files warns and limits files if too many audio files are present."""
         midi_min = 10
@@ -308,7 +357,7 @@ class TestScanSourceFiles:
 
         mock_get_info.side_effect = lambda path: {"samplerate": 44100, "channels": 2}
 
-        result = kit_generator.scan_source_files(temp_dir, metadata)
+        result = kit_generator.scan_source_files(temp_dir, {"config": metadata})
         # La dict doit être limitée à la plage MIDI (10 fichiers)
         assert len(result) == (midi_max - midi_min + 1)
         # Un warning doit avoir été émis
@@ -346,7 +395,7 @@ class TestScanSourceFiles:
             "mocked": os.path.basename(path),
         }
         # Test extensions .wav/.flac
-        result = kit_generator.scan_source_files(temp_dir, metadata)
+        result = kit_generator.scan_source_files(temp_dir, {"config": metadata})
         expected = {wav_file, flac_file, subdir_wav, subdir_flac}
         assert set(result.keys()) == expected
         for k in expected:

@@ -15,7 +15,7 @@ import shutil
 import subprocess
 import tempfile
 from contextlib import contextmanager
-from typing import Any, Dict, List
+from typing import Any, List
 
 from drumgizmo_kits_generator import constants
 from drumgizmo_kits_generator.exceptions import AudioProcessingError, DependencyError
@@ -217,54 +217,6 @@ def extract_instrument_names(audio_files: List[str]) -> List[str]:
     return sorted(list(instrument_names))
 
 
-def calculate_midi_mapping(instruments: List[str], midi_params: Dict[str, int]) -> Dict[str, int]:
-    """
-    Calculate MIDI note mapping for a list of instruments.
-
-    Args:
-        instruments: List of instrument names
-        midi_params: Dictionary with MIDI parameters (min, max, median)
-
-    Returns:
-        Dict[str, int]: Dictionary mapping instrument names to MIDI note numbers
-    """
-    # Use default values if parameters are None
-    min_note = midi_params.get("min")
-    if min_note is None:
-        min_note = constants.DEFAULT_MIDI_NOTE_MIN
-
-    max_note = midi_params.get("max")
-    if max_note is None:
-        max_note = constants.DEFAULT_MIDI_NOTE_MAX
-
-    median_note = midi_params.get("median")
-    if median_note is None:
-        median_note = constants.DEFAULT_MIDI_NOTE_MEDIAN
-
-    # Calculate how many instruments we have on each side of the median
-    instruments_count = len(instruments)
-    left_count = instruments_count // 2
-
-    # Generate notes for each instrument
-    midi_mapping = {}
-    for i, instrument_name in enumerate(instruments):
-        # Calculate note based on position
-        if i < left_count:
-            # Instruments to the left of median
-            offset = left_count - i
-            note = median_note - offset
-        else:
-            # Instruments to the right of median (including the middle one)
-            offset = i - left_count
-            note = median_note + offset
-
-        # Ensure note is within the allowed range
-        note = max(min_note, min(note, max_note))
-        midi_mapping[instrument_name] = note
-
-    return midi_mapping
-
-
 def calculate_midi_note(
     i: int, left_count: int, midi_note_median: int, midi_note_min: int, midi_note_max: int
 ) -> int:
@@ -418,31 +370,3 @@ def join_paths(*paths: str) -> str:
         str: Joined path
     """
     return os.path.join(*paths)
-
-
-def evaluate_midi_mapping(audio_files: List[str], metadata: Dict[str, Any]) -> Dict[str, int]:
-    """
-    Calculate MIDI mapping for given audio files based on metadata.
-
-    Args:
-        audio_files: List of audio file paths
-        metadata: Dictionary containing MIDI note range information
-
-    Returns:
-        Dict[str, int]: Mapping of instrument names to MIDI note numbers
-    """
-    # Extract instrument names from audio files
-    instrument_names = extract_instrument_names(audio_files)
-
-    if not instrument_names:
-        return {}
-
-    # Get MIDI note range
-    midi_params = {
-        "min": metadata.get("midi_note_min"),
-        "max": metadata.get("midi_note_max"),
-        "median": metadata.get("midi_note_median"),
-    }
-
-    # Calculate MIDI mapping
-    return calculate_midi_mapping(instrument_names, midi_params)

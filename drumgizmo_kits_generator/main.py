@@ -20,6 +20,8 @@ def main() -> None:
     try:
         start_time = time.perf_counter()
         args = cli.parse_arguments()
+        # global dictionary to store run data
+        run_data = {}
 
         # Initialize logger with verbosity level and raw output
         logger.set_verbose(args.verbose)
@@ -38,17 +40,20 @@ def main() -> None:
         logger.info(f"Target directory: {args.target}")
 
         # Load configuration (already transformed and validated)
-        metadata = config.load_configuration(args)
+        run_data["config"] = config.load_configuration(args)
 
         # Print metadata
-        kit_generator.print_metadata(metadata)
+        kit_generator.print_metadata(run_data["config"])
 
         # Scan samples & print information
-        audio_files = kit_generator.scan_source_files(args.source, metadata)
+        run_data["audio_files"] = kit_generator.scan_source_files(args.source, run_data)
+
+        # Evaluate MIDI mapping
+        run_data["midi_mapping"] = kit_generator.evaluate_midi_mapping(run_data)
 
         # Preview MIDI mapping in dry run mode
         if args.dry_run:
-            kit_generator.print_midi_mapping(audio_files, metadata)
+            kit_generator.print_midi_mapping(run_data)
             logger.message("\nDry run mode enabled, stopping here")
             return
 
@@ -65,15 +70,13 @@ def main() -> None:
         kit_generator.prepare_target_directory(args.target)
 
         # Process audio files
-        processed_audio_files = kit_generator.process_audio_files(
-            audio_files, args.target, metadata
-        )
+        run_data["audio_files_processed"] = kit_generator.process_audio_files(args.target, run_data)
 
         # Generate XML files
-        kit_generator.generate_xml_files(audio_files, args.target, metadata)
+        kit_generator.generate_xml_files(args.target, run_data)
 
         # Copy additional files
-        kit_generator.copy_additional_files(args.source, args.target, metadata)
+        kit_generator.copy_additional_files(args.source, args.target, run_data["config"])
 
         end_time = time.perf_counter()
         generation_process_duration = end_time - start_time
@@ -81,7 +84,9 @@ def main() -> None:
 
         # Print summary
         kit_generator.print_summary(
-            args.target, metadata, processed_audio_files, audio_files, generation_process_duration
+            args.target,
+            run_data,
+            generation_process_duration,
         )
 
         logger.message("\nKit generation completed successfully!")
