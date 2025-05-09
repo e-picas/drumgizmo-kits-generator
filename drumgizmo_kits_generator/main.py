@@ -42,12 +42,8 @@ def main() -> None:
         # Print metadata
         kit_generator.print_metadata(metadata)
 
-        # Scan source files
-        extensions = metadata["extensions"]
-        audio_files = kit_generator.scan_source_files(args.source, extensions)
-
-        # Scan samples & rint information
-        kit_generator.print_samples_info(audio_files, metadata)
+        # Scan samples & print information
+        audio_files = kit_generator.scan_source_files(args.source, metadata)
 
         # Preview MIDI mapping in dry run mode
         if args.dry_run:

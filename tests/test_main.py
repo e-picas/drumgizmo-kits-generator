@@ -191,10 +191,8 @@ class TestMain:
             "main_channels": "Left,Right",
         }
 
-    # pylint: disable=too-many-arguments
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_metadata")
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_midi_mapping")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.print_samples_info")
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
     @mock.patch("drumgizmo_kits_generator.kit_generator.validate_directories")
     @mock.patch("drumgizmo_kits_generator.config.load_configuration")
@@ -207,7 +205,6 @@ class TestMain:
         mock_load_configuration,
         mock_validate_directories,
         mock_parse_arguments,
-        mock_print_samples_info,
         mock_print_midi_mapping,
         mock_print_metadata,
     ):
@@ -247,7 +244,6 @@ class TestMain:
         main.main()
 
         # Check that dry run message was displayed
-        mock_print_samples_info.assert_called_once_with(audio_files, config_data)
         mock_print_midi_mapping.assert_called_once_with(audio_files, config_data)
         mock_message.assert_called_with("\nDry run mode enabled, stopping here")
 
@@ -257,55 +253,55 @@ class TestMain:
         mock_load_configuration.assert_called_once_with(args)
 
         mock_print_metadata.assert_called_once_with(config_data)
-        mock_scan_source_files.assert_called_once_with("/path/to/source", ["wav", "flac"])
+        mock_scan_source_files.assert_called_once_with("/path/to/source", config_data)
 
-    @mock.patch("drumgizmo_kits_generator.logger.is_verbose")
-    @mock.patch("traceback.format_exc")
-    @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.validate_directories")
-    @mock.patch("drumgizmo_kits_generator.logger.error")
-    def test_main_unexpected_exception(
-        self,
-        mock_error,
-        mock_validate_directories,
-        mock_parse_arguments,
-        mock_format_exc,
-        mock_is_verbose,
-    ):
-        """Test that unexpected exceptions are handled correctly in the main function."""
-        # Setup mocks
-        mock_args = mock.MagicMock()
-        mock_parse_arguments.return_value = mock_args
 
-        # Make validate_directories raise an unexpected exception
-        mock_validate_directories.side_effect = Exception("Unexpected test error")
+@mock.patch("drumgizmo_kits_generator.logger.is_verbose")
+@mock.patch("traceback.format_exc")
+@mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
+@mock.patch("drumgizmo_kits_generator.kit_generator.validate_directories")
+@mock.patch("drumgizmo_kits_generator.logger.error")
+def test_main_unexpected_exception(
+    mock_error,
+    mock_validate_directories,
+    mock_parse_arguments,
+    mock_format_exc,
+    mock_is_verbose,
+):
+    """Test that unexpected exceptions are handled correctly in the main function."""
+    # Setup mocks
+    mock_args = mock.MagicMock()
+    mock_parse_arguments.return_value = mock_args
 
-        # Mock traceback.format_exc to return a known string
-        mock_format_exc.return_value = (
-            "Traceback (most recent call last):\n  ...\nException: Unexpected test error"
-        )
+    # Make validate_directories raise an unexpected exception
+    mock_validate_directories.side_effect = Exception("Unexpected test error")
 
-        # Test with verbose mode off
-        mock_is_verbose.return_value = False
+    # Mock traceback.format_exc to return a known string
+    mock_format_exc.return_value = (
+        "Traceback (most recent call last):\n  ...\nException: Unexpected test error"
+    )
 
-        # Call the main function
-        main.main()
+    # Test with verbose mode off
+    mock_is_verbose.return_value = False
 
-        # Verify that an error message was printed
-        mock_error.assert_called_with("Unexpected error: Unexpected test error", mock.ANY)
+    # Call the main function
+    main.main()
 
-        # Reset mocks
-        mock_error.reset_mock()
+    # Verify that an error message was printed
+    mock_error.assert_called_with("Unexpected error: Unexpected test error", mock.ANY)
 
-        # Test with verbose mode on
-        mock_is_verbose.return_value = True
+    # Reset mocks
+    mock_error.reset_mock()
 
-        # Call the main function again
-        main.main()
+    # Test with verbose mode on
+    mock_is_verbose.return_value = True
 
-        # Verify that an error message was printed with traceback in verbose mode
-        mock_error.assert_any_call("Unexpected error: Unexpected test error", mock.ANY)
-        # Le traceback n'est plus loggé séparément, donc on ne vérifie plus mock_format_exc
+    # Call the main function again
+    main.main()
+
+    # Verify that an error message was printed with traceback in verbose mode
+    mock_error.assert_any_call("Unexpected error: Unexpected test error", mock.ANY)
+    # Le traceback n'est plus loggé séparément, donc on ne vérifie plus mock_format_exc
 
 
 class TestMainWithDependencies:
@@ -342,16 +338,14 @@ class TestMainWithDependencies:
     @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_metadata")
     @mock.patch("drumgizmo_kits_generator.kit_generator.scan_source_files")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.print_samples_info")
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_midi_mapping")
     @mock.patch("sys.stderr", new_callable=io.StringIO)
     def test_main_sox_dependency_check(
         self,
         mock_stderr,
-        mock_print_midi_mapping,  # pylint: disable=unused-argument
-        mock_print_samples_info,  # pylint: disable=unused-argument
-        mock_scan_source_files,  # pylint: disable=unused-argument
-        mock_print_metadata,  # pylint: disable=unused-argument
+        mock_print_midi_mapping,
+        mock_scan_source_files,
+        mock_print_metadata,
         mock_validate_config,
         mock_transform_config,
         mock_load_config,
@@ -408,7 +402,6 @@ class TestMainWithDependencies:
     @mock.patch("drumgizmo_kits_generator.kit_generator.validate_directories")
     @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_metadata")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.print_samples_info")
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_midi_mapping")
     @mock.patch("drumgizmo_kits_generator.kit_generator.prepare_target_directory")
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
@@ -420,8 +413,7 @@ class TestMainWithDependencies:
         mock_load_config,
         mock_parse_args,
         mock_prepare_target,
-        mock_print_midi_mapping,  # pylint: disable=unused-argument
-        mock_print_samples,
+        mock_print_midi_mapping,
         mock_print_metadata,
         mock_validate_config,
         mock_validate_dirs,
@@ -480,8 +472,7 @@ class TestMainWithDependencies:
 
         # Vérifier les autres appels
         mock_print_metadata.assert_called_once_with(transformed_config)
-        mock_print_samples.assert_called_once_with(audio_files, transformed_config)
-        mock_scan_source.assert_called_once_with("/path/to/source", [".wav", ".flac"])
+        mock_scan_source.assert_called_once_with("/path/to/source", transformed_config)
         mock_prepare_target.assert_called_once_with("/path/to/target")
         mock_process.assert_called_once_with(audio_files, "/path/to/target", transformed_config)
         mock_generate.assert_called_once_with(audio_files, "/path/to/target", transformed_config)

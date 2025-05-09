@@ -23,12 +23,11 @@ Audio channels: ['AmbL', 'AmbR', 'Hihat', 'Kdrum_back', 'Kdrum_front', 'OHL', 'O
 Main channels: ['AmbL', 'AmbR', 'OHL', 'OHR']
 Extra files: ['Lorem Ipsum.pdf', 'license.txt']
 
-=== Source Audio Samples ===
+=== Scanning Source Directory ===
 Found 3 audio files:
 - E-Mu-Proteus-FX-Wacky-Snare.wav
 - Example.ogg
 - gs-16b-1c-44100hz.flac
-Audio samples will be generated with a 'logarithmic' volume variations method.
 
 === Preparing Target Directory ===
 Cleaning target directory 'examples/target/'...
@@ -63,6 +62,7 @@ OK
 === Summary ===
 Processing complete. DrumGizmo kit successfully created in examples/target/
 Number of instruments created: 3
+
 Main files:
   - examples/target/drumkit.xml
   - examples/target/midimap.xml

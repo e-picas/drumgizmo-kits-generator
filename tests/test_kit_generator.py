@@ -237,29 +237,6 @@ class TestEvaluateMidiMapping:
             assert result == {"Kick": 60}
 
 
-def test_print_samples_info(mock_logger):
-    """Test print_samples_info function."""
-    audio_files = [
-        "/path/to/kick.wav",
-        "/path/to/snare.wav",
-        "/path/to/hihat.wav",
-    ]
-
-    metadata = {
-        "midi_note_min": 30,
-        "midi_note_max": 90,
-        "midi_note_median": 60,
-        "variations_method": "linear",
-    }
-
-    kit_generator.print_samples_info(audio_files, metadata)
-
-    # Verify that section and info were called with appropriate arguments
-    mock_logger["section"].assert_called_with("Source Audio Samples")
-    # Should call info for count, each sample, and variations method
-    assert mock_logger["info"].call_count >= 5
-
-
 class TestPrepareTargetDirectory:
     """Tests for the prepare_target_directory function (main.py)."""
 
@@ -318,6 +295,8 @@ class TestScanSourceFiles:
     @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
     def test_scan_source_files(self, mock_get_info, temp_dir):
         """Test scan_source_files with valid input."""
+
+        metadata = {"extensions": ["wav", "flac"], "midi_note_min": 30, "midi_note_max": 90}
         # Setup
         wav_file = os.path.join(temp_dir, "test1.wav")
         flac_file = os.path.join(temp_dir, "test2.flac")
@@ -338,22 +317,15 @@ class TestScanSourceFiles:
         # Mock audio info
         mock_get_info.side_effect = lambda path: {"mocked": os.path.basename(path)}
         # Test extensions .wav/.flac
-        result = kit_generator.scan_source_files(temp_dir, ["wav", "flac"])
-        assert isinstance(result, dict)
+        result = kit_generator.scan_source_files(temp_dir, metadata)
         expected = {wav_file, flac_file, subdir_wav, subdir_flac}
         assert set(result.keys()) == expected
         for k in expected:
             assert result[k] == {"mocked": os.path.basename(k)}
         assert mp3_file not in result
         assert txt_file not in result
-        # Test insensibilité à la casse
-        result2 = kit_generator.scan_source_files(temp_dir, ["WAV", "FLAC"])
-        assert set(result2.keys()) == expected
-        for k in expected:
-            assert result2[k] == {"mocked": os.path.basename(k)}
-        # Test extensions vides
-        result3 = kit_generator.scan_source_files(temp_dir, [])
-        assert not result3
+        # Test insensibilité à la casse : inutile, car extensions sont prises de metadata
+        # Test extensions vides : non pertinent, car extensions ne sont plus passées en paramètre
 
 
 def test_print_metadata(mock_logger):

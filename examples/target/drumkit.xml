@@ -10,7 +10,7 @@
     <samplerate>48000</samplerate>
     <website>https://example.com/my-drumgizmo-kit</website>
     <logo src="pngtree-music-notes-png-image_8660757.png"/>
-    <created>Generated on 2025-05-08 23:57:58 with drumgizmo-kits-generator v1.6.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
+    <created>Generated on 2025-05-09 11:46:06 with drumgizmo-kits-generator v1.6.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
   </metadata>
   <channels>
     <channel name="AmbL"/>

@@ -50,35 +50,6 @@ def prepare_target_directory(target_dir: str) -> None:
     logger.print_action_end()
 
 
-def print_samples_info(audio_files: List[str], metadata: Dict[str, Any]) -> None:
-    """
-    Print information about the source audio samples.
-
-    Args:
-        audio_files: List of audio file paths
-        metadata: Metadata with MIDI note range
-    """
-    logger.section("Source Audio Samples")
-
-    logger.info(f"Found {len(audio_files)} audio files:")
-
-    # Check if the number of files exceeds the MIDI note range
-    midi_range = metadata["midi_note_max"] - metadata["midi_note_min"] + 1
-    if len(audio_files) > midi_range:
-        logger.warning(
-            f"Number of audio files ({len(audio_files)}) exceeds MIDI note range "
-            f"({metadata['midi_note_min']} - {metadata['midi_note_max']}, {midi_range} notes)"
-        )
-
-    # Print the list of audio files
-    for file in audio_files:
-        logger.info(f"- {os.path.basename(file)}")
-
-    logger.info(
-        f"Audio samples will be generated with a '{metadata['variations_method']}' volume variations method."
-    )
-
-
 def print_metadata(metadata: Dict[str, Any]) -> None:
     """
     Print metadata information.
@@ -166,7 +137,7 @@ def print_summary(
         msg = f"Processing complete in {generation_duration:.2f} seconds. DrumGizmo kit successfully created in {target_dir}"
     logger.info(msg)
     logger.info(f"Number of instruments created: {len(processed_audio_files)}")
-    logger.info("Main files:")
+    logger.info("\nMain files:")
     logger.info(f"  - {os.path.join(target_dir, 'drumkit.xml')}")
     logger.info(f"  - {os.path.join(target_dir, 'midimap.xml')}")
 
@@ -308,17 +279,20 @@ def generate_xml_files(audio_files: List[str], target_dir: str, metadata: Dict[s
         raise XMLGenerationError(error_msg) from e
 
 
-def scan_source_files(source_dir: str, extensions: List[str]) -> Dict[str, Any]:
+def scan_source_files(source_dir: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Scan source directory for audio files with specified extensions, with audio info for each audio file.
+    Scan source directory for audio files with extensions from metadata, with audio info for each audio file.
 
     Args:
         source_dir: Path to the source directory
-        extensions: List of file extensions to include
+        metadata: Metadata containing the list of extensions
 
     Returns:
         Dict[str, Any]: List of audio file paths, sorted alphabetically and audio infos: {file_path: audio_info}
     """
+    logger.section("Scanning Source Directory")
+
+    extensions = metadata["extensions"]
     logger.debug(
         f"Scanning source directory '{source_dir}' for audio files with extensions {extensions}"
     )
@@ -336,6 +310,21 @@ def scan_source_files(source_dir: str, extensions: List[str]) -> Dict[str, Any]:
     for file_path in audio_files:
         info = audio.get_audio_info(file_path)
         result[file_path] = info
+
+    audio_files = result
+    logger.info(f"Found {len(audio_files)} audio files:")
+
+    # Check if the number of files exceeds the MIDI note range
+    midi_range = metadata["midi_note_max"] - metadata["midi_note_min"] + 1
+    if len(audio_files) > midi_range:
+        logger.warning(
+            f"Number of audio files ({len(audio_files)}) exceeds MIDI note range "
+            f"({metadata['midi_note_min']} - {metadata['midi_note_max']}, {midi_range} notes)"
+        )
+
+    # Print the list of audio files
+    for file in audio_files:
+        logger.info(f"- {os.path.basename(file)}")
 
     return result
 
