@@ -303,8 +303,7 @@ def scan_source_files(source_dir: str, metadata: Dict[str, Any]) -> Dict[str, An
             if file_ext in [ext.lower() for ext in extensions]:
                 logger.debug(f"Found '{file}'")
                 file_path = os.path.join(root, file)
-                info = audio.get_audio_info(file_path)
-                audio_files[file_path] = info
+                audio_files[file_path] = None
 
     # Sort audio files alphabetically by filename
     audio_files = dict(sorted(audio_files.items()))
@@ -314,8 +313,15 @@ def scan_source_files(source_dir: str, metadata: Dict[str, Any]) -> Dict[str, An
     if len(audio_files) > midi_range:
         logger.warning(
             f"Number of audio files ({len(audio_files)}) exceeds MIDI note range "
-            f"({metadata['midi_note_min']} - {metadata['midi_note_max']}, {midi_range} notes)"
+            f"({metadata['midi_note_min']} - {metadata['midi_note_max']}, {midi_range} notes)."
+            f"\nOnly the first {midi_range} files will be processed."
         )
+        audio_files = dict(list(audio_files.items())[:midi_range])
+
+    # get audio info for each sample
+    for file_path in audio_files:
+        info = audio.get_audio_info(file_path)
+        audio_files[file_path] = info
 
     # Print the list of audio files
     logger.info(f"Found {len(audio_files)} audio files:")

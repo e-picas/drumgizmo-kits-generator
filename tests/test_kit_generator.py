@@ -293,6 +293,31 @@ class TestScanSourceFiles:
     """Tests for the scan_source_files function in kit_generator module (returns dict)."""
 
     @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
+    def test_scan_source_files_too_many_files(self, mock_get_info, temp_dir, mock_logger):
+        """Test scan_source_files warns and limits files if too many audio files are present."""
+        midi_min = 10
+        midi_max = 19  # plage = 10
+        metadata = {"extensions": ["wav"], "midi_note_min": midi_min, "midi_note_max": midi_max}
+        num_files = 15  # plus que la plage
+
+        # Crée 15 fichiers audio
+        for i in range(num_files):
+            path = os.path.join(temp_dir, f"sample_{i}.wav")
+            with open(path, "w"):
+                pass
+
+        mock_get_info.side_effect = lambda path: {"samplerate": 44100, "channels": 2}
+
+        result = kit_generator.scan_source_files(temp_dir, metadata)
+        # La dict doit être limitée à la plage MIDI (10 fichiers)
+        assert len(result) == (midi_max - midi_min + 1)
+        # Un warning doit avoir été émis
+        assert mock_logger["warning"].called
+        # Le message doit mentionner le dépassement
+        warning_args = "".join(str(a) for a in mock_logger["warning"].call_args[0])
+        assert "exceeds MIDI note range" in warning_args
+
+    @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
     def test_scan_source_files(self, mock_get_info, temp_dir):
         """Test scan_source_files with valid input."""
 
