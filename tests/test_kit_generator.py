@@ -315,13 +315,17 @@ class TestScanSourceFiles:
         with open(subdir_flac, "w"):
             pass
         # Mock audio info
-        mock_get_info.side_effect = lambda path: {"mocked": os.path.basename(path)}
+        mock_get_info.side_effect = lambda path: {
+            "samplerate": 44100,
+            "channels": 2,
+            "mocked": os.path.basename(path),
+        }
         # Test extensions .wav/.flac
         result = kit_generator.scan_source_files(temp_dir, metadata)
         expected = {wav_file, flac_file, subdir_wav, subdir_flac}
         assert set(result.keys()) == expected
         for k in expected:
-            assert result[k] == {"mocked": os.path.basename(k)}
+            assert result[k]["mocked"] == os.path.basename(k)
         assert mp3_file not in result
         assert txt_file not in result
         # Test insensibilité à la casse : inutile, car extensions sont prises de metadata

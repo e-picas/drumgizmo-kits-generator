@@ -25,9 +25,9 @@ Extra files: ['Lorem Ipsum.pdf', 'license.txt']
 
 === Scanning Source Directory ===
 Found 3 audio files:
-- E-Mu-Proteus-FX-Wacky-Snare.wav
-- Example.ogg
-- gs-16b-1c-44100hz.flac
+- E-Mu-Proteus-FX-Wacky-Snare.wav (44100 Hz - 2 channels)
+- Example.ogg (44100 Hz - 2 channels)
+- gs-16b-1c-44100hz.flac (44100 Hz - 1 channels)
 
 === Preparing Target Directory ===
 Cleaning target directory 'examples/target/'...

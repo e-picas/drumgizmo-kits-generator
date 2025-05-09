@@ -110,7 +110,7 @@ def print_midi_mapping(audio_files: List[str], metadata: Dict[str, Any]) -> None
     # Display MIDI mapping
     logger.info("MIDI mapping preview (alphabetical order):")
     for instrument, note in sorted(midi_mapping.items(), key=lambda x: x[0]):
-        logger.info(f"  MIDI Note {note}: {instrument}")
+        logger.info(f"- MIDI Note {note}: {instrument}")
 
 
 def print_summary(
@@ -296,23 +296,18 @@ def scan_source_files(source_dir: str, metadata: Dict[str, Any]) -> Dict[str, An
     logger.debug(
         f"Scanning source directory '{source_dir}' for audio files with extensions {extensions}"
     )
-    audio_files = []
+    audio_files = {}
     for root, _, files in os.walk(source_dir):
         for file in files:
             file_ext = os.path.splitext(file)[1].lower().lstrip(".")
             if file_ext in [ext.lower() for ext in extensions]:
-                audio_files.append(os.path.join(root, file))
+                logger.debug(f"Found '{file}'")
+                file_path = os.path.join(root, file)
+                info = audio.get_audio_info(file_path)
+                audio_files[file_path] = info
 
     # Sort audio files alphabetically by filename
-    audio_files.sort(key=lambda x: os.path.basename(x).lower())
-
-    result = {}
-    for file_path in audio_files:
-        info = audio.get_audio_info(file_path)
-        result[file_path] = info
-
-    audio_files = result
-    logger.info(f"Found {len(audio_files)} audio files:")
+    audio_files = dict(sorted(audio_files.items()))
 
     # Check if the number of files exceeds the MIDI note range
     midi_range = metadata["midi_note_max"] - metadata["midi_note_min"] + 1
@@ -323,10 +318,13 @@ def scan_source_files(source_dir: str, metadata: Dict[str, Any]) -> Dict[str, An
         )
 
     # Print the list of audio files
-    for file in audio_files:
-        logger.info(f"- {os.path.basename(file)}")
+    logger.info(f"Found {len(audio_files)} audio files:")
+    for file, data in audio_files.items():
+        logger.info(
+            f"- {os.path.basename(file)} ({data['samplerate']} Hz - {data['channels']} channels)"
+        )
 
-    return result
+    return audio_files
 
 
 def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, Any]) -> None:

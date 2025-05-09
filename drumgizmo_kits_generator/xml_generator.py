@@ -204,7 +204,7 @@ def generate_instrument_xml(
 
     logger.debug(
         f"Generating instrument XML for '{instrument_name}' at '{xml_path}'"
-        f" with {instrument_channels} channels"
+        f" with {instrument_channels} channel(s)"
     )
 
     # Create instrument directory if it doesn't exist
