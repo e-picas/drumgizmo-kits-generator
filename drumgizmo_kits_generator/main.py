@@ -12,15 +12,7 @@ DrumGizmo Kit Generator - Main module
 import time
 import traceback
 
-from drumgizmo_kits_generator import (
-    cli,
-    config,
-    constants,
-    kit_generator,
-    logger,
-    utils,
-    validators,
-)
+from drumgizmo_kits_generator import cli, config, constants, kit_generator, logger, utils
 from drumgizmo_kits_generator.exceptions import DrumGizmoError
 
 
@@ -38,7 +30,7 @@ def main() -> None:
         logger.debug(f"{constants.APP_NAME} v{constants.APP_VERSION} - {constants.APP_LINK}")
 
         # Validate directories
-        validators.validate_directories(args.source, args.target)
+        kit_generator.validate_directories(args.source, args.target)
 
         # Display processing directories
         logger.section("Process Main Directories")

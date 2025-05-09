@@ -18,6 +18,7 @@ from drumgizmo_kits_generator.exceptions import (
     AudioProcessingError,
     DependencyError,
     DirectoryError,
+    ValidationError,
     XMLGenerationError,
 )
 
@@ -383,3 +384,25 @@ def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, 
     except Exception as e:
         error_msg = f"Failed to copy additional files: {e}"
         raise DirectoryError(error_msg) from e
+
+
+def validate_directories(source_dir: str, target_dir: str) -> None:
+    """
+    Validate source and target directories.
+
+    Args:
+        source_dir: Path to source directory
+        target_dir: Path to target directory
+
+    Raises:
+        ValidationError: If source directory doesn't exist
+        ValidationError: If target's parent directory doesn't exist
+    """
+    # Check if source directory exists
+    if not os.path.isdir(source_dir):
+        raise ValidationError(f"Source directory '{source_dir}' does not exist")
+
+    # Validate target directory
+    target_parent = os.path.dirname(os.path.abspath(target_dir))
+    if not os.path.exists(target_dir) and not os.path.isdir(target_parent):
+        raise ValidationError(f"Parent directory of target '{target_parent}' does not exist")

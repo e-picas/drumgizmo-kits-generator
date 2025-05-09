@@ -385,5 +385,39 @@ def test_print_metadata(mock_logger):
     assert mock_logger["info"].call_count >= 10  # Should call info for each metadata item
 
 
+def test_validate_directories_valid(tmp_path):
+    """Test validate_directories with valid directories."""
+    # Setup
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    target_dir = tmp_path / "target"
+
+    # Test (should not raise)
+    kit_generator.validate_directories(str(source_dir), str(target_dir))
+
+
+def test_validate_directories_source_not_exists(tmp_path):
+    """Test validate_directories with non-existent source directory."""
+    # Setup
+    source_dir = tmp_path / "nonexistent"
+    target_dir = tmp_path / "target"
+
+    # Test (should raise)
+    with pytest.raises(kit_generator.ValidationError):
+        kit_generator.validate_directories(str(source_dir), str(target_dir))
+
+
+def test_validate_directories_target_parent_not_exists(tmp_path):
+    """Test validate_directories with non-existent target parent directory."""
+    # Setup
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    target_dir = tmp_path / "nonexistent" / "target"
+
+    # Test (should raise)
+    with pytest.raises(kit_generator.ValidationError):
+        kit_generator.validate_directories(str(source_dir), str(target_dir))
+
+
 if __name__ == "__main__":
     pytest.main(["-v", __file__])

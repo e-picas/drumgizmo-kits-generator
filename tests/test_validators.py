@@ -660,37 +660,3 @@ def test_validate_whole_config_median_validation():
         "midi_note_max": 60,
     }
     validators.validate_whole_config(config_data)  # No exception should be raised
-
-
-def test_validate_directories_valid(tmp_path):
-    """Test validate_directories with valid directories."""
-    # Setup
-    source_dir = tmp_path / "source"
-    source_dir.mkdir()
-    target_dir = tmp_path / "target"
-
-    # Test (should not raise)
-    validators.validate_directories(str(source_dir), str(target_dir))
-
-
-def test_validate_directories_source_not_exists(tmp_path):
-    """Test validate_directories with non-existent source directory."""
-    # Setup
-    source_dir = tmp_path / "nonexistent"
-    target_dir = tmp_path / "target"
-
-    # Test (should raise)
-    with pytest.raises(ValidationError):
-        validators.validate_directories(str(source_dir), str(target_dir))
-
-
-def test_validate_directories_target_parent_not_exists(tmp_path):
-    """Test validate_directories with non-existent target parent directory."""
-    # Setup
-    source_dir = tmp_path / "source"
-    source_dir.mkdir()
-    target_dir = tmp_path / "nonexistent" / "target"
-
-    # Test (should raise)
-    with pytest.raises(ValidationError):
-        validators.validate_directories(str(source_dir), str(target_dir))

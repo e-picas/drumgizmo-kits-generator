@@ -196,7 +196,7 @@ class TestMain:
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_midi_mapping")
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_samples_info")
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
-    @mock.patch("drumgizmo_kits_generator.validators.validate_directories")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.validate_directories")
     @mock.patch("drumgizmo_kits_generator.config.load_configuration")
     @mock.patch("drumgizmo_kits_generator.kit_generator.scan_source_files")
     @mock.patch("drumgizmo_kits_generator.logger.message")
@@ -262,7 +262,7 @@ class TestMain:
     @mock.patch("drumgizmo_kits_generator.logger.is_verbose")
     @mock.patch("traceback.format_exc")
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
-    @mock.patch("drumgizmo_kits_generator.validators.validate_directories")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.validate_directories")
     @mock.patch("drumgizmo_kits_generator.logger.error")
     def test_main_unexpected_exception(
         self,
@@ -336,7 +336,7 @@ class TestMainWithDependencies:
     # pylint: disable=too-many-arguments
     @mock.patch("drumgizmo_kits_generator.utils.check_dependency")
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
-    @mock.patch("drumgizmo_kits_generator.validators.validate_directories")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.validate_directories")
     @mock.patch("drumgizmo_kits_generator.config.load_configuration")
     @mock.patch("drumgizmo_kits_generator.config.transform_configuration")
     @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
@@ -405,7 +405,7 @@ class TestMainWithDependencies:
     @mock.patch("drumgizmo_kits_generator.kit_generator.process_audio_files")
     @mock.patch("drumgizmo_kits_generator.kit_generator.generate_xml_files")
     @mock.patch("drumgizmo_kits_generator.kit_generator.copy_additional_files")
-    @mock.patch("drumgizmo_kits_generator.validators.validate_directories")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.validate_directories")
     @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_metadata")
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_samples_info")
