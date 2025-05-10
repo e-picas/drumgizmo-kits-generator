@@ -16,6 +16,10 @@ SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
 SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
 
 Tests for the main module of the DrumGizmo kit generator.
+
+# NOTE: All tests in this file are already compatible with the RunData architecture.
+# Each test constructs and manages its own RunData instance explicitly, so no patching is required.
+
 """
 
 import argparse
@@ -27,6 +31,8 @@ from unittest import mock
 import pytest
 
 from drumgizmo_kits_generator import constants, kit_generator
+from drumgizmo_kits_generator.exceptions import ValidationError
+from drumgizmo_kits_generator.state import RunData
 
 
 @pytest.fixture
@@ -176,10 +182,13 @@ class TestEvaluateMidiMapping:
         metadata = {"midi_note_min": min_note, "midi_note_max": max_note, "midi_note_median": 12}
         with mock.patch("drumgizmo_kits_generator.utils.extract_instrument_names") as mock_extract:
             mock_extract.return_value = instruments
-            run_data = {"audio_files": audio_files, "config": metadata}
-            result = kit_generator.evaluate_midi_mapping(run_data)
-            expected = dict(zip(instruments, range(min_note, max_note + 1)))
-            assert result == expected
+            run_data = RunData(source_dir="/src", target_dir="/target")
+            run_data.audio_sources = audio_files
+            run_data.config = metadata
+            kit_generator.evaluate_midi_mapping(run_data)
+        result = run_data.midi_mapping
+        expected = dict(zip(instruments, range(min_note, max_note + 1)))
+        assert result == expected
 
     def test_evaluate_midi_mapping_not_full_range(self, mock_logger):
         """Test evaluate_midi_mapping with fewer instruments than notes (algo médian classique)."""
@@ -190,35 +199,29 @@ class TestEvaluateMidiMapping:
         metadata = {"midi_note_min": min_note, "midi_note_max": max_note, "midi_note_median": 12}
         with mock.patch("drumgizmo_kits_generator.utils.extract_instrument_names") as mock_extract:
             mock_extract.return_value = instruments
-            run_data = {"audio_files": audio_files, "config": metadata}
-            result = kit_generator.evaluate_midi_mapping(run_data)
-            # Pour 3 instruments autour de 12 : [11, 12, 13]
-            assert list(result.values()) == [11, 12, 13]
+            run_data = RunData(source_dir="/src", target_dir="/target")
+            run_data.audio_sources = audio_files
+            run_data.config = metadata
+            kit_generator.evaluate_midi_mapping(run_data)
+        result = run_data.midi_mapping
+        # Pour 3 instruments autour de 12 : [11, 12, 13]
+        assert list(result.values()) == [11, 12, 13]
 
     def test_evaluate_midi_mapping_with_valid_input(self, mock_logger):
         """Test evaluate_midi_mapping with valid input."""
         # Setup
-        audio_files = [
-            "/path/to/source/Kick.wav",
-            "/path/to/source/Snare.wav",
-            "/path/to/source/HiHat.wav",
-        ]
-
         metadata = {"midi_note_min": 30, "midi_note_max": 90, "midi_note_median": 60}
 
         # Mock utils functions
-        with mock.patch("drumgizmo_kits_generator.utils.extract_instrument_names") as mock_extract:
-            # Configure mocks
-            mock_extract.return_value = ["Kick", "Snare", "HiHat"]
-
-            # Call the function
-            run_data = {"audio_files": audio_files, "config": metadata}
-            result = kit_generator.evaluate_midi_mapping(run_data)
-
-            # Assertions
-            mock_extract.assert_called_once_with(audio_files)
-            expected_mapping = {"Kick": 59, "Snare": 60, "HiHat": 61}
-            assert result == expected_mapping
+        # Construction correcte de audio_sources
+        run_data = RunData(source_dir="/src", target_dir="/target")
+        run_data.audio_sources = {"Kick": {}, "Snare": {}, "HiHat": {}}
+        run_data.config = metadata
+        kit_generator.evaluate_midi_mapping(run_data)
+        result = run_data.midi_mapping
+        # Assertions
+        expected_mapping = {"Kick": 59, "Snare": 60, "HiHat": 61}
+        assert result == expected_mapping
 
     def test_evaluate_midi_mapping_with_empty_files(self, mock_logger):
         """Test evaluate_midi_mapping with empty input list."""
@@ -227,8 +230,11 @@ class TestEvaluateMidiMapping:
         metadata = {"midi_note_min": 30, "midi_note_max": 90, "midi_note_median": 60}
 
         # Call the function
-        run_data = {"audio_files": audio_files, "config": metadata}
-        result = kit_generator.evaluate_midi_mapping(run_data)
+        run_data = RunData(source_dir="/src", target_dir="/target")
+        run_data.audio_sources = audio_files
+        run_data.config = metadata
+        kit_generator.evaluate_midi_mapping(run_data)
+        result = run_data.midi_mapping
 
         # Assertions
         assert not result
@@ -236,23 +242,19 @@ class TestEvaluateMidiMapping:
     def test_evaluate_midi_mapping_with_missing_metadata(self, mock_logger):
         """Test evaluate_midi_mapping with missing metadata keys."""
         # Setup
-        audio_files = ["/path/to/source/Kick.wav"]
         metadata = {}  # Missing required metadata keys
 
         # Mock utils functions
-        with mock.patch("drumgizmo_kits_generator.utils.extract_instrument_names") as mock_extract:
-            # Configure mocks
-            mock_extract.return_value = ["Kick"]
-
-            # Call the function
-            run_data = {"audio_files": audio_files, "config": metadata}
-            result = kit_generator.evaluate_midi_mapping(run_data)
-
-            # Assertions
-            mock_extract.assert_called_once_with(audio_files)
-            expected_mapping = {"Kick": 60}
-            assert result == expected_mapping
-            assert result == {"Kick": 60}
+        # Construction correcte de audio_sources
+        run_data = RunData(source_dir="/src", target_dir="/target")
+        run_data.audio_sources = {"Kick": {}}
+        run_data.config = metadata
+        kit_generator.evaluate_midi_mapping(run_data)
+        result = run_data.midi_mapping
+        # Assertions
+        expected_mapping = {"Kick": 60}
+        assert result == expected_mapping
+        assert result == {"Kick": 60}
 
 
 class TestPrepareTargetDirectory:
@@ -263,7 +265,8 @@ class TestPrepareTargetDirectory:
     def test_prepare_target_directory_new(self, mock_makedirs, mock_exists, mock_logger):
         """Test prepare_target_directory with a new directory."""
         mock_exists.return_value = False
-        kit_generator.prepare_target_directory("/path/to/target")
+        run_data = RunData(source_dir="/src", target_dir="/path/to/target")
+        kit_generator.prepare_target_directory(run_data)
         mock_makedirs.assert_called_once_with("/path/to/target")
         assert mock_logger["section"].call_count >= 1
         assert mock_logger["print_action_start"].call_count >= 1
@@ -297,7 +300,8 @@ class TestPrepareTargetDirectory:
             return "dir" in path
 
         mock_isdir.side_effect = mock_is_dir
-        kit_generator.prepare_target_directory("/path/to/target")
+        run_data = RunData(source_dir="/src", target_dir="/path/to/target")
+        kit_generator.prepare_target_directory(run_data)
         assert mock_logger["section"].call_count >= 1
         assert mock_logger["print_action_start"].call_count >= 1
         assert mock_listdir.call_count == 1
@@ -318,7 +322,9 @@ class TestScanSourceFiles:
         path = os.path.join(temp_dir, "sample.wav")
         with open(path, "w"):
             pass
-        result = kit_generator.scan_source_files(temp_dir, {"config": metadata})
+        run_data = RunData(source_dir=temp_dir, target_dir="/tmp/unused", config=metadata)
+        kit_generator.scan_source_files(run_data)
+        result = run_data.audio_sources
         assert not result
 
     @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
@@ -328,8 +334,9 @@ class TestScanSourceFiles:
         path = os.path.join(temp_dir, "sample.wav")
         with open(path, "w"):
             pass
-        with pytest.raises(KeyError):
-            kit_generator.scan_source_files(temp_dir, {"config": metadata})
+        run_data = RunData(source_dir=temp_dir, target_dir="/tmp/unused", config=metadata)
+        with pytest.raises(ValidationError):
+            kit_generator.scan_source_files(run_data)
 
     @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
     def test_scan_source_files_missing_midi_max(self, mock_get_info, temp_dir):
@@ -338,8 +345,9 @@ class TestScanSourceFiles:
         path = os.path.join(temp_dir, "sample.wav")
         with open(path, "w"):
             pass
-        with pytest.raises(KeyError):
-            kit_generator.scan_source_files(temp_dir, {"config": metadata})
+        run_data = RunData(source_dir=temp_dir, target_dir="/tmp/unused", config=metadata)
+        with pytest.raises(ValidationError):
+            kit_generator.scan_source_files(run_data)
 
     @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
     def test_scan_source_files_too_many_files(self, mock_get_info, temp_dir, mock_logger):
@@ -357,7 +365,9 @@ class TestScanSourceFiles:
 
         mock_get_info.side_effect = lambda path: {"samplerate": 44100, "channels": 2}
 
-        result = kit_generator.scan_source_files(temp_dir, {"config": metadata})
+        run_data = RunData(source_dir=temp_dir, target_dir="/tmp/unused", config=metadata)
+        kit_generator.scan_source_files(run_data)
+        result = run_data.audio_sources
         # La dict doit être limitée à la plage MIDI (10 fichiers)
         assert len(result) == (midi_max - midi_min + 1)
         # Un warning doit avoir été émis
@@ -395,11 +405,18 @@ class TestScanSourceFiles:
             "mocked": os.path.basename(path),
         }
         # Test extensions .wav/.flac
-        result = kit_generator.scan_source_files(temp_dir, {"config": metadata})
-        expected = {wav_file, flac_file, subdir_wav, subdir_flac}
-        assert set(result.keys()) == expected
-        for k in expected:
-            assert result[k]["mocked"] == os.path.basename(k)
+        run_data = RunData(source_dir=temp_dir, target_dir="/tmp/unused", config=metadata)
+        kit_generator.scan_source_files(run_data)
+        result = run_data.audio_sources
+        # Debug explicite en cas d’échec
+        found_instruments = set(result.keys())
+        expected_instruments = {"test1", "test2", "test5", "test6"}
+        if found_instruments != expected_instruments:
+            print("Expected:", expected_instruments)
+            print("Found:", found_instruments)
+        assert found_instruments == expected_instruments
+        for inst in expected_instruments:
+            assert result[inst]["mocked"].startswith(inst)
         assert mp3_file not in result
         assert txt_file not in result
         # Test insensibilité à la casse : inutile, car extensions sont prises de metadata
@@ -408,7 +425,7 @@ class TestScanSourceFiles:
 
 def test_print_metadata(mock_logger):
     """Test print_metadata function (déplacée dans kit_generator)."""
-    metadata = {
+    config = {
         "name": "Test Kit",
         "version": "1.0.0",
         "description": "Test description",
@@ -429,8 +446,8 @@ def test_print_metadata(mock_logger):
         "main_channels": ["Left", "Right"],
     }
 
-    kit_generator.print_metadata(metadata)
-
+    run_data = RunData(source_dir="/src", target_dir="/target", config=config)
+    kit_generator.print_metadata(run_data)
     mock_logger["section"].assert_called_with("Kit Metadata")
     assert mock_logger["info"].call_count >= 10  # Should call info for each metadata item
 
@@ -443,7 +460,9 @@ def test_validate_directories_valid(tmp_path):
     target_dir = tmp_path / "target"
 
     # Test (should not raise)
-    kit_generator.validate_directories(str(source_dir), str(target_dir))
+    kit_generator.validate_directories(
+        RunData(source_dir=str(source_dir), target_dir=str(target_dir))
+    )
 
 
 def test_validate_directories_source_not_exists(tmp_path):
@@ -454,7 +473,9 @@ def test_validate_directories_source_not_exists(tmp_path):
 
     # Test (should raise)
     with pytest.raises(kit_generator.ValidationError):
-        kit_generator.validate_directories(str(source_dir), str(target_dir))
+        kit_generator.validate_directories(
+            RunData(source_dir=str(source_dir), target_dir=str(target_dir))
+        )
 
 
 def test_validate_directories_target_parent_not_exists(tmp_path):
@@ -466,7 +487,9 @@ def test_validate_directories_target_parent_not_exists(tmp_path):
 
     # Test (should raise)
     with pytest.raises(kit_generator.ValidationError):
-        kit_generator.validate_directories(str(source_dir), str(target_dir))
+        kit_generator.validate_directories(
+            RunData(source_dir=str(source_dir), target_dir=str(target_dir))
+        )
 
 
 if __name__ == "__main__":

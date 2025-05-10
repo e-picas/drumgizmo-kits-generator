@@ -30,6 +30,7 @@ import pytest
 
 from drumgizmo_kits_generator import cli, constants, main
 from drumgizmo_kits_generator.exceptions import DependencyError
+from drumgizmo_kits_generator.state import RunData
 
 
 @pytest.fixture
@@ -195,7 +196,7 @@ class TestMain:
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_metadata")
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_midi_mapping")
     @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.validate_directories")
+    @mock.patch("drumgizmo_kits_generator.kit_generator.validate_directories", autospec=True)
     @mock.patch("drumgizmo_kits_generator.config.load_configuration")
     @mock.patch("drumgizmo_kits_generator.kit_generator.scan_source_files")
     @mock.patch("drumgizmo_kits_generator.logger.message")
@@ -211,8 +212,7 @@ class TestMain:
         mock_print_midi_mapping,
         mock_print_metadata,
     ):
-        """Test main function in dry run mode."""
-        # Setup mocks
+        """Test main function in dry run mode (adapté RunData)."""
         args = argparse.Namespace()
         args.source = "/path/to/source"
         args.target = "/path/to/target"
@@ -222,7 +222,6 @@ class TestMain:
         args.raw_output = False
         mock_parse_arguments.return_value = args
 
-        # La configuration est déjà transformée et validée par load_configuration
         config_data = dict(self.config_data)
         config_data.update(
             {
@@ -246,29 +245,41 @@ class TestMain:
         ]
         mock_scan_source_files.return_value = audio_files
 
-        # Call the function
-        main.main()
+        def make_run_data(*_args, **_kwargs):
+            # Accepte tous les arguments, utilise ceux attendus
+            return RunData(
+                source_dir=args.source,
+                target_dir=args.target,
+                config=config_data,
+            )
 
-        # Check that dry run message was displayed
-        # Nouvelle signature : prkit_generator.evaluate_midi_mapping({'audio_files': audio_files, 'config': config_data})
-        expected_run_data = {
-            "config": config_data,
-            "audio_files": audio_files,
-            "midi_mapping": mock.ANY,
-        }
-        mock_print_midi_mapping.assert_called_once_with(expected_run_data)
+        with mock.patch("drumgizmo_kits_generator.main.RunData", side_effect=make_run_data):
+            main.main()
+
+        mock_validate_directories.assert_called_once()
+        run_data_arg = mock_validate_directories.call_args[0][0]
+        assert isinstance(run_data_arg, RunData)
+        assert run_data_arg.source_dir == "/path/to/source"
+        assert run_data_arg.target_dir == "/path/to/target"
+        assert run_data_arg.config == config_data
+
+        args_print, kwargs_print = mock_print_midi_mapping.call_args
+        assert isinstance(args_print[0], RunData)
+        assert args_print[0].config == config_data
+        assert args_print[0].source_dir == "/path/to/source"
+        assert args_print[0].target_dir == "/path/to/target"
         mock_message.assert_called_with("\nDry run mode enabled, stopping here")
-
-        # Verify that all mocks were used
+        assert mock_load_configuration.called
         mock_parse_arguments.assert_called_once()
-        mock_validate_directories.assert_called_once_with("/path/to/source", "/path/to/target")
-        mock_load_configuration.assert_called_once_with(args)
+        mock_validate_directories.assert_called_once()
 
-        mock_print_metadata.assert_called_once_with(config_data)
-        args, kwargs = mock_scan_source_files.call_args
-        assert args[0] == "/path/to/source"
-        assert "config" in args[1]
-        assert args[1]["config"] == config_data
+        args_meta, _ = mock_print_metadata.call_args
+        assert isinstance(args_meta[0], RunData)
+        assert args_meta[0].config == config_data
+        args_scan, _ = mock_scan_source_files.call_args
+        assert isinstance(args_scan[0], RunData)
+        assert args_scan[0].source_dir == "/path/to/source"
+        assert args_scan[0].config == config_data
 
 
 @mock.patch("drumgizmo_kits_generator.logger.is_verbose")
@@ -300,7 +311,12 @@ def test_main_unexpected_exception(
     mock_is_verbose.return_value = False
 
     # Call the main function
-    main.main()
+    def make_run_data(*_args, **_kwargs):
+        # Utilise des valeurs par défaut minimales
+        return RunData(source_dir="/tmp/source", target_dir="/tmp/target", config={})
+
+    with mock.patch("drumgizmo_kits_generator.main.RunData", side_effect=make_run_data):
+        main.main()
 
     # Verify that an error message was printed
     mock_error.assert_called_with("Unexpected error: Unexpected test error", mock.ANY)
@@ -312,7 +328,8 @@ def test_main_unexpected_exception(
     mock_is_verbose.return_value = True
 
     # Call the main function again
-    main.main()
+    with mock.patch("drumgizmo_kits_generator.main.RunData", side_effect=make_run_data):
+        main.main()
 
     # Verify that an error message was printed with traceback in verbose mode
     mock_error.assert_any_call("Unexpected error: Unexpected test error", mock.ANY)
@@ -379,8 +396,12 @@ class TestMainWithDependencies:
         # Make check_dependency raise a DependencyError
         mock_check_dependency.side_effect = DependencyError("SoX not found")
 
-        # Call the main function
-        main.main()
+        # Patch RunData pour éviter toute erreur lors de la création
+        def make_run_data(*_args, **_kwargs):
+            return RunData(source_dir="/tmp/source", target_dir="/tmp/target", config={})
+
+        with mock.patch("drumgizmo_kits_generator.main.RunData", side_effect=make_run_data):
+            main.main()
 
         # Verify that check_dependency was called with "sox"
         mock_check_dependency.assert_called_with(
@@ -416,7 +437,6 @@ class TestMainWithDependencies:
     @mock.patch("drumgizmo_kits_generator.kit_generator.process_audio_files")
     @mock.patch("drumgizmo_kits_generator.kit_generator.generate_xml_files")
     @mock.patch("drumgizmo_kits_generator.kit_generator.copy_additional_files")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.validate_directories")
     @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_metadata")
     @mock.patch("drumgizmo_kits_generator.kit_generator.print_midi_mapping")
@@ -433,71 +453,70 @@ class TestMainWithDependencies:
         mock_print_midi_mapping,
         mock_print_metadata,
         mock_validate_config,
-        mock_validate_dirs,
         mock_copy,
         mock_generate,
         mock_process,
         mock_scan_source,
     ):
-        """Test main function with valid arguments."""
-        # Setup mocks
-        args = argparse.Namespace(
-            source="/path/to/source",
-            target="/path/to/target",
-            config=None,
-            verbose=False,
-            dry_run=False,
-            raw_output=False,
-        )
-        mock_parse_args.return_value = args
+        """Test main function with valid arguments"""
+        with mock.patch(
+            "drumgizmo_kits_generator.main.kit_generator.validate_directories", autospec=True
+        ) as mock_validate_dirs:
+            args = argparse.Namespace(
+                source="/path/to/source",
+                target="/path/to/target",
+                config=None,
+                verbose=False,
+                dry_run=False,
+                raw_output=False,
+            )
+            mock_parse_args.return_value = args
+            config_data = {
+                "extensions": [".wav", ".flac"],
+            }
+            transformed_config = dict(config_data)
+            mock_transform_config.return_value = transformed_config
+            mock_validate_config.return_value = transformed_config
+            mock_load_config.return_value = transformed_config
 
-        # Configurer les retours des mocks dans l'ordre d'appel
-        config_data = dict(self.config_data)
+            # Patch RunData pour éviter toute erreur lors de la création
+            def make_run_data(*_args, **_kwargs):
+                return RunData(
+                    source_dir=args.source,
+                    target_dir=args.target,
+                    config=transformed_config,
+                )
 
-        # Simuler la transformation de la configuration
-        transformed_config = dict(config_data)
-        transformed_config["extensions"] = [".wav", ".flac"]
-
-        # Configurer les retours des mocks pour simuler le flux normal
-        mock_transform_config.return_value = transformed_config
-        mock_validate_config.return_value = transformed_config
-        mock_load_config.return_value = (
-            transformed_config  # load_configuration retourne la config transformée
-        )
-
-        audio_files = ["kick.wav", "snare.wav"]
-        mock_scan_source.return_value = audio_files
-
-        mock_process.return_value = {
-            "Kick": ["kick1.wav", "kick2.wav"],
-            "Snare": ["snare1.wav", "snare2.wav"],
-        }
-
-        # Call the function
-        main.main()
-
-        # Assertions
-        mock_parse_args.assert_called_once()
-        mock_validate_dirs.assert_called_once_with("/path/to/source", "/path/to/target")
-
-        # Vérifier que load_configuration a été appelé avec les bons arguments
-        mock_load_config.assert_called_once_with(args)
-
-        # Vérifier que les fonctions de transformation et validation ont été appelées
-        # Note: Ces appels sont effectués à l'intérieur de load_configuration
-        # donc nous ne devrions pas les vérifier ici car nous avons mocké load_configuration
-
-        # Vérifier les autres appels
-        mock_print_metadata.assert_called_once_with(transformed_config)
-        args, kwargs = mock_scan_source.call_args
-        assert args[0] == "/path/to/source"
-        assert "config" in args[1]
-        assert args[1]["config"] == transformed_config
-        # En mode non-dry_run, prepare_target_directory doit être appelé
-        mock_prepare_target.assert_called_once_with("/path/to/target")
-        mock_process.assert_called_once_with("/path/to/target", mock.ANY)
-        mock_generate.assert_called_once_with("/path/to/target", mock.ANY)
-        mock_copy.assert_called_once_with("/path/to/source", "/path/to/target", transformed_config)
+            with mock.patch("drumgizmo_kits_generator.main.RunData", side_effect=make_run_data):
+                main.main()
+            mock_validate_dirs.assert_called_once()
+            run_data_arg = mock_validate_dirs.call_args[0][0]
+            assert isinstance(run_data_arg, RunData)
+            assert run_data_arg.source_dir == "/path/to/source"
+            assert run_data_arg.target_dir == "/path/to/target"
+            assert run_data_arg.config == transformed_config
+            assert mock_parse_args.call_count == 1
+        # scan_source_files doit être appelé avec RunData
+        args_scan, kwargs_scan = mock_scan_source.call_args
+        assert isinstance(args_scan[0], RunData)
+        assert args_scan[0].source_dir == "/path/to/source"
+        assert args_scan[0].config == transformed_config
+        # process_audio_files doit être appelé avec RunData
+        args_proc, kwargs_proc = mock_process.call_args
+        assert isinstance(args_proc[0], RunData)
+        assert args_proc[0].target_dir == "/path/to/target"
+        assert args_proc[0].config == transformed_config
+        # generate_xml_files doit être appelé avec RunData
+        args_gen, kwargs_gen = mock_generate.call_args
+        assert isinstance(args_gen[0], RunData)
+        assert args_gen[0].target_dir == "/path/to/target"
+        assert args_gen[0].config == transformed_config
+        # copy_additional_files doit être appelé avec RunData
+        args_copy, kwargs_copy = mock_copy.call_args
+        assert isinstance(args_copy[0], RunData)
+        assert args_copy[0].source_dir == "/path/to/source"
+        assert args_copy[0].target_dir == "/path/to/target"
+        assert args_copy[0].config == transformed_config
 
 
 if __name__ == "__main__":

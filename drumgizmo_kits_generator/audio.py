@@ -188,6 +188,7 @@ def get_audio_info(file_path: str) -> Dict[str, Any]:
     return audio_info
 
 
+# pylint: disable=too-many-locals
 def process_sample(
     file_path: str,
     target_dir: str,
@@ -214,13 +215,14 @@ def process_sample(
     file_basename = utils.get_file_basename(file_path)
 
     # Clean up the instrument name
-    instrument_name = utils.clean_instrument_name(file_basename)
+    instrument_name = utils.get_instrument_name(file_basename)
 
-    velocity_levels = metadata.get("velocity_levels")
+    velocity_levels = metadata.get("velocity_levels", constants.DEFAULT_VELOCITY_LEVELS)
+    samplerate = metadata.get("samplerate", constants.DEFAULT_SAMPLERATE)
 
     logger.print_action_start(
         f"Processing '{utils.get_filename(file_path)}' with {velocity_levels} volume variations"
-        f" at {metadata.get('samplerate')} Hz"
+        f" at {samplerate} Hz"
     )
 
     # Create instrument directory
@@ -230,7 +232,7 @@ def process_sample(
     os.makedirs(samples_dir, exist_ok=True)
 
     try:
-        requested_sr = str(metadata["samplerate"])
+        requested_sr = str(samplerate)
         # Utiliser audio_info fourni ou get_audio_info
         try:
             if audio_info is None:
@@ -263,7 +265,9 @@ def process_sample(
                 samples_dir,
                 velocity_levels,
                 instrument_name,
-                variations_method=metadata.get("variations_method", "linear"),
+                variations_method=metadata.get(
+                    "variations_method", constants.DEFAULT_VARIATIONS_METHOD
+                ),
             )
         finally:
             # Clean up the temporary file and directory if they exist
@@ -386,7 +390,7 @@ def create_velocity_variations(
     velocity_levels: int,
     instrument_name: str,
     variations_method: str = "linear",
-) -> List[str]:
+) -> Dict[str, str]:
     """
     Create velocity variations of an audio file.
 
@@ -424,7 +428,7 @@ def create_velocity_variations(
     else:
         raise ValueError(f"Invalid variations method: {variations_method}")
 
-    variation_files = []
+    variation_files = {}
     for i in range(1, velocity_levels + 1):
         # Create a file name for this velocity level using the standard format
         velocity_file = utils.join_paths(
@@ -445,6 +449,6 @@ def create_velocity_variations(
         )
         create_velocity_variation(file_path, velocity_file, volume_factor)
 
-        variation_files.append(velocity_file)
+        variation_files.update({velocity_file: {"volume": volume_factor}})
 
     return variation_files

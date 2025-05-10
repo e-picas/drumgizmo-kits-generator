@@ -675,7 +675,7 @@ class TestGetAudioInfo:
 class TestProcessSample:
     """Tests for the process_sample function."""
 
-    @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
+    @mock.patch("drumgizmo_kits_generator.utils.get_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.get_audio_info")
     @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
@@ -686,18 +686,19 @@ class TestProcessSample:
         mock_create_velocity,
         mock_convert_sample_rate,
         mock_get_audio_info,
-        mock_clean_name,
+        mock_get_name,
         tmp_dir,
         sample_file,
     ):
         """Test process_sample n'appelle pas la conversion si le sample rate est déjà correct."""
-        mock_clean_name.return_value = "test_instrument"
+        mock_get_name.return_value = "test_instrument"
         mock_create_velocity.return_value = ["file1.wav", "file2.wav", "file3.wav"]
         metadata = {
             "name": "Test Kit",
             "version": "1.0",
             "description": "Test description",
             "velocity_levels": 3,
+            "variations_method": "linear",
             "samplerate": 44100,
         }
         mock_get_audio_info.return_value = {"samplerate": 44100}
@@ -727,7 +728,7 @@ class TestProcessSample:
         mock_convert_sample_rate.assert_not_called()
         mock_get_audio_info.assert_not_called()
 
-    @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
+    @mock.patch("drumgizmo_kits_generator.utils.get_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
     @mock.patch("os.makedirs")
@@ -740,14 +741,14 @@ class TestProcessSample:
         mock_makedirs,
         mock_create_velocity,
         mock_convert_sample_rate,
-        mock_clean_name,
+        mock_get_name,
         tmp_dir,
         sample_file,
         metadata,
     ):
         """Test process_sample with sample rate conversion."""
         # Setup mocks
-        mock_clean_name.return_value = "test_instrument"
+        mock_get_name.return_value = "test_instrument"
         temp_dir = "/tmp/drumgizmo_temp"
         converted_file = os.path.join(temp_dir, "converted.wav")
         mock_convert_sample_rate.return_value = converted_file
@@ -763,7 +764,7 @@ class TestProcessSample:
 
         # Assertions
         assert result == ["file1.wav", "file2.wav", "file3.wav"]
-        mock_clean_name.assert_called_once()
+        mock_get_name.assert_called_once()
         mock_convert_sample_rate.assert_called_once_with(
             sample_file, metadata["samplerate"], target_dir=temp_dir
         )
@@ -776,7 +777,7 @@ class TestProcessSample:
         )
         mock_rmtree.assert_called_once_with(temp_dir)
 
-    @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
+    @mock.patch("drumgizmo_kits_generator.utils.get_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
     @mock.patch("os.makedirs")
@@ -785,13 +786,13 @@ class TestProcessSample:
         mock_makedirs,
         mock_create_velocity,
         mock_convert_sample_rate,
-        mock_clean_name,
+        mock_get_name,
         tmp_dir,
         sample_file,
     ):
         """Test process_sample without sample rate conversion."""
         # Setup mocks
-        mock_clean_name.return_value = "test_instrument"
+        mock_get_name.return_value = "test_instrument"
         mock_create_velocity.return_value = ["file1.wav", "file2.wav", "file3.wav"]
 
         # Create metadata with samplerate
@@ -800,6 +801,7 @@ class TestProcessSample:
             "version": "1.0",
             "description": "Test description",
             "velocity_levels": 3,
+            "variations_method": "linear",
             "samplerate": 44100,
         }
 
@@ -810,7 +812,7 @@ class TestProcessSample:
 
         # Assertions
         assert result == ["file1.wav", "file2.wav", "file3.wav"]
-        mock_clean_name.assert_called_once()
+        mock_get_name.assert_called_once()
         mock_makedirs.assert_called_once_with(
             os.path.join(tmp_dir, "test_instrument", "samples"), exist_ok=True
         )
@@ -823,7 +825,7 @@ class TestProcessSample:
             variations_method="linear",
         )
 
-    @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
+    @mock.patch("drumgizmo_kits_generator.utils.get_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.convert_sample_rate")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
     @mock.patch("os.makedirs")
@@ -836,14 +838,14 @@ class TestProcessSample:
         mock_makedirs,
         mock_create_velocity,
         mock_convert_sample_rate,
-        mock_clean_name,
+        mock_get_name,
         tmp_dir,
         sample_file,
         metadata,
     ):
         """Test process_sample cleans up temporary directories."""
         # Setup mocks
-        mock_clean_name.return_value = "test_instrument"
+        mock_get_name.return_value = "test_instrument"
         temp_dir = "/tmp/drumgizmo_temp"
         converted_file = os.path.join(temp_dir, "converted.wav")
         mock_convert_sample_rate.return_value = converted_file
@@ -864,20 +866,20 @@ class TestProcessSample:
         )
         mock_rmtree.assert_called_once_with(temp_dir)  # Should have cleaned up the temp dir
 
-    @mock.patch("drumgizmo_kits_generator.utils.clean_instrument_name")
+    @mock.patch("drumgizmo_kits_generator.utils.get_instrument_name")
     @mock.patch("drumgizmo_kits_generator.audio.create_velocity_variations")
     @mock.patch("os.makedirs")
     def test_process_sample_with_default_velocity_levels(
         self,
         mock_makedirs,
         mock_create_velocity,
-        mock_clean_name,
+        mock_get_name,
         tmp_dir,
         sample_file,
     ):
         """Test process_sample with default velocity levels."""
         # Setup mocks
-        mock_clean_name.return_value = "test_instrument"
+        mock_get_name.return_value = "test_instrument"
         mock_create_velocity.return_value = ["file1.wav", "file2.wav", "file3.wav"]
 
         # Create metadata with samplerate and without velocity_levels
@@ -887,6 +889,7 @@ class TestProcessSample:
             "description": "Test description",
             "velocity_levels": constants.DEFAULT_VELOCITY_LEVELS,
             "samplerate": 44100,
+            "variations_method": "linear",
         }
 
         # Patch get_audio_info pour simuler le même sample rate

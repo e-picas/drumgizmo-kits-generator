@@ -60,47 +60,47 @@ def sample_file_fixture():
 
 
 class TestCleanInstrumentName:
-    """Tests for the clean_instrument_name function."""
+    """Tests for the get_instrument_name function."""
 
-    def test_clean_instrument_name_basic(self):
-        """Test clean_instrument_name with basic input."""
+    def test_get_instrument_name_basic(self):
+        """Test get_instrument_name with basic input."""
         # Test with a simple filename (without extension)
-        assert utils.clean_instrument_name("Kick") == "Kick"
-        assert utils.clean_instrument_name("Snare") == "Snare"
-        assert utils.clean_instrument_name("HiHat") == "HiHat"
+        assert utils.get_instrument_name("Kick") == "Kick"
+        assert utils.get_instrument_name("Snare") == "Snare"
+        assert utils.get_instrument_name("HiHat") == "HiHat"
 
-    def test_clean_instrument_name_with_path(self):
-        """Test clean_instrument_name with path."""
+    def test_get_instrument_name_with_path(self):
+        """Test get_instrument_name with path."""
         # Test with paths (without extension)
-        assert utils.clean_instrument_name("Kick") == "Kick"
-        assert utils.clean_instrument_name("Snare") == "Snare"
+        assert utils.get_instrument_name("Kick") == "Kick"
+        assert utils.get_instrument_name("Snare") == "Snare"
 
-    def test_clean_instrument_name_with_special_chars(self):
-        """Test clean_instrument_name with special characters."""
+    def test_get_instrument_name_with_special_chars(self):
+        """Test get_instrument_name with special characters."""
         # Test with special characters (without extension)
-        assert utils.clean_instrument_name("Kick-Drum") == "Kick-Drum"
-        assert utils.clean_instrument_name("Snare-Left") == "Snare-Left"
-        assert utils.clean_instrument_name("Hi-Hat") == "Hi-Hat"
+        assert utils.get_instrument_name("Kick-Drum") == "Kick-Drum"
+        assert utils.get_instrument_name("Snare-Left") == "Snare-Left"
+        assert utils.get_instrument_name("Hi-Hat") == "Hi-Hat"
 
-    def test_clean_instrument_name_with_numbers(self):
-        """Test clean_instrument_name with numbers."""
+    def test_get_instrument_name_with_numbers(self):
+        """Test get_instrument_name with numbers."""
         # Test with numbers (without extension)
-        assert utils.clean_instrument_name("Kick01") == "Kick01"
-        assert utils.clean_instrument_name("Snare_02") == "Snare_02"
+        assert utils.get_instrument_name("Kick01") == "Kick01"
+        assert utils.get_instrument_name("Snare_02") == "Snare_02"
 
-    def test_clean_instrument_name_with_velocity_prefix(self):
-        """Test clean_instrument_name with velocity prefix."""
+    def test_get_instrument_name_with_velocity_prefix(self):
+        """Test get_instrument_name with velocity prefix."""
         # Test with velocity prefix
-        assert utils.clean_instrument_name("1-Kick") == "Kick"
-        assert utils.clean_instrument_name("2-Snare") == "Snare"
-        assert utils.clean_instrument_name("3-HiHat") == "HiHat"
+        assert utils.get_instrument_name("1-Kick") == "Kick"
+        assert utils.get_instrument_name("2-Snare") == "Snare"
+        assert utils.get_instrument_name("3-HiHat") == "HiHat"
 
-    def test_clean_instrument_name_with_converted_suffix(self):
-        """Test clean_instrument_name with _converted suffix."""
+    def test_get_instrument_name_with_converted_suffix(self):
+        """Test get_instrument_name with _converted suffix."""
         # Test with _converted suffix
-        assert utils.clean_instrument_name("Kick_converted") == "Kick"
-        assert utils.clean_instrument_name("Snare_converted") == "Snare"
-        assert utils.clean_instrument_name("1-HiHat_converted") == "HiHat"
+        assert utils.get_instrument_name("Kick_converted") == "Kick"
+        assert utils.get_instrument_name("Snare_converted") == "Snare"
+        assert utils.get_instrument_name("1-HiHat_converted") == "HiHat"
 
 
 class TestStripQuotes:

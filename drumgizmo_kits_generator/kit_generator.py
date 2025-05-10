@@ -7,11 +7,14 @@ SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
 SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
 
 DrumGizmo Kit Generator - Core logic module
+
+All functions of this module are expected to be called from the main module.
+All functions are expected to treat a `RunData` object and modify it.
 """
 
 import os
 import shutil
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from drumgizmo_kits_generator import audio, constants, logger, utils, xml_generator
 from drumgizmo_kits_generator.exceptions import (
@@ -21,27 +24,28 @@ from drumgizmo_kits_generator.exceptions import (
     ValidationError,
     XMLGenerationError,
 )
+from drumgizmo_kits_generator.state import RunData
 
 
-def prepare_target_directory(target_dir: str) -> None:
+def prepare_target_directory(run_data: RunData) -> None:
     """
     Prepare the target directory by creating it if it doesn't exist
     or cleaning it if it does.
 
     Args:
-        target_dir: Path to the target directory
+        run_data: RunData
     """
     logger.section("Preparing Target Directory")
 
     # Create directory if it doesn't exist
-    if not os.path.exists(target_dir):
-        logger.print_action_start(f"Creating target directory '{target_dir}'")
-        os.makedirs(target_dir)
+    if not os.path.exists(run_data.target_dir):
+        logger.print_action_start(f"Creating target directory '{run_data.target_dir}'")
+        os.makedirs(run_data.target_dir)
     else:
         # Clean directory if it exists
-        logger.print_action_start(f"Cleaning target directory '{target_dir}'")
-        for item in os.listdir(target_dir):
-            item_path = os.path.join(target_dir, item)
+        logger.print_action_start(f"Cleaning target directory '{run_data.target_dir}'")
+        for item in os.listdir(run_data.target_dir):
+            item_path = os.path.join(run_data.target_dir, item)
             if os.path.isdir(item_path):
                 shutil.rmtree(item_path)
             else:
@@ -50,88 +54,82 @@ def prepare_target_directory(target_dir: str) -> None:
     logger.print_action_end()
 
 
-def print_metadata(metadata: Dict[str, Any]) -> None:
+def print_metadata(run_data: RunData) -> None:
     """
     Print metadata information.
 
     Args:
-        metadata: Metadata to print
+        run_data: RunData
     """
     logger.section("Kit Metadata")
 
-    logger.info(f"Name: {metadata['name']}")
-    logger.info(f"Version: {metadata['version']}")
+    logger.info(f"Name: {run_data.config['name']}")
+    logger.info(f"Version: {run_data.config['version']}")
 
-    if metadata["description"]:
-        logger.info(f"Description: {metadata['description']}")
+    if run_data.config["description"]:
+        logger.info(f"Description: {run_data.config['description']}")
 
-    if metadata["notes"]:
-        logger.info(f"Notes: {metadata['notes']}")
+    if run_data.config["notes"]:
+        logger.info(f"Notes: {run_data.config['notes']}")
 
-    if metadata["author"]:
-        logger.info(f"Author: {metadata['author']}")
+    if run_data.config["author"]:
+        logger.info(f"Author: {run_data.config['author']}")
 
-    logger.info(f"License: {metadata['license']}")
+    logger.info(f"License: {run_data.config['license']}")
 
-    if metadata["website"]:
-        logger.info(f"Website: {metadata['website']}")
+    if run_data.config["website"]:
+        logger.info(f"Website: {run_data.config['website']}")
 
-    if metadata["logo"]:
-        logger.info(f"Logo: {metadata['logo']}")
+    if run_data.config["logo"]:
+        logger.info(f"Logo: {run_data.config['logo']}")
 
-    logger.info(f"Sample rate: {metadata['samplerate']} Hz")
-    logger.info(f"Velocity levels: {metadata['velocity_levels']}")
-    logger.info(f"Volume variations method: {metadata['variations_method']}")
-    logger.info(f"MIDI note range: [{metadata['midi_note_min']}, {metadata['midi_note_max']}]")
-    logger.info(f"MIDI note median: {metadata['midi_note_median']}")
-    logger.info(f"Audio extensions: {metadata['extensions']}")
-    logger.info(f"Audio channels: {metadata['channels']}")
-    logger.info(f"Main channels: {metadata['main_channels']}")
+    logger.info(f"Sample rate: {run_data.config['samplerate']} Hz")
+    logger.info(f"Velocity levels: {run_data.config['velocity_levels']}")
+    logger.info(f"Volume variations method: {run_data.config['variations_method']}")
+    logger.info(
+        f"MIDI note range: [{run_data.config['midi_note_min']}, {run_data.config['midi_note_max']}]"
+    )
+    logger.info(f"MIDI note median: {run_data.config['midi_note_median']}")
+    logger.info(f"Audio extensions: {run_data.config['extensions']}")
+    logger.info(f"Audio channels: {run_data.config['channels']}")
+    logger.info(f"Main channels: {run_data.config['main_channels']}")
 
-    if metadata["extra_files"]:
-        logger.info(f"Extra files: {metadata['extra_files']}")
+    if run_data.config["extra_files"]:
+        logger.info(f"Extra files: {run_data.config['extra_files']}")
 
 
-def evaluate_midi_mapping(run_data: Dict[str, Any]) -> Dict[str, int]:
+def evaluate_midi_mapping(run_data: RunData) -> None:
     """
     Calculate MIDI mapping for given run_data dict.
 
     Args:
-        run_data: Dictionary containing at least 'audio_files' and 'config' keys
+        run_data: RunData instance containing at least 'audio_files' and 'config' keys
 
     Returns:
-        Dict[str, int]: Mapping of instrument names to MIDI note numbers
+        None
     """
-    audio_files = run_data.get("audio_files", [])
-    metadata = run_data.get("config", {})
-    # Extract instrument names from audio files
-    instrument_names = utils.extract_instrument_names(audio_files)
-
-    if not instrument_names:
-        return {}
+    audio_files = run_data.audio_sources
+    metadata = run_data.config
 
     # Get MIDI note range
-    min_note = metadata.get("midi_note_min")
-    if min_note is None:
-        min_note = constants.DEFAULT_MIDI_NOTE_MIN
-    max_note = metadata.get("midi_note_max")
-    if max_note is None:
-        max_note = constants.DEFAULT_MIDI_NOTE_MAX
-    median_note = metadata.get("midi_note_median")
-    if median_note is None:
-        median_note = constants.DEFAULT_MIDI_NOTE_MEDIAN
+    min_note = metadata.get("midi_note_min", constants.DEFAULT_MIDI_NOTE_MIN)
+    max_note = metadata.get("midi_note_max", constants.DEFAULT_MIDI_NOTE_MAX)
+    median_note = metadata.get("midi_note_median", constants.DEFAULT_MIDI_NOTE_MEDIAN)
 
-    instruments_count = len(instrument_names)
+    instruments_count = len(audio_files)
     note_range = max_note - min_note + 1
 
     midi_mapping = {}
     if instruments_count == note_range and instruments_count > 0:
         # Cas spécial : chaque instrument couvre toute la plage
-        for i, instrument_name in enumerate(instrument_names):
+        for i, filename in enumerate(audio_files):
+            instrument_name = utils.get_instrument_name(filename)
             midi_mapping[instrument_name] = min_note + i
+            run_data.midi_mapping[instrument_name] = min_note + i
     else:
         left_count = instruments_count // 2
-        for i, instrument_name in enumerate(instrument_names):
+        for i, filename in enumerate(audio_files):
+            instrument_name = utils.get_instrument_name(filename)
             # Algo médian classique
             if i < left_count:
                 offset = left_count - i
@@ -140,55 +138,48 @@ def evaluate_midi_mapping(run_data: Dict[str, Any]) -> Dict[str, int]:
                 offset = i - left_count
                 note = median_note + offset
             note = max(min_note, min(note, max_note))
-            midi_mapping[instrument_name] = note
-
-    return midi_mapping
+            run_data.midi_mapping[instrument_name] = note
 
 
-def print_midi_mapping(run_data: Dict[str, Any]) -> None:
+def print_midi_mapping(run_data: RunData) -> None:
     """
     Print the MIDI mapping for the given run_data dict.
 
     Args:
-        run_data: Dictionary containing at least 'audio_files' and 'config' keys
+        run_data: RunData instance containing at least 'audio_files' and 'config' keys
     """
     logger.info("\n=== MIDI Mapping Preview ===")
-    midi_mapping = run_data.get("midi_mapping", {})
+    audio_files = run_data.midi_mapping
 
-    if not midi_mapping:
+    if not audio_files:
         logger.warning("No instruments found for MIDI mapping")
         return
 
     # Display MIDI mapping
     logger.info("MIDI mapping preview (alphabetical order):")
-    for instrument, note in sorted(midi_mapping.items(), key=lambda x: x[0]):
+    for instrument, note in sorted(audio_files.items(), key=lambda x: x[0]):
         logger.info(f"- MIDI Note {note}: {instrument}")
 
 
-def print_summary(
-    target_dir: str,
-    run_data: Dict[str, Any],
-    generation_duration: float = None,
-) -> None:
+def print_summary(run_data: RunData) -> None:
     """
     Print a summary of the generated kit.
 
     Args:
-        target_dir: The target directory where the kit was generated
-        run_data: Dict containing at least 'config', 'audio_files', 'audio_files_processed', 'midi_mapping' keys
-        generation_duration: (optional) Duration of the generation process
+        run_data: RunData instance containing at least 'config', 'audio_files', 'audio_files_processed', 'midi_mapping', 'generation_time' keys
     """
     logger.section("Summary")
 
-    metadata = run_data.get("config", {})
-    processed_audio_files = run_data.get("audio_files_processed", {})
-    audio_files = run_data.get("audio_files", [])
-    midi_mapping = run_data.get("midi_mapping", {})
+    target_dir = run_data.target_dir
+    metadata = run_data.config
+    processed_audio_files = run_data.audio_processed
+    audio_files = run_data.audio_sources
+    midi_mapping = run_data.midi_mapping
 
     if logger.is_raw_output():
         msg = f"Processing complete. DrumGizmo kit successfully created in {target_dir}"
     else:
-        msg = f"Processing complete in {generation_duration:.2f} seconds. DrumGizmo kit successfully created in {target_dir}"
+        msg = f"Processing complete in {run_data.generation_time:.2f} seconds. DrumGizmo kit successfully created in {target_dir}"
     logger.info(msg)
     logger.info(f"Number of instruments created: {len(processed_audio_files)}")
     logger.info("\nMain files:")
@@ -208,8 +199,6 @@ def print_summary(
 
     logger.info("\nInstrument samples MIDI mapping:")
 
-    midi_mapping = run_data.get("midi_mapping", {})
-
     # Display mapping with MIDI notes
     for instrument, audio_file in zip(processed_audio_files.keys(), audio_files):
         midi_note = midi_mapping.get(instrument, "N/A")
@@ -227,42 +216,37 @@ def print_summary(
             logger.info(f"  - {extra_file}")
 
 
-def process_audio_files(target_dir: str, run_data: Dict[str, Any]) -> Dict[str, List[str]]:
+def process_audio_files(run_data: RunData) -> Dict[str, List[str]]:
     """
     Process audio files by creating velocity variations.
 
     Args:
-        target_dir: Path to the target directory
-        run_data: Dict containing at least 'audio_files' and 'config' keys
-
-    Returns:
-        Dict[str, List[str]]: Dictionary mapping instrument names to processed audio files
+        run_data: RunData instance containing at least 'audio_files' and 'config' keys
 
     Raises:
         AudioProcessingError: If processing audio files fails
         DependencyError: If SoX is not found
     """
-    audio_files = run_data["audio_files"]
-    metadata = run_data["config"]
+    audio_files = run_data.audio_sources
+    metadata = run_data.config
     logger.section("Processing Audio Files")
 
-    processed_audio_files = {}
+    run_data.audio_processed = {}
 
     try:
-        for file_path in audio_files:
+        for instrument_name in audio_files:
             # Process the sample with sample rate conversion if needed
             processed_files = audio.process_sample(
-                file_path, target_dir, metadata, audio_files[file_path]
+                audio_files[instrument_name]["source_path"],
+                run_data.target_dir,
+                metadata,
+                audio_files[instrument_name],
             )
 
             # Get the instrument name from the first processed file
             if processed_files:
-                instrument_name = os.path.basename(
-                    os.path.dirname(os.path.dirname(processed_files[0]))
-                )
-                processed_audio_files[instrument_name] = processed_files
+                run_data.audio_processed[instrument_name] = processed_files
 
-        return processed_audio_files
     except Exception as e:
         error_msg = f"Failed to process audio files: {e}"
         if not isinstance(e, (AudioProcessingError, DependencyError)):
@@ -270,37 +254,32 @@ def process_audio_files(target_dir: str, run_data: Dict[str, Any]) -> Dict[str, 
         raise
 
 
-def generate_xml_files(target_dir: str, run_data: Dict[str, Any]) -> None:
+def generate_xml_files(run_data: RunData) -> None:
     """
     Generate XML files for the DrumGizmo kit.
 
     Args:
-        target_dir: Path to the target directory
-        run_data: Dict containing at least 'audio_files' and 'config' keys
+        run_data: RunData instance containing at least 'audio_files' and 'config' keys
 
     Raises:
         XMLGenerationError: If generating XML files fails
     """
     logger.section("Generating XML Files")
 
-    audio_files = run_data["audio_files"]
-    metadata = run_data["config"]
+    metadata = run_data.config
 
     try:
         # Extract instrument names from audio files
-        instrument_names = utils.extract_instrument_names(audio_files)
-
-        # Add instrument names to metadata
-        metadata["instruments"] = instrument_names
+        instrument_names = run_data.audio_processed.keys()
 
         logger.print_action_start("Generating 'drumkit.xml'")
-        xml_generator.generate_drumkit_xml(target_dir, metadata)
+        xml_generator.generate_drumkit_xml(run_data.target_dir, instrument_names, metadata)
         logger.print_action_end()
 
         logger.print_action_start("Generating instruments XML files")
         for instrument_name in instrument_names:
             instrument_files = []
-            for f in audio_files:
+            for f in run_data.audio_processed:
                 base_name = os.path.basename(f)
                 # It could be with or without velocity prefix, and with or without "_converted" suffix
                 if utils.is_instrument_file(base_name, instrument_name) or any(
@@ -310,37 +289,41 @@ def generate_xml_files(target_dir: str, run_data: Dict[str, Any]) -> None:
                 ):
                     instrument_files.append(f)
 
+            # Pass run_data instead of old separate arguments
             xml_generator.generate_instrument_xml(
-                target_dir, instrument_name, metadata, instrument_files, audio_files
+                run_data.target_dir,
+                instrument_name,
+                run_data.audio_sources,
+                run_data.audio_processed,
+                run_data.config,
             )
         logger.print_action_end()
 
         logger.print_action_start("Generating 'midimap.xml'")
-        xml_generator.generate_midimap_xml(target_dir, metadata)
+        xml_generator.generate_midimap_xml(run_data.target_dir, run_data.midi_mapping)
         logger.print_action_end()
     except Exception as e:
         error_msg = f"Failed to generate XML files: {e}"
         raise XMLGenerationError(error_msg) from e
 
 
-def scan_source_files(source_dir: str, run_data: Dict[str, Any]) -> Dict[str, Any]:
+# pylint: disable=too-many-locals
+def scan_source_files(run_data: RunData) -> None:
     """
     Scan source directory for audio files with extensions from config in run_data, with audio info for each audio file.
 
     Args:
-        source_dir: Path to the source directory
-        run_data: Dict containing at least 'config' with the metadata
-
-    Returns:
-        Dict[str, Any]: List of audio file paths, sorted alphabetically and audio infos: {file_path: audio_info}
+        run_data: RunData containing at least 'config' with the metadata
     """
     logger.section("Scanning Source Directory")
 
-    metadata = run_data.get("config", {})
-    extensions = metadata.get("extensions", [])
+    source_dir = run_data.source_dir
+    extensions = run_data.config.get("extensions", constants.DEFAULT_EXTENSIONS)
+
     logger.debug(
         f"Scanning source directory '{source_dir}' for audio files with extensions {extensions}"
     )
+
     audio_files = {}
     for root, _, files in os.walk(source_dir):
         for file in files:
@@ -348,73 +331,76 @@ def scan_source_files(source_dir: str, run_data: Dict[str, Any]) -> Dict[str, An
             if file_ext in [ext.lower() for ext in extensions]:
                 logger.debug(f"Found '{file}'")
                 file_path = os.path.join(root, file)
-                audio_files[file_path] = None
+                instrument_name = utils.get_instrument_name(file)
+                audio_files[instrument_name] = {"source_path": file_path}
 
     # Sort audio files alphabetically by filename
     audio_files = dict(sorted(audio_files.items()))
 
     # Check if the number of files exceeds the MIDI note range
-    midi_range = metadata["midi_note_max"] - metadata["midi_note_min"] + 1
+    midi_note_max = run_data.config.get("midi_note_max")
+    midi_note_min = run_data.config.get("midi_note_min")
+
+    if midi_note_max is None or midi_note_min is None:
+        raise ValidationError("Missing MIDI note range in options (min or max)")
+
+    midi_range = midi_note_max - midi_note_min + 1
     if len(audio_files) > midi_range:
         logger.warning(
             f"Number of audio files ({len(audio_files)}) exceeds MIDI note range "
-            f"({metadata['midi_note_min']} - {metadata['midi_note_max']}, {midi_range} notes)."
+            f"({midi_note_min} - {midi_note_max}, {midi_range} notes)."
             f"\nOnly the first {midi_range} files will be processed."
         )
         audio_files = dict(list(audio_files.items())[:midi_range])
 
     # get audio info for each sample
-    for file_path in audio_files:
-        info = audio.get_audio_info(file_path)
-        audio_files[file_path] = info
+    for instrument_name, file_info in audio_files.items():
+        info = audio.get_audio_info(file_info["source_path"])
+        file_info.update(info)
 
     # Print the list of audio files
     logger.info(f"Found {len(audio_files)} audio files:")
-    for file, data in audio_files.items():
-        logger.info(
-            f"- {os.path.basename(file)} ({data['samplerate']} Hz - {data['channels']} channels)"
-        )
+    for instrument_name, data in audio_files.items():
+        logger.info(f"- {instrument_name} ({data['samplerate']} Hz - {data['channels']} channels)")
 
-    return audio_files
+    run_data.audio_sources = audio_files
 
 
-def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, Any]) -> None:
+def copy_additional_files(run_data: RunData) -> None:
     """
     Copy logo and additional files to the target directory.
 
     Args:
-        source_dir: Path to the source directory
-        target_dir: Path to the target directory
-        metadata: Metadata with logo and extra files information
+        run_data: RunData instance containing at least 'config' and 'target_dir' keys
 
     Raises:
         DirectoryError: If copying additional files fails
     """
     try:
         # Copy logo if specified
-        if metadata["logo"]:
+        if run_data.config.get("logo"):
             logger.section("Copying Logo")
-            logo_path = os.path.join(source_dir, metadata["logo"])
+            logo_path = os.path.join(run_data.source_dir, run_data.config["logo"])
             if os.path.isfile(logo_path):
-                logger.print_action_start(f"Copying logo file '{metadata['logo']}'")
-                shutil.copy2(logo_path, target_dir)
+                logger.print_action_start(f"Copying logo file '{run_data.config['logo']}'")
+                shutil.copy2(logo_path, run_data.target_dir)
                 logger.print_action_end()
             else:
                 logger.warning(f"Logo file not found: {logo_path}")
 
         # Copy extra files if specified
-        if metadata["extra_files"]:
+        if run_data.config.get("extra_files"):
             logger.section("Copying Additional Files")
-            extra_files = metadata["extra_files"]
+            extra_files = run_data.config.get("extra_files")
             # If extra_files is already a list, use it directly
             if not isinstance(extra_files, list):
                 extra_files = extra_files.split(",")
             for extra_file in extra_files:
                 extra_file = extra_file.strip()
-                extra_file_path = os.path.join(source_dir, extra_file)
+                extra_file_path = os.path.join(run_data.source_dir, extra_file)
                 if os.path.isfile(extra_file_path):
                     logger.print_action_start(f"Copying extra file '{extra_file}'")
-                    shutil.copy2(extra_file_path, target_dir)
+                    shutil.copy2(extra_file_path, run_data.target_dir)
                     logger.print_action_end()
                 else:
                     logger.warning(f"Extra file not found: {extra_file_path}")
@@ -424,23 +410,22 @@ def copy_additional_files(source_dir: str, target_dir: str, metadata: Dict[str, 
         raise DirectoryError(error_msg) from e
 
 
-def validate_directories(source_dir: str, target_dir: str) -> None:
+def validate_directories(run_data: RunData) -> None:
     """
     Validate source and target directories.
 
     Args:
-        source_dir: Path to source directory
-        target_dir: Path to target directory
+        run_data: RunData instance containing at least 'source_dir' and 'target_dir' keys
 
     Raises:
         ValidationError: If source directory doesn't exist
         ValidationError: If target's parent directory doesn't exist
     """
     # Check if source directory exists
-    if not os.path.isdir(source_dir):
-        raise ValidationError(f"Source directory '{source_dir}' does not exist")
+    if not os.path.isdir(run_data.source_dir):
+        raise ValidationError(f"Source directory '{run_data.source_dir}' does not exist")
 
     # Validate target directory
-    target_parent = os.path.dirname(os.path.abspath(target_dir))
-    if not os.path.exists(target_dir) and not os.path.isdir(target_parent):
+    target_parent = os.path.dirname(os.path.abspath(run_data.target_dir))
+    if not os.path.exists(run_data.target_dir) and not os.path.isdir(target_parent):
         raise ValidationError(f"Parent directory of target '{target_parent}' does not exist")

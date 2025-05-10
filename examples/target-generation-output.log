@@ -25,9 +25,9 @@ Extra files: ['Lorem Ipsum.pdf', 'license.txt']
 
 === Scanning Source Directory ===
 Found 3 audio files:
-- E-Mu-Proteus-FX-Wacky-Snare.wav (44100 Hz - 2 channels)
-- Example.ogg (44100 Hz - 2 channels)
-- gs-16b-1c-44100hz.flac (44100 Hz - 1 channels)
+- E-Mu-Proteus-FX-Wacky-Snare (44100 Hz - 2 channels)
+- Example (44100 Hz - 2 channels)
+- gs-16b-1c-44100hz (44100 Hz - 1 channels)
 
 === Preparing Target Directory ===
 Cleaning target directory 'examples/target/'...
@@ -79,9 +79,9 @@ Kit metadata summary:
   - Logo: pngtree-music-notes-png-image_8660757.png
 
 Instrument samples MIDI mapping:
-  - MIDI note 59: E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare.wav
-  - MIDI note 60: Example: Example.ogg
-  - MIDI note 61: gs-16b-1c-44100hz: gs-16b-1c-44100hz.flac
+  - MIDI note 59: E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare
+  - MIDI note 60: Example: Example
+  - MIDI note 61: gs-16b-1c-44100hz: gs-16b-1c-44100hz
 
 Extra files copied:
   - pngtree-music-notes-png-image_8660757.png

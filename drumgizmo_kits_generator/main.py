@@ -13,6 +13,7 @@ import time
 
 from drumgizmo_kits_generator import cli, config, constants, kit_generator, logger, utils
 from drumgizmo_kits_generator.exceptions import DrumGizmoError
+from drumgizmo_kits_generator.state import RunData
 
 
 def main() -> None:
@@ -20,8 +21,9 @@ def main() -> None:
     try:
         start_time = time.perf_counter()
         args = cli.parse_arguments()
-        # global dictionary to store run data
-        run_data = {}
+
+        # Prepare RunData instance (explicit state management)
+        run_data = RunData(source_dir=args.source, target_dir=args.target)
 
         # Initialize logger with verbosity level and raw output
         logger.set_verbose(args.verbose)
@@ -32,24 +34,24 @@ def main() -> None:
             logger.debug(f"{constants.APP_NAME} v{constants.APP_VERSION} - {constants.APP_LINK}")
 
         # Validate directories
-        kit_generator.validate_directories(args.source, args.target)
+        kit_generator.validate_directories(run_data)
 
         # Display processing directories
         logger.section("Process Main Directories")
-        logger.info(f"Source directory: {args.source}")
-        logger.info(f"Target directory: {args.target}")
+        logger.info(f"Source directory: {run_data.source_dir}")
+        logger.info(f"Target directory: {run_data.target_dir}")
 
-        # Load configuration (already transformed and validated)
-        run_data["config"] = config.load_configuration(args)
+        # Load configuration
+        run_data.config = config.load_configuration(args)
 
         # Print metadata
-        kit_generator.print_metadata(run_data["config"])
+        kit_generator.print_metadata(run_data)
 
         # Scan samples & print information
-        run_data["audio_files"] = kit_generator.scan_source_files(args.source, run_data)
+        kit_generator.scan_source_files(run_data)
 
         # Evaluate MIDI mapping
-        run_data["midi_mapping"] = kit_generator.evaluate_midi_mapping(run_data)
+        kit_generator.evaluate_midi_mapping(run_data)
 
         # Preview MIDI mapping in dry run mode
         if args.dry_run:
@@ -67,27 +69,23 @@ def main() -> None:
         # Nothing should be actually done in the system before this point
 
         # Prepare target directory
-        kit_generator.prepare_target_directory(args.target)
+        kit_generator.prepare_target_directory(run_data)
 
         # Process audio files
-        run_data["audio_files_processed"] = kit_generator.process_audio_files(args.target, run_data)
+        kit_generator.process_audio_files(run_data)
 
         # Generate XML files
-        kit_generator.generate_xml_files(args.target, run_data)
+        kit_generator.generate_xml_files(run_data)
 
         # Copy additional files
-        kit_generator.copy_additional_files(args.source, args.target, run_data["config"])
+        kit_generator.copy_additional_files(run_data)
 
         end_time = time.perf_counter()
-        generation_process_duration = end_time - start_time
+        run_data.generation_time = end_time - start_time
         # GENERATION PROCESS END
 
         # Print summary
-        kit_generator.print_summary(
-            args.target,
-            run_data,
-            generation_process_duration,
-        )
+        kit_generator.print_summary(run_data)
 
         logger.message("\nKit generation completed successfully!")
     except DrumGizmoError as e:

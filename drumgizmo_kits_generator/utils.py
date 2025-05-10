@@ -124,26 +124,31 @@ def split_comma_separated(
     return result
 
 
-def clean_instrument_name(file_base: str) -> str:
+def get_instrument_name(file_name: str) -> str:
     """
-    Clean up the instrument name by removing velocity prefixes and _converted suffixes.
+    Extract and clean the instrument name from a file name.
+    Removes velocity prefix (e.g. '1-'), extension, and '_converted' suffix if present.
 
     Args:
-        file_base: Base name of the file (without extension)
+        file_name: File name (with or without extension)
 
     Returns:
         str: Cleaned instrument name
     """
-    # Remove any existing velocity prefix (e.g., "1-", "2-")
+    base = os.path.basename(file_name)
+    # Remove extension if present
+    file_base, _ = os.path.splitext(base)
+    # Remove velocity prefix (e.g., '1-')
     if file_base.startswith(tuple(f"{i}-" for i in range(1, 10))):
-        # Remove velocity prefix
-        instrument_name = file_base[2:]
+        parts = file_base.split("-", 1)
+        if len(parts) > 1:
+            instrument_name = parts[1]
+        else:
+            instrument_name = file_base
     else:
         instrument_name = file_base
-
-    # Remove any "_converted" suffixes
+    # Remove any '_converted' suffix
     instrument_name = instrument_name.replace("_converted", "")
-
     return instrument_name
 
 
@@ -196,24 +201,8 @@ def extract_instrument_names(audio_files: List[str]) -> List[str]:
     """
     instrument_names = set()
     for file_path in audio_files:
-        file_name = os.path.basename(file_path)
-        # Extract the base instrument name without velocity prefix
-        if file_name.startswith(tuple(f"{i}-" for i in range(1, 10))):
-            # Remove the velocity prefix (e.g., "1-", "2-")
-            parts = file_name.split("-", 1)
-            if len(parts) > 1:
-                instrument_name = parts[1].split(".")[0]  # Remove extension
-                # Remove any "_converted" suffixes
-                instrument_name = instrument_name.replace("_converted", "")
-                instrument_names.add(instrument_name)
-        else:
-            # No velocity prefix
-            file_base, _ = os.path.splitext(file_name)
-            # Remove any "_converted" suffixes
-            file_base = file_base.replace("_converted", "")
-            instrument_names.add(file_base)
-
-    # Convert to list for consistent ordering
+        instrument_name = get_instrument_name(file_path)
+        instrument_names.add(instrument_name)
     return sorted(list(instrument_names))
 
 

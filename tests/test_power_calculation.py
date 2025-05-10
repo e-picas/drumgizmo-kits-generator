@@ -68,7 +68,9 @@ def test_power_calculation_for_different_velocity_levels(temp_dir, mock_logger):
         os.makedirs(instrument_dir, exist_ok=True)
 
         # Generate instrument XML
-        xml_generator.generate_instrument_xml(temp_dir, instrument_name, metadata, [])
+        xml_generator.generate_instrument_xml(
+            temp_dir, instrument_name, {}, {instrument_name: []}, metadata
+        )
 
         # Check that the file was created
         xml_path = os.path.join(instrument_dir, f"{instrument_name}.xml")
@@ -118,7 +120,9 @@ def test_power_values_decrease_linearly(temp_dir, mock_logger):
     os.makedirs(instrument_dir, exist_ok=True)
 
     # Generate instrument XML
-    xml_generator.generate_instrument_xml(temp_dir, instrument_name, metadata, [])
+    xml_generator.generate_instrument_xml(
+        temp_dir, instrument_name, {}, {instrument_name: []}, metadata
+    )
 
     # Check that the file was created
     xml_path = os.path.join(instrument_dir, f"{instrument_name}.xml")

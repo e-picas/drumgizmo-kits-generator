@@ -237,6 +237,16 @@ class TestIntegration:
         assert os.path.exists(temp_output_dir)
         assert len(os.listdir(temp_output_dir)) > 0
 
+        # Affiche le contenu du répertoire temporaire pour debug
+        print("\n--- Contenu du répertoire temporaire généré ---")
+        for root, _, files in os.walk(temp_output_dir):
+            level = root.replace(temp_output_dir, "").count(os.sep)
+            indent = " " * 2 * level
+            print(f"{indent}{os.path.basename(root)}/")
+            subindent = " " * 2 * (level + 1)
+            for f in files:
+                print(f"{subindent}{f}")
+
         # Compare the output with the reference directory
         # Ignore patterns for files that might differ between runs
         ignore_patterns = [

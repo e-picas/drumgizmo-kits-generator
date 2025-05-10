@@ -16,7 +16,6 @@ import xml.etree.ElementTree as ET
 from typing import Any, Dict, List
 
 from drumgizmo_kits_generator import constants, logger
-from drumgizmo_kits_generator.utils import calculate_midi_note
 
 
 def _add_metadata_elements(metadata_elem: ET.Element, metadata: Dict[str, Any]) -> None:
@@ -82,7 +81,10 @@ def _add_metadata_elements(metadata_elem: ET.Element, metadata: Dict[str, Any]) 
     )
 
 
-def generate_drumkit_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
+# pylint: disable=too-many-locals
+def generate_drumkit_xml(
+    target_dir: str, instrument_names: List[str], metadata: Dict[str, Any]
+) -> None:
     """
     Generate the drumkit.xml file for a DrumGizmo kit.
 
@@ -113,7 +115,7 @@ def generate_drumkit_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
     instruments_elem = ET.SubElement(root, "instruments")
 
     # Add each instrument
-    for instrument_name in metadata.get("instruments", []):
+    for instrument_name in instrument_names:
         instrument_elem = ET.SubElement(instruments_elem, "instrument")
         instrument_elem.set("name", instrument_name)
         instrument_elem.set("file", f"{instrument_name}/{instrument_name}.xml")
@@ -154,7 +156,7 @@ def _add_instrument_samples(
         instrument_channels: Number of channels of the original sample
     """
     # Get velocity levels
-    velocity_levels = metadata.get("velocity_levels")
+    velocity_levels = metadata.get("velocity_levels", constants.DEFAULT_VELOCITY_LEVELS)
 
     # Add a sample for each velocity level
     for i in range(1, velocity_levels + 1):
@@ -178,12 +180,13 @@ def _add_instrument_samples(
             audiofile_elem.set("filechannel", filechannel)
 
 
+# pylint: disable=too-many-locals
 def generate_instrument_xml(
     target_dir: str,
     instrument_name: str,
+    audio_sources: Dict[str, Dict[str, Any]],
+    audio_files: Dict[str, Dict[str, Any]],
     metadata: Dict[str, Any],
-    instrument_files: List[str],
-    audio_files: dict = None,
 ) -> None:
     """
     Generate the instrument.xml file for a DrumGizmo instrument.
@@ -191,16 +194,19 @@ def generate_instrument_xml(
     Args:
         target_dir: Path to the target directory
         instrument_name: Name of the instrument
-        metadata: Metadata for the instrument
-        instrument_files: List of audio file paths for this instrument
-        audio_files: Dict mapping all audio file paths to their info (as in scan_source_files)
+        audio_files: Dict containing at least 'config', 'audio_files', and 'audio_files_processed' keys
     """
+    instrument_files = audio_files.get(instrument_name)
+
     instrument_dir = os.path.join(target_dir, instrument_name)
     xml_path = os.path.join(instrument_dir, f"{instrument_name}.xml")
-    if audio_files is not None:
-        instrument_channels = audio_files.get(instrument_files[0])["channels"]
+    instrument_channels = 1
+
+    if audio_sources.get(instrument_name) is None:
+        logger.debug(f"No audio_files entry found for {instrument_name}, fallback to channels=1")
     else:
-        instrument_channels = 1
+        instrument_channels = audio_sources.get(instrument_name).get("channels", 1)
+        logger.debug(f"Detected {instrument_channels} channels for {instrument_name}")
 
     logger.debug(
         f"Generating instrument XML for '{instrument_name}' at '{xml_path}'"
@@ -239,9 +245,7 @@ def generate_instrument_xml(
         f.write(pretty_xml)
 
 
-def _add_midimap_elements(
-    root: ET.Element, instruments: List[str], midi_params: Dict[str, int]
-) -> Dict[str, int]:
+def _add_midimap_elements(root: ET.Element, midi_mapping: Dict[str, int]) -> Dict[str, int]:
     """
     Add mapping elements to the midimap XML.
 
@@ -252,18 +256,8 @@ def _add_midimap_elements(
     Returns:
         A dictionary with the MIDI mapping
     """
-    # Calculate how many instruments we have on each side of the median
-    instruments_count = len(instruments)
-    left_count = instruments_count // 2
-
     # Generate notes for each instrument
-    midi_mapping = {}
-    for i, instrument_name in enumerate(instruments):
-        # Calculate note based on position
-        note = calculate_midi_note(
-            i, left_count, midi_params["median"], midi_params["min"], midi_params["max"]
-        )
-
+    for instrument_name, note in midi_mapping.items():
         # Create the map element
         map_elem = ET.SubElement(root, "map")
         map_elem.set("note", str(note))
@@ -277,7 +271,7 @@ def _add_midimap_elements(
     return midi_mapping
 
 
-def generate_midimap_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
+def generate_midimap_xml(target_dir: str, midi_mapping: Dict[str, int]) -> None:
     """
     Generate the midimap.xml file for a DrumGizmo kit.
 
@@ -291,22 +285,12 @@ def generate_midimap_xml(target_dir: str, metadata: Dict[str, Any]) -> None:
     # Create the root element
     root = ET.Element("midimap")
 
-    # Get MIDI note range
-    midi_params = {
-        "min": metadata.get("midi_note_min"),
-        "max": metadata.get("midi_note_max"),
-        "median": metadata.get("midi_note_median"),
-    }
-
-    # Get instruments
-    instruments = metadata.get("instruments")
-
-    if not instruments:
+    if not midi_mapping:
         logger.warning("No instruments found for MIDI mapping")
         return
 
     # Add mapping elements
-    midi_mapping = _add_midimap_elements(root, instruments, midi_params)
+    _add_midimap_elements(root, midi_mapping)
 
     # Pretty print the XML
     xml_string = ET.tostring(root, encoding="utf-8")
