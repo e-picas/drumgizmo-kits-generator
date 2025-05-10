@@ -1,6 +1,148 @@
 # CHANGELOG
 
 
+## v1.7.0 (2025-05-10)
+
+### Build System
+
+- Do not include 'docs' commits in changelog
+  ([`5e9f399`](https://github.com/e-picas/drumgizmo-kits-generator/commit/5e9f399f46a0f877cdcddc8c1e4b8d0723e20612))
+
+### Chores
+
+- Review of contribution doc
+  ([`586ee2b`](https://github.com/e-picas/drumgizmo-kits-generator/commit/586ee2bf872579ce1adce3c02dcb85dc42fb744d))
+
+### Features
+
+- Add a new option to get app's version
+  ([#27](https://github.com/e-picas/drumgizmo-kits-generator/pull/27),
+  [`b89ddfd`](https://github.com/e-picas/drumgizmo-kits-generator/commit/b89ddfd3b80b0521f802477f1db8b0dd1b8c8224))
+
+- Add the version in the metadata block
+  ([#26](https://github.com/e-picas/drumgizmo-kits-generator/pull/26),
+  [`0fd756e`](https://github.com/e-picas/drumgizmo-kits-generator/commit/0fd756ec1d7bfa70eed30bf564cdde56687cb325))
+
+- Large code refactoring ([#29](https://github.com/e-picas/drumgizmo-kits-generator/pull/29),
+  [`167f595`](https://github.com/e-picas/drumgizmo-kits-generator/commit/167f59549e1499763a6cb2f3c6c3efa1f9edce76))
+
+* feat: large refactorization
+
+* ignore `TODO` on lint * move function `_strip_quotes` from `config.py` to `utils.py` * move
+  function `_calculate_midi_note` from `xml_generator.py` to `utils.py` * move function
+  `convert_sample_rate` from `utils.py` to `audio.py` * move function `get_audio_info` from
+  `utils.py` to `audio.py` * new `utils.handle_subprocess_error` function to handle SoX errors (and
+  other process errors) * move function `calculate_midi_note` from `xml_generator.py` to `utils.py`
+  * new ContextManager to handle temporary directories * move function `validate_directories` from
+  `main.py` to `validators.py`
+
+* feat: large refacto 2
+
+* all arguments parsing & printing methods moved to the new `cli.py` module * all configuration
+  related methods are all in the `config.py` module
+
+* feat: refactorization - step 3
+
+* cleanup unsued functions * move `load_configuration` & `prepare_metadata` from `main` to `config`
+  * let `config` call the transformers & validators to finally get full & validated config data
+
+* feat: refactorization - step 4
+
+* new `-r / --raw-output` option to strip ANSI formatting in output * add all the necessary tests to
+  validate all options following `.cascade-config` specs * move the transformation of the options
+  values in `transformers.py` module * do never use a default value for options outside of the
+  `config.py` module
+
+* fix: SonarQube issue
+
+* fix: fix unused samplerate
+
+* fix samplerate conversion of all samples * regenerate the examples/target/ samples * add a new
+  script to process a generation and compare it to the example * update the Makefile with targets to
+  load the script * update pre-commit config to exclude all txt files
+
+* feat: review examples for clarity
+
+* docs: add SPDX metadata in all scripts
+
+* docs: review example config
+
+* docs: review configs
+
+* feat: new 'variations_method' param & implementation
+
+* new parameter in the CLI * move the original volume calculation outside of the main audio files
+  process * original method is now called 'linear' * implementation of a 'logarithmic' alternative *
+  regeneration of the whole examples to use the 'logarithmic' method
+
+* feat: review the 'utils.check_dependency' function
+
+harmonize usage of the function to get a command path and test if it exists
+
+* feat: make some cleanup
+
+* move the `scan_source_files` function from 'cli' to 'main' module * remove unnecessary validations
+  * review some outputs * regenerate the examples target
+
+* feat: refactorization of validators & transformers
+
+* test all rules of the specs for each option * mutualize some functions
+  (i.e.`split_comma_separated`) * update the transformers & validators for robust process
+
+* test: add tests to 'config' module
+
+* fix: fix SonarQube issues
+
+* feat: review of the app output
+
+* feat: add a timer to output processing time
+
+* fix: do not convert samples already in requested samplerate
+
+* feat: new 'kit_generator' module
+
+* create a new 'kit_generator' module * move all 'main' module functions (but not 'main') * move the
+  related tests to a new tests file * move the 'prepare_target_directory' function from 'utils' to
+  the new module
+
+* feat: scan all audio samples when searching them (once)
+
+* fix: wrong calculation of 'filechannels' iteration in instruments XML
+
+* feat: centralize print & process steps in 'kit_generator' module
+
+* feat: move the 'prepare_directories' fct to 'kit_generator'
+
+* feat: review errors output
+
+* feat: review the 'scan_source_file' fct
+
+* feat: review the generate_and_compare script to include verbose mode
+
+* fix: review of output & simplification of sources scanning
+
+* feat: handle the case of too many source audio files
+
+* feat: review of the midi mapping calculation
+
+* uniformization of midi functions * load all process data in a new 'run_data' dictionnary *
+  specific algo for midi note evaluation: * if the samples number is less than the midi range:
+  classic * if the samples number is more, forget the 'median' and apply from start to end of range
+  * in any case where the 'median' can not be user, apply above rule
+
+* feat: introduce new 'RunData' state object
+
+* define a dataclass 'RunData' * use it for all process data * update all functions of
+  'kit_generator' to handle 'run_data' param * review of the tests to follow modifications
+
+- New custom exceptions ([#28](https://github.com/e-picas/drumgizmo-kits-generator/pull/28),
+  [`402ebb8`](https://github.com/e-picas/drumgizmo-kits-generator/commit/402ebb8dd566219486f6047ae5a0c5245170ace6))
+
+* feat: new custom exceptions ** custom exceptions classes ** all modules should raise one of them
+  in case of error ** only the main module should actually handle the errors by printing the message
+  and exiting * fix: fix SonarQube issues on PR * fix: add new tests
+
+
 ## v1.6.0 (2025-05-04)
 
 ### Features
