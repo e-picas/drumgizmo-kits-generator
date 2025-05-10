@@ -6,7 +6,7 @@
 #		source .venv/bin/activate;
 #
 SHELL := /bin/bash
-.PHONY: help install lint test coverage generate check-env install-ci test-ci coverage-ci lint-ci default
+.PHONY: help install-ci test-ci coverage-ci lint-ci check-env install format lint test coverage generate generate-dry-run generate-test-kit generate-test-kit-dry-run clean version default
 default: help
 
 install-ci:
@@ -50,10 +50,41 @@ test:
 coverage:
 	python3 -m pytest --cov=drumgizmo_kits_generator --cov-report=term-missing
 
-## Generate a test kit to `tests/target_test/` (excluded from VCS) from `examples/sources/` and compare it with `examples/target/`
+## Generate a test kit from `examples/sources/` to `tests/target_test/` (excluded from VCS)
 generate:
-	python3 create_drumgizmo_kit.py -s examples/sources/ -t tests/target_test/
-	diff -r tests/target_test/ examples/target/ || true
+	python3 create_drumgizmo_kit.py \
+		-s examples/sources/ \
+		-t tests/target_test/ \
+		-c examples/drumgizmo-kit-example.ini
+
+## Generate a test kit in DRY-RUN mode from `examples/sources/` to `tests/target_test/` (excluded from VCS)
+generate-dry-run:
+	python3 create_drumgizmo_kit.py \
+		-s examples/sources/ \
+		-t tests/target_test/ \
+		-c examples/drumgizmo-kit-example.ini --dry-run
+
+## Run the test script to generate a test kit and compare it with `examples/target/`
+generate-and-compare:
+	./scripts/generate_test_kit_and_compare.py
+
+## Re-generate the example kit from `examples/sources/` to `examples/target/` catching output in log files `examples/target-generation-output*.log`
+generate-example:
+	python3 create_drumgizmo_kit.py \
+		-s examples/sources/ \
+		-t examples/target/ \
+		-c examples/drumgizmo-kit-example.ini \
+		-r > examples/target-generation-output.log 2>&1;
+	python3 create_drumgizmo_kit.py \
+		-s examples/sources/ \
+		-t examples/target/ \
+		-c examples/drumgizmo-kit-example.ini \
+		-r -v > examples/target-generation-output-verbose.log 2>&1;
+	python3 create_drumgizmo_kit.py \
+		-s examples/sources/ \
+		-t examples/target/ \
+		-c examples/drumgizmo-kit-example.ini \
+		-x -r > examples/target-generation-output-dry-run.log 2>&1;
 
 ## Cleanup Python's temporary files, cache and build
 clean:
@@ -64,6 +95,7 @@ clean:
 		-o -name "coverage.xml" \
 		-o -name "*.pyc" \
 		-o -name "build" \
+		-o -name "*.egg-info" \
 	\) -exec rm -rf {} \;
 	rm -rf tests/target_test
 
@@ -71,8 +103,8 @@ clean:
 version:
 	@python3 create_drumgizmo_kit.py --app-version
 
-## Run all checks: `format`, `lint`, `test`, `coverage` and `generate`
-all: format lint test coverage generate
+## Run all checks: `format`, `lint`, `test`, `coverage` and `generate-and-compare`
+all: format lint test coverage generate-and-compare
 
 # This generates a 'help' string with the list of available tasks
 # with their description if it is prefixed by two dashes:
@@ -92,7 +124,7 @@ help:
 			helpMessage = substr(lastLine, RSTART + 3, RLENGTH); \
 			gsub("\\\\", "", helpCommand); \
 			gsub(":+$$", "", helpCommand); \
-			printf "  \x1b[32;01m%-15s\x1b[0m %s\n", helpCommand, helpMessage; \
+			printf "  \x1b[32;01m%-20s\x1b[0m %s\n", helpCommand, helpMessage; \
 		} \
 	} \
 	{ lastLine = $$0 }' $(MAKEFILE_LIST) | sort -u

@@ -8,6 +8,11 @@
 # pylint: disable=broad-exception-caught
 # pylint: disable=too-many-return-statements
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Integration tests for velocity levels in the DrumGizmo kit generator.
 This test suite verifies that the application correctly handles different velocity level configurations.
 """
@@ -195,7 +200,7 @@ class TestIntegrationVelocityLevels:
         # Get the absolute paths
         project_root = Path(__file__).parent.parent
         source_dir = os.path.join(project_root, "examples", "sources")
-        config_file = os.path.join(source_dir, "drumgizmo-kit.ini")
+        config_file = os.path.join(project_root, "examples", "drumgizmo-kit-example.ini")
 
         # Run the generator with the specified number of velocity levels
         with mock.patch(

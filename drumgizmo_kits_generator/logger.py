@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Logger module for DrumGizmo kit generator.
 Contains functions to manage the logging: `info`, `debug` (to output only in verbose mode), `warning`.
 """
@@ -18,8 +23,9 @@ class Logger:
     """Logger class for DrumGizmo kit generator."""
 
     def __init__(self):
-        """Initialize the logger with verbose mode disabled."""
+        """Initialize the logger with verbose mode disabled and raw output disabled."""
         self.verbose_mode = False
+        self.raw_output = False
 
     def set_verbose(self, verbose: bool) -> None:
         """
@@ -30,6 +36,15 @@ class Logger:
         """
         self.verbose_mode = verbose
 
+    def set_raw_output(self, raw_output: bool) -> None:
+        """
+        Set the raw output mode for logging.
+
+        Args:
+            raw_output: If True, disables ANSI color codes in output
+        """
+        self.raw_output = raw_output
+
     def info(self, msg: str, end: str = "\n") -> None:
         """
         Print an information message to stdout.
@@ -38,6 +53,9 @@ class Logger:
             msg: The message to print
             end: The string appended after the message (default: newline)
         """
+        if self.raw_output and any(code in msg for code in [RED, GREEN, RESET]):
+            # Remove ANSI color codes if raw output is enabled
+            msg = msg.replace(RED, "").replace(GREEN, "").replace(RESET, "")
         print(msg, end=end, file=sys.stdout)
         sys.stdout.flush()
 
@@ -61,19 +79,33 @@ class Logger:
             msg: The message to print
             end: The string appended after the message (default: newline)
         """
-        print(f"{RED}WARNING: {msg}{RESET}", end=end, file=sys.stderr)
+        if self.raw_output:
+            print(f"WARNING: {msg}", end=end, file=sys.stderr)
+        else:
+            print(f"{RED}WARNING: {msg}{RESET}", end=end, file=sys.stderr)
         sys.stderr.flush()
 
-    def error(self, msg: str) -> None:
+    def error(self, msg: str, exc: Exception = None) -> None:
         """
-        Print an error message to stderr in red color.
+        Print an error message to stderr in red color. Optionally print exception traceback.
 
         Args:
             msg: The error message to print
+            exc: The exception object to print (optional)
         """
-        print(f"{RED}ERROR: {msg}{RESET}", file=sys.stderr)
+        if exc is not None:
+            error_type = type(exc).__name__ + ": "
+        else:
+            error_type = ""
+
+        if self.raw_output:
+            print(f"ERROR - {error_type}{msg}", file=sys.stderr)
+        else:
+            print(f"{RED}ERROR - {error_type}{msg}{RESET}", file=sys.stderr)
+
         if self.verbose_mode:
             traceback.print_exc(file=sys.stderr)
+
         sys.stderr.flush()
 
     def section(self, title: str) -> None:
@@ -93,7 +125,10 @@ class Logger:
             msg: The message to print
             end: The string appended after the message (default: newline)
         """
-        print(f"{GREEN}{msg}{RESET}", end=end, file=sys.stdout)
+        if self.raw_output:
+            print(msg, end=end, file=sys.stdout)
+        else:
+            print(f"{GREEN}{msg}{RESET}", end=end, file=sys.stdout)
         sys.stdout.flush()
 
     def is_verbose(self) -> bool:
@@ -105,12 +140,40 @@ class Logger:
         """
         return self.verbose_mode
 
+    def is_raw_output(self) -> bool:
+        """
+        Check if raw output mode is enabled.
+
+        Returns:
+            bool: True if raw output mode is enabled, False otherwise
+        """
+        return self.raw_output
+
+    def print_action_start(self, msg: str) -> None:
+        """
+        Print the start of an action with ellipsis.
+
+        Args:
+            msg: The message to display (e.g., "Génération du XML")
+        """
+        print(f"{msg}...", flush=True)
+
+    def print_action_end(self, msg: str = "OK") -> None:
+        """
+        Print the end of an action (default: OK).
+
+        Args:
+            msg: The message to display (default: "OK")
+        """
+        print(msg, flush=True)
+
 
 # Create a singleton instance of the Logger
 _logger = Logger()
 
 # Export the logger methods as module-level functions
 set_verbose = _logger.set_verbose
+set_raw_output = _logger.set_raw_output
 info = _logger.info
 debug = _logger.debug
 warning = _logger.warning
@@ -118,3 +181,6 @@ error = _logger.error
 section = _logger.section
 message = _logger.message
 is_verbose = _logger.is_verbose
+is_raw_output = _logger.is_raw_output
+print_action_start = _logger.print_action_start
+print_action_end = _logger.print_action_end

@@ -2,19 +2,28 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=unused-argument
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Validation utilities for DrumGizmo kit generation.
 Contains functions to validate configuration entries.
-All methods should be named `validate_<configuration_entry_name>`.
+
+All validator functions should:
+*   be named `validate_<configuration_entry_name>`
+*   follow the theorical interface `validate(value: Any, config: Dict[str, Any]) -> None`
+*   raise `ValidationError` on failure
 """
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from drumgizmo_kits_generator import constants, logger
+from drumgizmo_kits_generator import constants
 from drumgizmo_kits_generator.exceptions import ValidationError
 
 
-def validate_name(value: Optional[str], config: Dict[str, Any]) -> str:  # NOSONAR python:S1172
+def validate_name(value: Optional[str], config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the kit name.
 
@@ -28,14 +37,11 @@ def validate_name(value: Optional[str], config: Dict[str, Any]) -> str:  # NOSON
     Raises:
         ValidationError: If the name is empty
     """
-    if not value:
+    if value is None or (isinstance(value, str) and not value.strip()):
         raise ValidationError("Kit name cannot be empty")
-    return value
 
 
-def validate_samplerate(
-    value: Optional[str], config: Dict[str, Any]
-) -> str:  # NOSONAR python:S1172
+def validate_samplerate(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the sample rate.
 
@@ -43,57 +49,75 @@ def validate_samplerate(
         value: The sample rate to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated sample rate
-
     Raises:
         ValidationError: If the sample rate is not a positive number
+        TypeError: If the value cannot be converted to an integer
     """
-    if not value:
-        logger.warning(f"Sample rate is empty, using default: {constants.DEFAULT_SAMPLERATE}")
-        return constants.DEFAULT_SAMPLERATE
+    if value is None or (isinstance(value, str) and not value.strip()):
+        raise ValidationError("Sample rate cannot be empty")
 
     try:
         samplerate = int(value)
-        if samplerate <= 0:
-            raise ValidationError(f"Sample rate must be greater than 0, got: {samplerate}")
-    except ValueError as e:
-        raise ValidationError(f"Sample rate must be a number, got: {value}") from e
+    except (ValueError, TypeError) as exc:
+        raise ValidationError(f"Sample rate must be a number, got: {value}") from exc
 
-    return value
+    if samplerate <= 0:
+        raise ValidationError(f"Sample rate must be greater than 0, got: {samplerate}")
 
 
-def validate_velocity_levels(
-    value: Optional[int], config: Dict[str, Any]
-) -> int:  # NOSONAR python:S1172
+def validate_velocity_levels(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
-    Validate the velocity levels.
-
+    Validate the number of velocity levels.
     Args:
-        value: The velocity levels to validate
+        value: The number of velocity levels to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated velocity levels
+    Raises:
+        ValidationError: If the number of velocity levels is not a positive integer
+        TypeError: If the value cannot be converted to an integer
+    """
+    if value is None or (isinstance(value, str) and not value.strip()):
+        raise ValidationError("Number of velocity levels cannot be empty")
+
+    try:
+        velocity_levels = int(value)
+    except (ValueError, TypeError) as exc:
+        raise ValidationError(f"Number of velocity levels must be a number, got: {value}") from exc
+
+    if velocity_levels <= 0:
+        raise ValidationError(
+            f"Number of velocity levels must be greater than 0, got: {velocity_levels}"
+        )
+
+
+def _validate_midi_note(
+    value: Optional[int], config: Dict[str, Any]
+) -> None:  # NOSONAR python:S1172
+    """
+    Validate a MIDI note.
+
+    Args:
+        value: The MIDI note to validate
+        config: The complete configuration dictionary
 
     Raises:
-        ValidationError: If the velocity levels is not a positive number
+        ValidationError: If the MIDI note is not in the valid range
     """
-    if not value:
-        logger.warning(
-            f"Velocity levels is empty, using default: {constants.DEFAULT_VELOCITY_LEVELS}"
-        )
-        return constants.DEFAULT_VELOCITY_LEVELS
+    if value is None or (isinstance(value, str) and not value.strip()):
+        raise ValidationError("A MIDI note cannot be empty")
 
-    if value <= 0:
-        raise ValidationError(f"Velocity levels must be greater than 0, got: {value}")
+    try:
+        midi_note = int(value)
+    except (ValueError, TypeError) as exc:
+        raise ValidationError(f"A MIDI note must be an integer, got: {value}") from exc
 
-    return value
+    if midi_note < 0 or midi_note > 127:
+        raise ValidationError(f"A MIDI note must be between 0 and 127, got: {value}")
 
 
 def validate_midi_note_min(
     value: Optional[int], config: Dict[str, Any]
-) -> int:  # NOSONAR python:S1172
+) -> None:  # NOSONAR python:S1172
     """
     Validate the minimum MIDI note.
 
@@ -101,41 +125,13 @@ def validate_midi_note_min(
         value: The minimum MIDI note to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated minimum MIDI note
-
     Raises:
         ValidationError: If the minimum MIDI note is not in the valid range
     """
-    if not value and value != 0:  # Handle case where value is 0
-        logger.warning(
-            f"Minimum MIDI note is empty, using default: {constants.DEFAULT_MIDI_NOTE_MIN}"
-        )
-        return constants.DEFAULT_MIDI_NOTE_MIN
-
-    if value < 0 or value > 127:
-        raise ValidationError(f"Minimum MIDI note must be between 0 and 127, got: {value}")
-
-    # Check relationship with midi_note_max if it exists in config
-    if "midi_note_max" in config and config["midi_note_max"] is not None:
-        if value >= config["midi_note_max"]:
-            raise ValidationError(
-                f"Minimum MIDI note ({value}) must be less than maximum MIDI note ({config['midi_note_max']})"
-            )
-
-    # Check relationship with midi_note_median if it exists in config
-    if "midi_note_median" in config and config["midi_note_median"] is not None:
-        if value > config["midi_note_median"]:
-            raise ValidationError(
-                f"Minimum MIDI note ({value}) must be less than or equal to median MIDI note ({config['midi_note_median']})"
-            )
-
-    return value
+    _validate_midi_note(value, config)
 
 
-def validate_midi_note_max(
-    value: Optional[int], config: Dict[str, Any]
-) -> int:  # NOSONAR python:S1172
+def validate_midi_note_max(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the maximum MIDI note.
 
@@ -143,41 +139,14 @@ def validate_midi_note_max(
         value: The maximum MIDI note to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated maximum MIDI note
-
     Raises:
         ValidationError: If the maximum MIDI note is not in the valid range
+        TypeError: If the value cannot be converted to an integer
     """
-    if not value:
-        logger.warning(
-            f"Maximum MIDI note is empty, using default: {constants.DEFAULT_MIDI_NOTE_MAX}"
-        )
-        return constants.DEFAULT_MIDI_NOTE_MAX
-
-    if value < 0 or value > 127:
-        raise ValidationError(f"Maximum MIDI note must be between 0 and 127, got: {value}")
-
-    # Check relationship with midi_note_min if it exists in config
-    if "midi_note_min" in config and config["midi_note_min"] is not None:
-        if value <= config["midi_note_min"]:
-            raise ValidationError(
-                f"Maximum MIDI note ({value}) must be greater than minimum MIDI note ({config['midi_note_min']})"
-            )
-
-    # Check relationship with midi_note_median if it exists in config
-    if "midi_note_median" in config and config["midi_note_median"] is not None:
-        if value < config["midi_note_median"]:
-            raise ValidationError(
-                f"Maximum MIDI note ({value}) must be greater than or equal to median MIDI note ({config['midi_note_median']})"
-            )
-
-    return value
+    _validate_midi_note(value, config)
 
 
-def validate_midi_note_median(
-    value: Optional[int], config: Dict[str, Any]
-) -> int:  # NOSONAR python:S1172
+def validate_midi_note_median(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the median MIDI note.
 
@@ -185,41 +154,14 @@ def validate_midi_note_median(
         value: The median MIDI note to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated median MIDI note
-
     Raises:
         ValidationError: If the median MIDI note is not in the valid range
+        TypeError: If the value cannot be converted to an integer
     """
-    if not value:
-        logger.warning(
-            f"Median MIDI note is empty, using default: {constants.DEFAULT_MIDI_NOTE_MEDIAN}"
-        )
-        return constants.DEFAULT_MIDI_NOTE_MEDIAN
-
-    if value < 0 or value > 127:
-        raise ValidationError(f"Median MIDI note must be between 0 and 127, got: {value}")
-
-    # Check relationship with midi_note_min if it exists in config
-    if "midi_note_min" in config and config["midi_note_min"] is not None:
-        if value < config["midi_note_min"]:
-            raise ValidationError(
-                f"Median MIDI note ({value}) must be greater than or equal to minimum MIDI note ({config['midi_note_min']})"
-            )
-
-    # Check relationship with midi_note_max if it exists in config
-    if "midi_note_max" in config and config["midi_note_max"] is not None:
-        if value > config["midi_note_max"]:
-            raise ValidationError(
-                f"Median MIDI note ({value}) must be less than or equal to maximum MIDI note ({config['midi_note_max']})"
-            )
-
-    return value
+    _validate_midi_note(value, config)
 
 
-def validate_extensions(
-    value: Optional[List[str]], config: Dict[str, Any]
-) -> List[str]:  # NOSONAR python:S1172
+def validate_extensions(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the audio file extensions.
 
@@ -227,22 +169,21 @@ def validate_extensions(
         value: The list of extensions to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated list of extensions
-
     Raises:
-        ValidationError: If the extensions list is empty
+        ValidationError: If the extensions list is empty or contains invalid values
     """
-    if not value:
-        raise ValidationError("Extensions list cannot be empty")
+    if not value or (isinstance(value, (list, tuple)) and not value):
+        raise ValidationError("At least one file extension must be specified")
 
-    # Ensure all extensions are trimmed
-    return [ext.strip() for ext in value]
+    if not isinstance(value, (list, tuple)):
+        raise ValidationError("Extensions must be a list of strings")
+
+    for ext in value:
+        if not ext or not isinstance(ext, str) or not ext.strip():
+            raise ValidationError("Extension cannot be empty")
 
 
-def validate_channels(
-    value: Optional[List[str]], config: Dict[str, Any]
-) -> List[str]:  # NOSONAR python:S1172
+def validate_channels(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the audio channels.
 
@@ -250,116 +191,102 @@ def validate_channels(
         value: The list of channels to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated list of channels
-
     Raises:
-        ValidationError: If the channels list is empty
+        ValidationError: If the channels list is empty or contains invalid values
     """
-    if not value:
-        raise ValidationError("Channels list cannot be empty")
+    if not value or (isinstance(value, (list, tuple)) and not value):
+        raise ValidationError("At least one channel must be specified")
 
-    # Ensure all channels are trimmed
-    return [channel.strip() for channel in value]
+    if not isinstance(value, (list, tuple)):
+        raise ValidationError("Channels must be a list of strings")
+
+    for channel in value:
+        if not channel or not isinstance(channel, str) or not channel.strip():
+            raise ValidationError("Channel name cannot be empty")
 
 
-def validate_main_channels(
-    value: Optional[List[str]], config: Dict[str, Any]
-) -> List[str]:  # NOSONAR python:S1172
+def validate_main_channels(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the main audio channels.
-
     Args:
         value: The list of main channels to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated list of main channels
-
     Raises:
-        ValidationError: If any main channel is not in the channels list
+        ValidationError: If any main channel is not in the channels list or is invalid
     """
     if not value:
-        return []
+        return
 
-    # Ensure all main channels are trimmed
-    trimmed_value = [channel.strip() for channel in value]
+    if not isinstance(value, (list, tuple)):
+        raise ValidationError("Main channels must be a list of strings")
+
+    # Check that all main channels are valid strings
+    for channel in value:
+        if not channel or not isinstance(channel, str) or not channel.strip():
+            raise ValidationError("Main channel name cannot be empty")
 
     # Check that all main channels exist in the channels list
     if "channels" in config and config["channels"]:
-        channels = [channel.strip() for channel in config["channels"]]
-        for main_channel in trimmed_value:
+        channels = [ch.strip() for ch in config["channels"]]
+        for main_channel in value:
             if main_channel not in channels:
-                raise ValidationError(
-                    f"Main channel '{main_channel}' is not in the channels list: {', '.join(channels)}"
-                )
-
-    return trimmed_value
+                raise ValidationError(f"Main channel {main_channel} not found in channels list")
 
 
-def validate_logo(
-    value: Optional[str], config: Dict[str, Any]
-) -> Optional[str]:  # NOSONAR python:S1172
+def validate_logo(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the logo file.
-
     Args:
         value: The logo file path to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated logo file path
-
     Raises:
-        ValidationError: If the logo file does not exist
+        ValidationError: If the logo file is invalid or does not exist
     """
     if not value:
-        return None
+        return
+
+    if not isinstance(value, str) or not value.strip():
+        raise ValidationError("Logo path must be a non-empty string")
 
     # Check if the logo file exists in the source directory
     if "source" in config and config["source"]:
         logo_path = os.path.join(config["source"], value)
         if not os.path.isfile(logo_path):
-            raise ValidationError(f"Logo file does not exist: {logo_path}")
-
-    return value
+            raise ValidationError(f"Logo file does not exist in the source directory: {logo_path}")
 
 
-def validate_extra_files(
-    value: Optional[List[str]], config: Dict[str, Any]
-) -> List[str]:  # NOSONAR python:S1172
+def validate_extra_files(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the extra files.
-
     Args:
         value: The list of extra files to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated list of extra files
-
     Raises:
-        ValidationError: If any extra file does not exist
+        ValidationError: If any extra file is invalid or does not exist
     """
     if not value:
-        return []
+        return
 
-    # Ensure all extra files are trimmed
-    trimmed_value = [file_path.strip() for file_path in value]
+    if not isinstance(value, (list, tuple)):
+        raise ValidationError("Extra files must be a list of strings")
 
     # Check if the extra files exist in the source directory
     if "source" in config and config["source"]:
-        for file_path in trimmed_value:
+        for file_path in value:
+            if not file_path or not isinstance(file_path, str) or not file_path.strip():
+                raise ValidationError("Extra file path cannot be empty")
+
             full_path = os.path.join(config["source"], file_path)
             if not os.path.isfile(full_path):
-                raise ValidationError(f"Extra file does not exist: {full_path}")
+                raise ValidationError(
+                    f"Extra file does not exist in the source directory: {full_path}"
+                )
 
-    return trimmed_value
 
-
-def validate_website(
-    value: Optional[str], config: Dict[str, Any]
-) -> Optional[str]:  # NOSONAR python:S1172
+def validate_website(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the website URL.
 
@@ -367,16 +294,14 @@ def validate_website(
         value: The website URL to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated website URL or None if empty
+    Raises:
+        ValidationError: If the website URL is not a valid string
     """
-    # Return None for empty strings
-    if value == "":
-        return None
-    return value
+    if value is not None and not isinstance(value, str):
+        raise ValidationError("Website must be a string or None")
 
 
-def validate_version(value: Optional[str], config: Dict[str, Any]) -> str:  # NOSONAR python:S1172
+def validate_version(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the kit version.
 
@@ -384,91 +309,119 @@ def validate_version(value: Optional[str], config: Dict[str, Any]) -> str:  # NO
         value: The kit version to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated kit version
-
-    Note:
-        This function does not raise any exceptions as it accepts any string value
-        and defaults to DEFAULT_VERSION if the value is empty.
+    Raises:
+        ValidationError: If the version is not a valid string
     """
-    # No specific validation required for version
-    return value or constants.DEFAULT_VERSION
+    if value is not None and not isinstance(value, str):
+        raise ValidationError("Version must be a string or None")
 
 
-def validate_description(
-    value: Optional[str], config: Dict[str, Any]
-) -> Optional[str]:  # NOSONAR python:S1172
+def validate_description(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the kit description.
-
     Args:
         value: The kit description to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated kit description
-
-    Note:
-        This function does not raise any exceptions as it accepts any string value.
+    Raises:
+        ValidationError: If the description is not a valid string
     """
-    # No specific validation required for description
-    return value
+    if value is not None and not isinstance(value, str):
+        raise ValidationError("Description must be a string or None")
 
 
-def validate_notes(
-    value: Optional[str], config: Dict[str, Any]
-) -> Optional[str]:  # NOSONAR python:S1172
+def validate_notes(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the kit notes.
-
     Args:
         value: The kit notes to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated kit notes
-
-    Note:
-        This function does not raise any exceptions as it accepts any string value.
+    Raises:
+        ValidationError: If the notes are not a valid string
     """
-    # No specific validation required for notes
-    return value
+    if value is not None and not isinstance(value, str):
+        raise ValidationError("Notes must be a string or None")
 
 
-def validate_author(
-    value: Optional[str], config: Dict[str, Any]
-) -> Optional[str]:  # NOSONAR python:S1172
+def validate_author(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the kit author.
-
     Args:
         value: The kit author to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated kit author
-
-    Note:
-        This function does not raise any exceptions as it accepts any string value.
+    Raises:
+        ValidationError: If the author is not a valid string
     """
-    # No specific validation required for author
-    return value
+    if value is not None and not isinstance(value, str):
+        raise ValidationError("Author must be a string or None")
 
 
-def validate_license(value: Optional[str], config: Dict[str, Any]) -> str:  # NOSONAR python:S1172
+def validate_license(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
     """
     Validate the kit license.
-
     Args:
         value: The kit license to validate
         config: The complete configuration dictionary
 
-    Returns:
-        The validated kit license
-
-    Note:
-        This function does not raise any exceptions as it accepts any string value
-        and defaults to DEFAULT_LICENSE if the value is empty.
+    Raises:
+        ValidationError: If the license is not a valid string
     """
-    # No specific validation required for license
-    return value or constants.DEFAULT_LICENSE
+    if value is not None and not isinstance(value, str):
+        raise ValidationError("License must be a string or None")
+
+
+def validate_variations_method(value: Any, config: Dict[str, Any]) -> None:  # NOSONAR python:S1172
+    """
+    Validate the variations method.
+
+    Args:
+        value: The variations method to validate (must be 'linear' or 'logarithmic')
+        config: The complete configuration dictionary
+
+    Raises:
+        ValidationError: If the value is not 'linear' or 'logarithmic'
+    """
+    if value is None or (isinstance(value, str) and not value.strip()):
+        raise ValidationError("Variations method cannot be empty")
+
+    if not isinstance(value, str):
+        raise ValidationError("Variations method must be a string")
+
+    if value.lower() not in constants.ALLOWED_VARIATIONS_METHOD:
+        raise ValidationError(
+            f"Variations method must be one of {constants.ALLOWED_VARIATIONS_METHOD}, got: {value}"
+        )
+
+
+def validate_whole_config(config_data: Dict[str, Any]) -> None:
+    """
+    Validate the complete configuration for consistency.
+
+    Args:
+        config_data: The complete configuration dictionary
+
+    Raises:
+        ValidationError: If the configuration is not consistent
+    """
+    # Check relationship between midi_note_min and midi_note_max
+    if config_data["midi_note_min"] >= config_data["midi_note_max"]:
+        raise ValidationError(
+            f"Minimum MIDI note ({config_data['midi_note_min']}) "
+            f"must be less than maximum MIDI note ({config_data['midi_note_max']})"
+        )
+
+    # Check relationship between midi_note_min and midi_note_median
+    if config_data["midi_note_min"] > config_data["midi_note_median"]:
+        raise ValidationError(
+            f"Minimum MIDI note ({config_data['midi_note_min']}) "
+            f"must be less than or equal to median MIDI note ({config_data['midi_note_median']})"
+        )
+
+    # Check relationship between midi_note_max and midi_note_median
+    if config_data["midi_note_max"] < config_data["midi_note_median"]:
+        raise ValidationError(
+            f"Maximum MIDI note ({config_data['midi_note_max']}) "
+            f"must be greater than or equal to median MIDI note ({config_data['midi_note_median']})"
+        )

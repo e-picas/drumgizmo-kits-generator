@@ -1,35 +1,101 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Configuration module for DrumGizmo kit generator.
 Contains functions for reading and processing configuration files and command line options.
 """
 
 import configparser
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from drumgizmo_kits_generator import constants, logger
-from drumgizmo_kits_generator.exceptions import ConfigurationError
+from drumgizmo_kits_generator import constants, logger, transformers, validators
+from drumgizmo_kits_generator.exceptions import ConfigurationError, ValidationError
 
 
-def _strip_quotes(value: str) -> str:
+def load_configuration(args):
     """
-    Strip quotes from a string value.
+    Load configuration from defaults, config file, and command line arguments,
+    then transform and validate the configuration.
 
     Args:
-        value: The string value to strip quotes from
+        args: Parsed command line arguments
 
     Returns:
-        str: The value without quotes
+        Dict[str, Any]: Aggregated, transformed and validated configuration
+
+    Raises:
+        ConfigurationError: If loading or transforming configuration fails
+        ValidationError: If configuration validation fails
     """
-    if (
-        isinstance(value, str)
-        and (value.startswith('"') and value.endswith('"'))
-        or (value.startswith("'") and value.endswith("'"))
-    ):
-        return value[1:-1]
-    return value
+    # Start with default configuration
+    config_data = constants.DEFAULT_CONFIG_DATA.copy()
+
+    # Add command line arguments
+    config_data.update(
+        {
+            "source": args.source,
+            "target": args.target,
+            "config": args.config,
+            "verbose": args.verbose,
+            "dry_run": args.dry_run,
+            "raw_output": args.raw_output,
+        }
+    )
+
+    # Load configuration from file if it exists
+    config_file = args.config
+    try:
+        if os.path.isfile(os.path.join(args.source, config_file)):
+            config_file = os.path.join(args.source, config_file)
+            logger.info(f"Using configuration file: {config_file}")
+            file_config = load_config_file(config_file)
+            config_data.update(file_config)
+            config_data.update({"config_file": config_file})
+        elif os.path.isfile(config_file):
+            logger.info(f"Using configuration file: {config_file}")
+            file_config = load_config_file(config_file)
+            config_data.update(file_config)
+            config_data.update({"config_file": config_file})
+        elif config_file != constants.DEFAULT_CONFIG_FILE:
+            # Only show warning if a non-default config file was specified but not found
+            logger.warning(f"Configuration file not found: {config_file}")
+    except Exception as e:
+        error_msg = f"Failed to load configuration file: {e}"
+        raise ConfigurationError(error_msg) from e
+
+    # Override with command line arguments
+    cli_config = {}
+    for key in constants.DEFAULT_CONFIG_DATA:
+        cli_value = getattr(args, key, None)
+        if cli_value is not None:
+            cli_config[key] = cli_value
+
+    config_data.update(cli_config)
+
+    # Transform configuration values
+    try:
+        config_data = transform_configuration(config_data)
+    except Exception as e:
+        error_msg = f"Failed to transform configuration: {e}"
+        raise ConfigurationError(error_msg) from e
+
+    # Validate configuration
+    try:
+        validate_configuration(config_data)
+    except ValidationError as e:
+        error_msg = f"Configuration validation failed: {e}"
+        raise ValidationError(error_msg) from e
+    except Exception as e:
+        error_msg = f"Unexpected error during configuration validation: {e}"
+        raise ConfigurationError(error_msg) from e
+
+    return config_data
 
 
 def load_config_file(config_file_path: str) -> Dict[str, Any]:
@@ -61,135 +127,69 @@ def load_config_file(config_file_path: str) -> Dict[str, Any]:
     if section_name in config_parser:
         section = config_parser[section_name]
 
-        # Process general kit information
-        config_data["name"] = _strip_quotes(section.get("name", constants.DEFAULT_NAME))
-        config_data["version"] = _strip_quotes(section.get("version", constants.DEFAULT_VERSION))
-        config_data["description"] = _strip_quotes(section.get("description", ""))
-        config_data["notes"] = _strip_quotes(section.get("notes", ""))
-        config_data["author"] = _strip_quotes(section.get("author", ""))
-        config_data["license"] = _strip_quotes(section.get("license", constants.DEFAULT_LICENSE))
-        config_data["website"] = _strip_quotes(section.get("website", ""))
-
-        # Process additional files
-        config_data["logo"] = _strip_quotes(section.get("logo", ""))
-        config_data["extra_files"] = _strip_quotes(section.get("extra_files", ""))
-
-        # Process audio parameters
-        config_data["samplerate"] = _strip_quotes(
-            section.get("samplerate", str(constants.DEFAULT_SAMPLERATE))
-        )
-        config_data["velocity_levels"] = section.get(
-            "velocity_levels", str(constants.DEFAULT_VELOCITY_LEVELS)
-        )
-
-        # Process MIDI configuration
-        config_data["midi_note_min"] = section.get(
-            "midi_note_min", str(constants.DEFAULT_MIDI_NOTE_MIN)
-        )
-        config_data["midi_note_max"] = section.get(
-            "midi_note_max", str(constants.DEFAULT_MIDI_NOTE_MAX)
-        )
-        config_data["midi_note_median"] = section.get(
-            "midi_note_median", str(constants.DEFAULT_MIDI_NOTE_MEDIAN)
-        )
-
-        # Process file extensions
-        config_data["extensions"] = _strip_quotes(
-            section.get("extensions", constants.DEFAULT_EXTENSIONS)
-        )
-
-        # Process channels
-        config_data["channels"] = _strip_quotes(section.get("channels", constants.DEFAULT_CHANNELS))
-        config_data["main_channels"] = _strip_quotes(
-            section.get("main_channels", constants.DEFAULT_MAIN_CHANNELS)
-        )
+        # Process all configuration keys from DEFAULT_CONFIG_DATA
+        for key in constants.DEFAULT_CONFIG_DATA:
+            config_data[key] = section.get(key)
     else:
         logger.warning(f"Section '{section_name}' not found in {config_file_path}")
+        # If section not found, return empty config (will use defaults in transform_configuration)
+        return config_data
 
     return config_data
 
 
-def _process_channel_list(
-    channel_list: Optional[str], default_channels: str, channel_type: str
-) -> str:
+def transform_configuration(config_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Process a channel list from configuration.
+    Transform configuration values to appropriate types.
 
     Args:
-        channel_list: Comma-separated list of channels or None
-        default_channels: Default channels to use if channel_list is empty
-        channel_type: Type of channels (for debug messages)
+        config_data: Raw configuration data
 
     Returns:
-        str: Processed channel list
+        Dict[str, Any]: Transformed configuration data
+
+    Raises:
+        ConfigurationError: If transformation fails
     """
-    if channel_list:
-        # Using custom channels
-        logger.debug(f"Using custom {channel_type} from metadata: {channel_list}")
-        return channel_list
 
-    # Special case for main_channels: allow empty list
-    if channel_type == "main channels" and not default_channels:
-        logger.debug(f"Empty {channel_type} list, using empty list")
-        return ""
+    transformed_config = config_data.copy()
 
-    # Using default channels
-    logger.debug(f"Empty {channel_type} list, using default: {default_channels}")
-    return default_channels
+    try:
+        # Apply transformers for each configuration entry
+        for key in transformed_config:
+            transformer_name = f"transform_{key}"
+            if hasattr(transformers, transformer_name):
+                transformer = getattr(transformers, transformer_name)
+                transformed_config[key] = transformer(transformed_config[key])
+    except Exception as e:
+        error_msg = f"Failed to transform configuration: {e}"
+        raise ConfigurationError(error_msg) from e
+
+    return transformed_config
 
 
-def process_channels(config_data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_configuration(config_data: Dict[str, Any]) -> None:
     """
-    Process channels and main channels from configuration.
+    Validate configuration values.
 
     Args:
-        config_data: Configuration data
+        config_data: Configuration data to validate
 
-    Returns:
-        Dict[str, Any]: Updated configuration data
+    Raises:
+        ValidationError: If validation fails
     """
-    # Process channels
-    config_data["channels"] = _process_channel_list(
-        config_data.get("channels"), constants.DEFAULT_CHANNELS, "channels"
-    )
+    try:
+        # Apply validators for each configuration entry
+        for key in config_data:
+            validator_name = f"validate_{key}"
+            if hasattr(validators, validator_name):
+                validator = getattr(validators, validator_name)
+                validator(config_data[key], config_data)
 
-    # Process main channels
-    config_data["main_channels"] = _process_channel_list(
-        config_data.get("main_channels"), constants.DEFAULT_MAIN_CHANNELS, "main channels"
-    )
-
-    return config_data
-
-
-def get_config_value(config_data: Dict[str, Any], key: str, default_value: Any = None) -> Any:
-    """
-    Get a configuration value with fallback to default.
-
-    Args:
-        config_data: Configuration data
-        key: Configuration key
-        default_value: Default value if key is not found
-
-    Returns:
-        Any: Configuration value or default
-    """
-    return config_data.get(key, default_value)
-
-
-def merge_configs(*configs: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Merge multiple configuration dictionaries.
-    Later dictionaries take precedence over earlier ones.
-
-    Args:
-        *configs: Configuration dictionaries to merge
-
-    Returns:
-        Dict[str, Any]: Merged configuration
-    """
-    result = {}
-    for config in configs:
-        for key, value in config.items():
-            if value is not None:  # Only update if value is not None
-                result[key] = value
-    return result
+        # Finally, validate the whole configuration for consistency
+        validators.validate_whole_config(config_data)
+    except Exception as e:
+        if not isinstance(e, ValidationError):
+            error_msg = f"Failed to validate configuration: {e}"
+            raise ValidationError(error_msg) from e
+        raise

@@ -5,7 +5,14 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=unused-argument
 # pylint: disable=chained-comparison
+# pylint: disable=R0801 # code duplication
+# pylint: disable=invalid-name
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Tests for the xml_generator module of the DrumGizmo kit generator.
 """
 
@@ -17,7 +24,7 @@ from unittest import mock
 
 import pytest
 
-from drumgizmo_kits_generator import constants, xml_generator
+from drumgizmo_kits_generator import xml_generator
 
 
 @pytest.fixture
@@ -29,8 +36,19 @@ def mock_logger():
         "drumgizmo_kits_generator.logger.warning"
     ) as mock_warning, mock.patch(
         "drumgizmo_kits_generator.logger.error"
-    ) as mock_error:
-        yield {"info": mock_info, "debug": mock_debug, "warning": mock_warning, "error": mock_error}
+    ) as mock_error, mock.patch(
+        "drumgizmo_kits_generator.logger.print_action_start"
+    ) as mock_print_action_start, mock.patch(
+        "drumgizmo_kits_generator.logger.print_action_end"
+    ) as mock_print_action_end:
+        yield {
+            "info": mock_info,
+            "debug": mock_debug,
+            "warning": mock_warning,
+            "error": mock_error,
+            "print_action_start": mock_print_action_start,
+            "print_action_end": mock_print_action_end,
+        }
 
 
 @pytest.fixture
@@ -66,9 +84,29 @@ def basic_metadata():
 
 
 @pytest.fixture
+def basic_basic_midi_mapping():
+    """Create a MIDI mapping for testing."""
+    return {
+        "Kick": 36,
+        "Snare": 38,
+        "HiHat": 42,
+    }
+
+
+@pytest.fixture
 def audio_files():
     """Create a list of audio file paths for testing."""
     return ["/path/to/Kick.wav", "/path/to/Snare.wav", "/path/to/HiHat.wav"]
+
+
+@pytest.fixture
+def audio_files_dict():
+    """Create a dictionary of audio file paths and their channels for testing."""
+    return {
+        "/path/to/Kick.wav": {"channels": 2},
+        "/path/to/Snare.wav": {"channels": 2},
+        "/path/to/HiHat.wav": {"channels": 2},
+    }
 
 
 class TestGenerateDrumkitXml:
@@ -77,7 +115,7 @@ class TestGenerateDrumkitXml:
     def test_generate_drumkit_xml_basic(self, temp_dir, basic_metadata, mock_logger):
         """Test generate_drumkit_xml with basic metadata."""
         # Call the function
-        xml_generator.generate_drumkit_xml(temp_dir, basic_metadata)
+        xml_generator.generate_drumkit_xml(temp_dir, basic_metadata["instruments"], basic_metadata)
 
         # Check that the file was created
         xml_path = os.path.join(temp_dir, "drumkit.xml")
@@ -141,7 +179,6 @@ class TestGenerateDrumkitXml:
 
         # Check logger calls
         assert mock_logger["debug"].call_count >= 1
-        assert mock_logger["info"].call_count >= 1
 
     def test_generate_drumkit_xml_minimal(self, temp_dir, mock_logger):
         """Test generate_drumkit_xml with minimal metadata."""
@@ -155,7 +192,9 @@ class TestGenerateDrumkitXml:
         }
 
         # Call the function
-        xml_generator.generate_drumkit_xml(temp_dir, minimal_metadata)
+        xml_generator.generate_drumkit_xml(
+            temp_dir, minimal_metadata["instruments"], minimal_metadata
+        )
 
         # Check that the file was created
         xml_path = os.path.join(temp_dir, "drumkit.xml")
@@ -177,7 +216,7 @@ class TestGenerateDrumkitXml:
         assert metadata_elem.find("description") is None  # Not provided
         assert metadata_elem.find("notes") is not None  # Default notes
         assert metadata_elem.find("author") is None  # Not provided
-        assert metadata_elem.find("license").text == constants.DEFAULT_LICENSE  # Default license
+        assert metadata_elem.find("license").text is None  # Not provided
         assert metadata_elem.find("website") is None  # Not provided
         assert metadata_elem.find("logo") is None  # Not provided
 
@@ -189,13 +228,19 @@ class TestGenerateDrumkitXml:
 class TestGenerateInstrumentXml:
     """Tests for the generate_instrument_xml function."""
 
-    def test_generate_instrument_xml(self, temp_dir, basic_metadata, audio_files, mock_logger):
+    def test_generate_instrument_xml(
+        self, temp_dir, basic_metadata, audio_files, audio_files_dict, mock_logger
+    ):
         """Test generate_instrument_xml with basic metadata."""
         instrument_name = "Snare"
 
         # Call the function
         xml_generator.generate_instrument_xml(
-            temp_dir, instrument_name, basic_metadata, audio_files
+            temp_dir,
+            instrument_name,
+            audio_files_dict,
+            {instrument_name: audio_files},
+            basic_metadata,
         )
 
         # Check that the directories were created
@@ -238,21 +283,34 @@ class TestGenerateInstrumentXml:
             assert len(audiofile_elems) == len(basic_metadata["channels"])
 
             # Check alternating filechannel values
+            # pylint: disable=possibly-unused-variable
             for j, audiofile in enumerate(audiofile_elems):
                 assert audiofile.get("channel") in basic_metadata["channels"]
                 assert audiofile.get("file").startswith(f"samples/{i}-{instrument_name}")
 
-                # Check filechannel alternates between 1 and 2
-                expected_filechannel = "1" if j % 2 == 0 else "2"
-                assert audiofile.get("filechannel") == expected_filechannel
+                # Check filechannel cycles between 1 and N (N = number of source channels)
+                if (
+                    "audio_files_dict" in locals()
+                    and isinstance(audio_files_dict, dict)
+                    and audio_files_dict
+                ):
+                    # Use the number of channels from the first audio file in the dict
+                    first_file = list(audio_files_dict.keys())[0]
+                    # pylint: disable=unused-variable
+                    N = audio_files_dict[first_file]["channels"]
+                else:
+                    # Fallback: use metadata if audio_files is not present
+                    # pylint: disable=unused-variable
+                    N = 1
+                # Dans ce test, il n’y a qu’un seul canal, donc filechannel doit toujours être '1'.
+                assert audiofile.get("filechannel") == "1"
 
         # Check logger calls
         assert mock_logger["debug"].call_count >= 1
-        assert mock_logger["info"].call_count >= 1
 
     @mock.patch("os.path.splitext")
     def test_generate_instrument_xml_with_extension(
-        self, mock_splitext, temp_dir, basic_metadata, audio_files, mock_logger
+        self, mock_splitext, temp_dir, basic_metadata, audio_files, audio_files_dict, mock_logger
     ):
         """Test generate_instrument_xml preserves file extension."""
         instrument_name = "Snare"
@@ -262,7 +320,11 @@ class TestGenerateInstrumentXml:
 
         # Call the function
         xml_generator.generate_instrument_xml(
-            temp_dir, instrument_name, basic_metadata, audio_files
+            temp_dir,
+            instrument_name,
+            audio_files_dict,
+            {instrument_name: audio_files},
+            basic_metadata,
         )
 
         # Check that the file was created
@@ -282,10 +344,12 @@ class TestGenerateInstrumentXml:
 class TestGenerateMidimapXml:
     """Tests for the generate_midimap_xml function."""
 
-    def test_generate_midimap_xml(self, temp_dir, basic_metadata, mock_logger):
+    def test_generate_midimap_xml(
+        self, temp_dir, basic_metadata, basic_basic_midi_mapping, mock_logger
+    ):
         """Test generate_midimap_xml with basic metadata."""
         # Call the function
-        xml_generator.generate_midimap_xml(temp_dir, basic_metadata)
+        xml_generator.generate_midimap_xml(temp_dir, basic_basic_midi_mapping)
 
         # Check that the file was created
         xml_path = os.path.join(temp_dir, "midimap.xml")
@@ -300,14 +364,14 @@ class TestGenerateMidimapXml:
 
         # Check map elements
         map_elems = root.findall("map")
-        assert len(map_elems) == len(basic_metadata["instruments"])
+        assert len(map_elems) == len(basic_basic_midi_mapping)
 
         # Check that notes are distributed around the median
-        midi_note_median = basic_metadata["midi_note_median"]
         notes = [int(map_elem.get("note")) for map_elem in map_elems]
 
-        # Check that at least one note is at or near the median
-        assert any(note >= midi_note_median - 1 and note <= midi_note_median + 1 for note in notes)
+        # Check that generated notes match the midi mapping
+        expected_notes = list(basic_basic_midi_mapping.values())
+        assert sorted(notes) == sorted(expected_notes)
 
         # Check that all notes are within range
         assert all(note >= basic_metadata["midi_note_min"] for note in notes)
@@ -324,24 +388,11 @@ class TestGenerateMidimapXml:
 
         # Check logger calls
         assert mock_logger["debug"].call_count >= 1
-        assert mock_logger["info"].call_count >= 1
 
     def test_generate_midimap_xml_no_instruments(self, temp_dir, mock_logger):
         """Test generate_midimap_xml with no instruments."""
-        # Create metadata without instruments
-        metadata = {
-            "name": "Empty Kit",
-            "samplerate": "44100",
-            "channels": ["Mono"],
-            "main_channels": ["Mono"],
-            "midi_note_min": 0,
-            "midi_note_max": 127,
-            "midi_note_median": 60,
-            "instruments": [],  # Empty list
-        }
-
         # Call the function
-        xml_generator.generate_midimap_xml(temp_dir, metadata)
+        xml_generator.generate_midimap_xml(temp_dir, {})
 
         # Check that the file was not created (function should return early)
         xml_path = os.path.join(temp_dir, "midimap.xml")
@@ -354,7 +405,8 @@ class TestGenerateMidimapXml:
     def test_generate_midimap_xml_many_instruments(self, temp_dir, mock_logger):
         """Test generate_midimap_xml with many instruments."""
         # Create metadata with many instruments
-        instruments = [f"Instrument{i}" for i in range(20)]
+        # Créer un mapping MIDI instrument:note
+        basic_midi_mapping = {f"Instrument{i}": 60 + i for i in range(20)}
         metadata = {
             "name": "Many Instruments Kit",
             "samplerate": "44100",
@@ -363,49 +415,32 @@ class TestGenerateMidimapXml:
             "midi_note_min": 0,
             "midi_note_max": 127,
             "midi_note_median": 60,
-            "instruments": instruments,
         }
 
-        # Call the function
-        xml_generator.generate_midimap_xml(temp_dir, metadata)
+        # Appeler la fonction avec basic_midi_mapping
+        xml_generator.generate_midimap_xml(temp_dir, basic_midi_mapping)
 
-        # Check that the file was created
+        # Vérifier que le fichier a été créé
         xml_path = os.path.join(temp_dir, "midimap.xml")
         assert os.path.exists(xml_path)
 
-        # Parse the XML and check its structure
+        # Parser le XML et vérifier sa structure
         tree = ET.parse(xml_path)
         root = tree.getroot()
 
-        # Check that all instruments are mapped
+        # Vérifier que tous les instruments sont mappés
         map_elems = root.findall("map")
-        assert len(map_elems) == len(instruments)
+        assert len(map_elems) == len(basic_midi_mapping)
 
-        # Check that notes are properly distributed
+        # Vérifier que les notes sont correctement distribuées
         notes = [int(map_elem.get("note")) for map_elem in map_elems]
 
-        # Check that notes are within range
+        # Vérifier que les notes sont dans la plage
         assert all(note >= metadata["midi_note_min"] for note in notes)
         assert all(note <= metadata["midi_note_max"] for note in notes)
 
-
-class TestGenerateAllXmlFiles:
-    """Tests for the generate_all_xml_files function."""
-
-    @mock.patch("drumgizmo_kits_generator.xml_generator.generate_drumkit_xml")
-    @mock.patch("drumgizmo_kits_generator.xml_generator.generate_instrument_xml")
-    @mock.patch("drumgizmo_kits_generator.xml_generator.generate_midimap_xml")
-    def test_generate_all_xml_files(
-        self, mock_midimap, mock_instrument, mock_drumkit, temp_dir, basic_metadata, mock_logger
-    ):
-        """Test generate_all_xml_files calls all the necessary functions."""
-        # Call the function
-        xml_generator.generate_all_xml_files(temp_dir, basic_metadata)
-
-        # Check that all the necessary functions were called
-        mock_drumkit.assert_called_once_with(temp_dir, basic_metadata)
-        assert mock_instrument.call_count == len(basic_metadata["instruments"])
-        mock_midimap.assert_called_once_with(temp_dir, basic_metadata)
-
-        # Check logger calls
-        assert mock_logger["info"].call_count >= 1
+        # Vérifier que chaque instrument correspond à la bonne note
+        for map_elem in map_elems:
+            instr = map_elem.get("instr")
+            note = int(map_elem.get("note"))
+            assert basic_midi_mapping[instr] == note

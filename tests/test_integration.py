@@ -5,7 +5,13 @@
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-branches
 # pylint: disable=too-few-public-methods
+# pylint: disable=R0801 # code duplication
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Integration test for the DrumGizmo kit generator.
 This test performs a complete generation from examples/sources/ to a temporary directory
 and compares the results with examples/target/.
@@ -209,7 +215,7 @@ class TestIntegration:
         # Get the absolute paths
         project_root = Path(__file__).parent.parent
         source_dir = os.path.join(project_root, "examples", "sources")
-        config_file = os.path.join(source_dir, "drumgizmo-kit.ini")
+        config_file = os.path.join(project_root, "examples", "drumgizmo-kit-example.ini")
         reference_dir = os.path.join(project_root, "examples", "target")
 
         # Run the generator directly with the appropriate arguments
@@ -230,6 +236,16 @@ class TestIntegration:
         # Verify that the output directory exists and contains files
         assert os.path.exists(temp_output_dir)
         assert len(os.listdir(temp_output_dir)) > 0
+
+        # Affiche le contenu du répertoire temporaire pour debug
+        print("\n--- Contenu du répertoire temporaire généré ---")
+        for root, _, files in os.walk(temp_output_dir):
+            level = root.replace(temp_output_dir, "").count(os.sep)
+            indent = " " * 2 * level
+            print(f"{indent}{os.path.basename(root)}/")
+            subindent = " " * 2 * (level + 1)
+            for f in files:
+                print(f"{subindent}{f}")
 
         # Compare the output with the reference directory
         # Ignore patterns for files that might differ between runs

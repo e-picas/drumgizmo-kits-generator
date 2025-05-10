@@ -37,45 +37,74 @@ The DrumGizmo Kit Generator is a Python tool that generates kits for [DrumGizmo]
 
 ## Reference models
 A reference kit has been generated in the `examples/target/` directory from the source `examples/sources/` directory.
-The command was `python create_drumgizmo_kit.py -s examples/sources/ -t examples/target/`.
-The output of that generation is stored in `examples/target-generation-output.txt`.
+The command was `python create_drumgizmo_kit.py -s examples/sources/ -t examples/target/ -c examples/drumgizmo-kit-example.ini -r`.
+The output of that generation is stored in `examples/target-generation-output.log`.
+The output of that generation in `dry-run` mode is stored in `examples/target-generation-output-dry-run.log`.
 The kit, source and output must be used as models.
 
 ## Modules
 All the application modules are stored in the `drumgizmo_kits_generator` directory.
 All the tests of the code are stored in the `tests` directory.
 
-constants.py
-: Embeds all the constants used in the app
-
+### Core Modules
 main.py
+: Entry point of the application
+: Kit generation process
+
+cli.py
+: Command-line interface implementation
+: Arguments parsing
+: Specific print methods
+
+config.py
+: Configuration management
 : Common options transform and validate (`source`, `target` and `config`)
 : Options aggregation in the following order: defaults + configuration file + cli options
 : Options transformations and validations
-: Kit generation process
 
-logger.py
-: Methods `info`, `debug` (to output only in verbose mode), `warning` to manage the output
-
-config.py
-: Manage the configuration file and the command line options
-
-transformers.py
-: Transformers of each option by optional methods `transform_<option_name>`
-: i.e. `transform_extensions` should call a method like `transform_comma_separated_string_to_list`
-
-validators.py
-: Validation of each option by optional methods `validate_<option_name>`
-: i.e. `validate_midi_note_min` should call a method like `validate_midi_note` and test that the value is in range `[0-127]`
-
-utils.py
-: Set of utilities in a "Keep It Simple Stupid" concept
-
+### Processing Modules
 audio.py
-: Management of the audio samples and volumes variations
+: Audio file processing and manipulation
+: Sample rate conversion using SoX
+: Volume variations generation
+: Audio files format handling
 
 xml_generator.py
-: Management of the XML files of the generated kit
+: Generate DrumGizmo XML configuration files
+: Handle drumkit.xml, instrument(s).xml, and midimap.xml
+: XML structure and validation
+
+transformers.py
+: Transform configuration values to appropriate types
+: Handle type conversion and normalization
+: Custom transformers for specific configuration options
+
+validators.py
+: Validate configuration values
+: Custom validators for specific configuration options
+: Ensure data integrity and constraints
+: Validators must not return values but raise exceptions if the validation fails
+
+### Utilities
+utils.py
+: General utility functions
+: File operations and path handling
+: Common string and data manipulation
+
+logger.py
+: Logging configuration and utilities
+: Methods `info`, `debug` (to output only in verbose mode), `warning` and `error`
+: Log formatting and output control
+
+exceptions.py
+: Custom exception classes
+: Error hierarchy and handling
+: Specific exceptions for different error cases
+
+constants.py
+: Application-wide constants
+: Default values and configuration
+: String literals and magic numbers
 
 ## Command line calls
 These options are for the command line run only, not for the configuration file.
@@ -85,7 +114,7 @@ source
 : type: string (path)
 : required: true
 : rule: If the directory does not exist, an error is raised
-: rule: A warning must be printed if the directory contains more than `midi_note_max - midi_note_min` audio files
+: rule: During the processing, a warning must be printed if the directory contains more than `midi_note_max - midi_note_min` audio files
 
 target
 : desc: The generated kit target directory
@@ -107,16 +136,21 @@ config
 -v/--verbose
 : desc: Increase process verbosity
 
+-V/--app-version
+: desc: Print the application version and exit with a 0 status
+
 -x/--dry-run
 : desc: Enable the DEBUG or "dry run" mode: metadata and samples list are printed instead of generating the kit
 
+-r/--raw-output
+: desc: Do not include ANSI characters in output (for automatic processing)
+
 ## Configuration entries
-Each of these configuration entries can be defined in the configuration file with a `kit_` prefix or as a command line option (without prefix).
+Each of these configuration entries can be defined in the configuration file, in `INI` format, in a `drumgizmo_kit_generator` section or as a command line option (without prefix).
 They are loaded in the following precedence order: defaults then configuration file then command line options.
 All default values are stored as constants.
 
 ### Specifications
-
 name
 : desc: Kit name
 : type: string
@@ -163,7 +197,7 @@ logo
 
 samplerate
 : desc: Sample rate in Hz
-: type: number
+: type: integer
 : rule: Can not be empty
 : rule: If an empty value is set, the default value is used and a warning is printed
 : rule: Must be `> 0`
@@ -179,15 +213,22 @@ extra_files
 
 velocity_levels
 : desc: Number of velocity levels to generate
-: type: number
+: type: integer
 : rule: Can not be empty
 : rule: If an empty value is set, the default value is used and a warning is printed
 : rule: Must be `> 0`
 : default: `10`
 
+variations_method
+: desc: Mathematical formula to use to generate volume variations
+: type: string in list `[ linear , logarithmic ]`
+: rule: Can not be empty
+: rule: If an empty or unknown value is set, an error is raised
+: default: `linear`
+
 midi_note_min
 : desc: Minimum MIDI note number allowed
-: type: number
+: type: integer
 : rule: Can not be empty
 : rule: If an empty value is set, the default value is used and a warning is printed
 : rule: Must be `>= 0`
@@ -198,7 +239,7 @@ midi_note_min
 
 midi_note_max
 : desc: Maximum MIDI note number allowed
-: type: number
+: type: integer
 : rule: Can not be empty
 : rule: If an empty value is set, the default value is used and a warning is printed
 : rule: Must be `>= 0`
@@ -209,7 +250,7 @@ midi_note_max
 
 midi_note_median
 : desc: Median MIDI note for distributing instruments
-: type: number
+: type: integer
 : rule: Can not be empty
 : rule: If an empty value is set, the default value is used and a warning is printed
 : rule: Must be `>= 0`
@@ -235,7 +276,7 @@ channels
 : rule: Each list item must be left and right trimed
 : rule: Each list item can have a space inside
 : rule: The order of the list items must be kept as-is
-: default: `"AmbL,AmbR,Hihat,Kdrum_back,Kdrum_front,OHL,OHR,Ride,Snare_bottom,Snare_top,Tom1,Tom2,Tom3"`
+: default: `"Left,Right"`
 
 main_channels
 : desc: Comma-separated list of main audio channels
@@ -244,7 +285,45 @@ main_channels
 : rule: Each list item must be left and right trimed
 : rule: Each list item can have a space inside
 : rule: Each list item must exist in the `channels` list or an error is raised
-: default: `"AmbL,AmbR,OHL,OHR"`
+: default: `""`
+
+## Cascade Configuration
+
+### Language & Communication
+- **Default Language**: French for discussions
+- **Code Language**: English for all code, comments, and documentation
+- **Communication Style**: Informal (use "tu" form in French)
+
+### Code Generation Preferences
+- **Docstring Format**: Google style
+- **Type Hints**: Always use type hints for function signatures
+- **Test Framework**: Prefer pytest over unittest
+- **Test Coverage**: Minimum 80% coverage required
+
+### File Handling
+- **Line Length**: 88 characters (Black default)
+- **Indentation**: 4 spaces (PEP 8)
+- **String Quotes**: Double quotes for docstrings, single quotes for all other strings
+
+### Behavior
+- **Auto-format**: Always format code with Black and isort before saving
+- **Linting**: Run pylint and mypy on file save
+- **Testing**: Run tests related to changed files on save
+- **Documentation**: Generate/update docstrings when modifying functions
+
+### Project-Specific Rules
+- **File Headers**: Include copyright and license information in each .py file
+- **Import Order**: Standard library → Third-party → Local application
+- **Error Handling**: Use custom exceptions defined in exceptions.py
+
+### Memory Management
+- **Context Window**: Keep track of the last 10 files opened in the project
+- **Code Patterns**: Remember frequently used patterns in the codebase
+
+### UI/UX
+- **Verbosity**: Default to normal verbosity, allow -v for debug
+- **Progress Updates**: Show progress for long-running operations
+- **Error Messages**: Provide actionable error messages with suggestions for fixes
 
 ## Development helpers
 We use [Make](https://www.gnu.org/software/make/) to manage the development tasks.

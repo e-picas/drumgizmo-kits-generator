@@ -6,6 +6,11 @@
 # pylint: disable=too-many-branches
 # pylint: disable=too-few-public-methods
 """
+SPDX-License-Identifier: MIT
+SPDX-PackageName: DrumGizmo kits generator
+SPDX-PackageHomePage: https://github.com/e-picas/drumgizmo-kits-generator
+SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
+
 Integration tests for error scenarios in the DrumGizmo kit generator.
 This test suite verifies that the application handles error conditions correctly.
 """
@@ -69,8 +74,11 @@ class TestIntegrationErrors:
 
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
-            assert "ERROR: " in stderr_output
-            assert "Source directory does not exist" in stderr_output
+            # Check that the error message contains the expected text, ignoring ANSI color codes
+            assert "ValidationError: " in stderr_output
+            assert f"Source directory '{nonexistent_dir}' does not exist" in stderr_output.replace(
+                "\x1b[91m", ""
+            ).replace("\x1b[0m", "")
 
     def test_nonexistent_config_file(self, temp_output_dir, temp_source_dir):
         """Test with a non-existent configuration file."""
@@ -97,8 +105,11 @@ class TestIntegrationErrors:
 
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
-            assert "ERROR: " in stderr_output
-            assert "Configuration file does not exist" in stderr_output
+            # Check for a warning about the configuration file not being found
+            assert "WARNING:" in stderr_output.replace("\x1b[91m", "").replace("\x1b[0m", "")
+            assert f"Configuration file not found: {nonexistent_config}" in stderr_output.replace(
+                "\x1b[91m", ""
+            ).replace("\x1b[0m", "")
 
     def test_invalid_config_file(self, temp_output_dir, temp_source_dir, temp_config_file):
         """Test with an invalid configuration file (not a valid INI file)."""
@@ -124,7 +135,7 @@ class TestIntegrationErrors:
 
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
-            assert "ERROR: " in stderr_output
+            assert "ConfigurationError: " in stderr_output
             assert "Error parsing configuration file" in stderr_output
 
     def test_missing_required_config_values(
@@ -251,8 +262,8 @@ class TestIntegrationErrors:
 
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
-            assert "ERROR: " in stderr_output
-            assert "SoX not found" in stderr_output
+            assert "DependencyError: " in stderr_output
+            assert "soxi (part of SoX) not found in the system" in stderr_output
 
     def test_dry_run_mode(self, temp_output_dir, temp_source_dir, temp_config_file):
         """Test dry run mode (no actual files should be generated)."""
@@ -328,7 +339,7 @@ class TestIntegrationErrors:
 
             # Verify that an error message was printed
             stderr_output = mock_stderr.getvalue()
-            assert "ERROR: " in stderr_output
+            assert "AudioProcessingError: " in stderr_output
             assert "Failed to process audio file" in stderr_output
 
 
