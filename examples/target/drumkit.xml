@@ -10,7 +10,7 @@
     <samplerate>48000</samplerate>
     <website>https://example.com/my-drumgizmo-kit</website>
     <logo src="pngtree-music-notes-png-image_8660757.png"/>
-    <created>Generated on 2025-05-11 21:36:02 with drumgizmo-kits-generator v1.7.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
+    <created>Generated on 2025-05-11 21:46:54 with drumgizmo-kits-generator v1.7.0 (https://github.com/e-picas/drumgizmo-kits-generator)</created>
   </metadata>
   <channels>
     <channel name="AmbL"/>
@@ -58,7 +58,7 @@
       <channelmap in="Tom2" out="Tom2"/>
       <channelmap in="Tom3" out="Tom3"/>
     </instrument>
-    <instrument name="gs-16b-1c-44100hz" file="gs-16b-1c-44100hz/gs-16b-1c-44100hz.xml">
+    <instrument name="gs-16b-1c-48000hz" file="gs-16b-1c-48000hz/gs-16b-1c-48000hz.xml">
       <channelmap in="AmbL" out="AmbL" main="true"/>
       <channelmap in="AmbR" out="AmbR" main="true"/>
       <channelmap in="Hihat" out="Hihat"/>

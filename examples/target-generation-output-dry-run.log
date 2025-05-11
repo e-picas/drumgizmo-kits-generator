@@ -27,12 +27,12 @@ Extra files: ['Lorem Ipsum.pdf', 'license.txt']
 Found 3 audio files:
 - E-Mu-Proteus-FX-Wacky-Snare (44100 Hz - 2 channels)
 - Example (44100 Hz - 2 channels)
-- gs-16b-1c-44100hz (44100 Hz - 1 channels)
+- gs-16b-1c-48000hz (48000 Hz - 1 channels)
 
 === MIDI Mapping Preview ===
 MIDI mapping preview (alphabetical order):
 - MIDI Note 59: E-Mu-Proteus-FX-Wacky-Snare
 - MIDI Note 60: Example
-- MIDI Note 61: gs-16b-1c-44100hz
+- MIDI Note 61: gs-16b-1c-48000hz
 
 Dry run mode enabled, stopping here

@@ -27,7 +27,7 @@ Extra files: ['Lorem Ipsum.pdf', 'license.txt']
 Found 3 audio files:
 - E-Mu-Proteus-FX-Wacky-Snare (44100 Hz - 2 channels)
 - Example (44100 Hz - 2 channels)
-- gs-16b-1c-44100hz (44100 Hz - 1 channels)
+- gs-16b-1c-48000hz (48000 Hz - 1 channels)
 
 === Preparing Target Directory ===
 Cleaning target directory 'examples/target/'...
@@ -38,7 +38,7 @@ Processing 'E-Mu-Proteus-FX-Wacky-Snare.wav' with 4 volume variations at 48000 H
 OK
 Processing 'Example.ogg' with 4 volume variations at 48000 Hz...
 OK
-Processing 'gs-16b-1c-44100hz.flac' with 4 volume variations at 48000 Hz...
+Processing 'gs-16b-1c-48000hz.flac' with 4 volume variations at 48000 Hz...
 OK
 
 === Generating XML Files ===
@@ -83,7 +83,7 @@ Number of instruments created: 3
 Instrument samples MIDI mapping:
   - MIDI note 59: E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare.wav
   - MIDI note 60: Example: Example.ogg
-  - MIDI note 61: gs-16b-1c-44100hz: gs-16b-1c-44100hz.flac
+  - MIDI note 61: gs-16b-1c-48000hz: gs-16b-1c-48000hz.flac
 
 Extra files copied:
   - pngtree-music-notes-png-image_8660757.png

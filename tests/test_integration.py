@@ -273,7 +273,7 @@ class TestIntegration:
         assert os.path.exists(os.path.join(temp_output_dir, "midimap.xml"))
 
         # Verify instrument directories and files
-        for instrument in ["E-Mu-Proteus-FX-Wacky-Snare", "Example", "gs-16b-1c-44100hz"]:
+        for instrument in ["E-Mu-Proteus-FX-Wacky-Snare", "Example", "gs-16b-1c-48000hz"]:
             instrument_dir = os.path.join(temp_output_dir, instrument)
             assert os.path.exists(instrument_dir)
             assert os.path.exists(os.path.join(instrument_dir, f"{instrument}.xml"))
@@ -287,8 +287,8 @@ class TestIntegration:
                 # For Example.ogg, the extension should be preserved
                 if instrument == "Example":
                     assert os.path.exists(os.path.join(samples_dir, f"{i}-{instrument}.ogg"))
-                # For gs-16b-1c-44100hz.flac, the extension should be preserved
-                elif instrument == "gs-16b-1c-44100hz":
+                # For gs-16b-1c-48000hz.flac, the extension should be preserved
+                elif instrument == "gs-16b-1c-48000hz":
                     assert os.path.exists(os.path.join(samples_dir, f"{i}-{instrument}.flac"))
                 # For other instruments, the extension should be .wav
                 else:
