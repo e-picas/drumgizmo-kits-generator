@@ -5,7 +5,7 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 [![GitHub Release](https://img.shields.io/github/v/release/e-picas/drumgizmo-kits-generator)](https://github.com/e-picas/drumgizmo-kits-generator/releases)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/e-picas/drumgizmo-kits-generator/quality.yml?branch=master)](https://github.com/e-picas/drumgizmo-kits-generator/actions?query=branch%3Amaster)
 [![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fe-picas%2Fdrumgizmo-kits-generator%2Frefs%2Fheads%2Fmaster%2Fpyproject.toml)](https://www.python.org/)
-[![License]([https://img.shields.io/github/license/e-picas/drumgizmo-kits-generator](https://img.shields.io/badge/License-MIT-yellow.svg))](https://github.com/e-picas/drumgizmo-kits-generator?tab=License-1-ov-file#readme)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/e-picas/drumgizmo-kits-generator?tab=License-1-ov-file#readme)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=e-picas_drumgizmo-kits-generator&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=e-picas_drumgizmo-kits-generator)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=e-picas_drumgizmo-kits-generator&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=e-picas_drumgizmo-kits-generator)
 
