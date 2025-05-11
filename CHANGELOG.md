@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v1.8.0 (2025-05-11)
+
+### Features
+
+- Introduce a logging file in the 'logger' module
+  ([#31](https://github.com/e-picas/drumgizmo-kits-generator/pull/31),
+  [`9fe433f`](https://github.com/e-picas/drumgizmo-kits-generator/commit/9fe433f1cae98ea14beeed8e0c1c5e8b688fd30d))
+
+- Review the summary output ([#30](https://github.com/e-picas/drumgizmo-kits-generator/pull/30),
+  [`5e917a9`](https://github.com/e-picas/drumgizmo-kits-generator/commit/5e917a9e08429aa21625d59d8335843d7586a8b1))
+
+
 ## v1.7.0 (2025-05-10)
 
 ### Build System
