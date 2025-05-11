@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-outer-name
 # pylint: disable=protected-access
+# pylint: disable=unspecified-encoding
 """
 SPDX-License-Identifier: MIT
 SPDX-PackageName: DrumGizmo kits generator
@@ -11,6 +12,7 @@ SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
 Tests for the logger module of the DrumGizmo kit generator.
 """
 
+import re
 import sys
 
 import pytest
@@ -318,3 +320,182 @@ def test_print_action_end_custom(capsys):
     logger.print_action_end("Terminé")
     captured = capsys.readouterr()
     assert captured.out == "Terminé\n"
+
+
+def test_logging_with_logging_module(tmp_path):
+    """Test that logging messages are written to file using the logging module."""
+    log_file = tmp_path / "test_log.log"
+    logger.set_log_file(str(log_file))
+
+    # Test different log levels
+    logger.log("INFO", "Test info message")
+    logger.log("DEBUG", "Test debug message")
+    logger.log("WARNING", "Test warning message")
+    logger.log("ERROR", "Test error message")
+
+    # Check that the log file exists and contains the messages
+    assert log_file.exists()
+
+    with open(log_file, "r") as f:
+        content = f.read()
+
+    # Verify the content of the log file
+    assert "INFO - Test info message" in content
+    assert "DEBUG - Test debug message" in content
+    assert "WARNING - Test warning message" in content
+    assert "ERROR - Test error message" in content
+
+
+def test_logging_with_raw_output(tmp_path):
+    """Test logging with raw output enabled."""
+    log_file = tmp_path / "test_log_raw.log"
+    logger.set_log_file(str(log_file))
+    logger.set_raw_output(True)
+
+    logger.log("INFO", "Test info message with raw output")
+    logger.log("WARNING", "Test warning message with raw output")
+    logger.log("ERROR", "Test error message with raw output")
+
+    assert log_file.exists()
+
+    with open(log_file, "r") as f:
+        content = f.read()
+
+    # Verify the content of the log file
+    assert "INFO - Test info message with raw output" in content
+    assert "WARNING - Test warning message with raw output" in content
+    assert "ERROR - Test error message with raw output" in content
+    # Verify no ANSI color codes in raw output
+    assert "\033" not in content
+
+
+def test_logging_change_log_file(tmp_path):
+    """Test changing the log file."""
+    # Create first log file
+    log_file1 = tmp_path / "test_log1.log"
+    logger.set_log_file(str(log_file1))
+    logger.log("INFO", "Message in first log file")
+
+    # Create second log file
+    log_file2 = tmp_path / "test_log2.log"
+    logger.set_log_file(str(log_file2))
+    logger.log("INFO", "Message in second log file")
+
+    # Verify first log file
+    assert log_file1.exists()
+    with open(log_file1, "r") as f:
+        content = f.read()
+        assert "Message in first log file" in content
+        assert "Message in second log file" not in content
+
+    # Verify second log file
+    assert log_file2.exists()
+    with open(log_file2, "r") as f:
+        content = f.read()
+        assert "Message in second log file" in content
+        assert "Message in first log file" not in content
+
+
+def test_logging_format(tmp_path):
+    """Test the format of log messages."""
+    log_file = tmp_path / "test_log_format.log"
+    logger.set_log_file(str(log_file))
+
+    # Log a message and check its format
+    logger.log("INFO", "Test format message")
+
+    assert log_file.exists()
+    with open(log_file, "r") as f:
+        line = f.readline()
+        # Verify the format: timestamp - level - message
+        assert re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} - INFO - Test format message", line)
+
+
+def test_logging_error_with_exception(tmp_path):
+    """Test logging an error with an exception."""
+    log_file = tmp_path / "test_log_error.log"
+    logger.set_log_file(str(log_file))
+
+    try:
+        raise ValueError("Test error")
+    except ValueError as e:
+        logger.log("ERROR", "An error occurred", exc=e)
+
+    assert log_file.exists()
+    with open(log_file, "r") as f:
+        content = f.read()
+        assert "ERROR - An error occurred" in content
+        assert "ValueError: Test error" in content
+
+
+def test_info_with_write_log(tmp_path):
+    """Test info function with write_log parameter."""
+    log_file = tmp_path / "test_log_info.log"
+    logger.set_log_file(str(log_file))
+
+    # Test with write_log=True (default)
+    logger.info("Message with write_log=True")
+
+    # Test with write_log=False
+    logger.info("Message with write_log=False", write_log=False)
+
+    assert log_file.exists()
+    with open(log_file, "r") as f:
+        content = f.read()
+        assert "Message with write_log=True" in content
+        assert "Message with write_log=False" not in content
+
+
+def test_debug_with_write_log(tmp_path):
+    """Test debug function with write_log parameter."""
+    log_file = tmp_path / "test_log_debug.log"
+    logger.set_log_file(str(log_file))
+    logger.set_verbose(True)  # Enable verbose mode for debug messages
+
+    # Test with write_log=True (default)
+    logger.debug("Debug message with write_log=True")
+
+    # Test with write_log=False
+    logger.debug("Debug message with write_log=False", write_log=False)
+
+    assert log_file.exists()
+    with open(log_file, "r") as f:
+        content = f.read()
+        assert "Debug message with write_log=True" in content
+        assert "Debug message with write_log=False" not in content
+
+
+def test_warning_with_write_log(tmp_path):
+    """Test warning function with write_log parameter."""
+    log_file = tmp_path / "test_log_warning.log"
+    logger.set_log_file(str(log_file))
+
+    # Test with write_log=True (default)
+    logger.warning("Warning message with write_log=True")
+
+    # Test with write_log=False
+    logger.warning("Warning message with write_log=False", write_log=False)
+
+    assert log_file.exists()
+    with open(log_file, "r") as f:
+        content = f.read()
+        assert "Warning message with write_log=True" in content
+        assert "Warning message with write_log=False" not in content
+
+
+def test_error_with_write_log(tmp_path):
+    """Test error function with write_log parameter."""
+    log_file = tmp_path / "test_log_error.log"
+    logger.set_log_file(str(log_file))
+
+    # Test with write_log=True (default)
+    logger.error("Error message with write_log=True")
+
+    # Test with write_log=False
+    logger.error("Error message with write_log=False", write_log=False)
+
+    assert log_file.exists()
+    with open(log_file, "r") as f:
+        content = f.read()
+        assert "Error message with write_log=True" in content
+        assert "Error message with write_log=False" not in content

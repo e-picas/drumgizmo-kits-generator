@@ -9,6 +9,8 @@ SPDX-FileCopyrightText: 2025 Pierre Cassat (Picas)
 DrumGizmo Kit Generator - Main module
 """
 
+import os
+import sys
 import time
 
 from drumgizmo_kits_generator import cli, config, constants, kit_generator, logger, utils
@@ -19,6 +21,10 @@ from drumgizmo_kits_generator.state import RunData
 def main() -> None:
     """Main entry point for the DrumGizmo Kit Generator."""
     try:
+        logger.log(
+            "INFO",
+            f"### Starting run {os.getpid()} of DrumGizmo Kit Generator with CLI params: {sys.argv} ###",
+        )
         start_time = time.perf_counter()
         args = cli.parse_arguments()
 
@@ -42,15 +48,18 @@ def main() -> None:
         logger.info(f"Target directory: {run_data.target_dir}")
 
         # Load configuration
+        logger.log("INFO", "Loading configuration...")
         run_data.config = config.load_configuration(args)
 
         # Print metadata
         kit_generator.print_metadata(run_data)
 
         # Scan samples & print information
+        logger.log("INFO", "Scanning sources directory...")
         kit_generator.scan_source_files(run_data)
 
         # Evaluate MIDI mapping
+        logger.log("INFO", "Evaluating MIDI mapping...")
         kit_generator.evaluate_midi_mapping(run_data)
 
         # Preview MIDI mapping in dry run mode
@@ -67,6 +76,7 @@ def main() -> None:
 
         # !! - GENERATION PROCESS START - !!
         # Nothing should be actually done in the system before this point
+        logger.log("INFO", "Generating kit...")
 
         # Prepare target directory
         kit_generator.prepare_target_directory(run_data)
@@ -88,6 +98,9 @@ def main() -> None:
         kit_generator.print_summary(run_data)
 
         logger.message("\nKit generation completed successfully!")
+        logger.log(
+            "INFO", f"### Ending run {os.getpid()} in {run_data.generation_time:.2f} seconds ###"
+        )
     except DrumGizmoError as e:
         logger.error(f"{e}", e)
     # pylint: disable=broad-exception-caught
