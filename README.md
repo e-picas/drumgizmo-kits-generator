@@ -11,7 +11,7 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 
 [![DrumGizmo](https://img.shields.io/badge/DrumGizmo-%3E%3D0.9.20-orange)](https://drumgizmo.org/)
 
-## Features (and table of contents)
+## Key Features
 
 - 🚀 **Generate [DrumGizmo kits from a set of audio samples](#generated-kit-structure)**
 - 🎙️ **Support for [multiple audio formats](#note-about-audio-files-formats)**
@@ -21,7 +21,38 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
 - 📥 **Copy additional files to the final kit**
 - ⬛ **Complete [command-line interface](#command-line)**
 
-## Generated kit structure
+## Table of contents
+
+-   [Process documentation](#process-documentation)
+    -   [Generated kit structure](#generated-kit-structure)
+    -   [Original audio samples](#original-audio-samples)
+    -   [Target directory of the generated kit](#target-directory-of-the-generated-kit)
+    -   [Kit metadata](#kit-metadata)
+    -   [Audio samples treatments](#audio-samples-treatments)
+    -   [Samplerate](#samplerate)
+    -   [About samples channels](#about-samples-channels)
+    -   [MIDI keys repartition](#midi-keys-repartition)
+    -   [Extra files](#extra-files)
+    -   [Note about audio files formats](#note-about-audio-files-formats)
+-   [Installation & usage](#installation--usage)
+    -   [Prerequisites](#prerequisites)
+    -   [Installation](#installation)
+    -   [Usage](#usage)
+        -   [Command Line](#command-line)
+        -   [Execution flags](#execution-flags)
+        -   [Options](#options)
+        -   [Configuration file](#configuration-file)
+    -   [Daily usage / How-to work with it](#daily-usage)
+-   [Project info](#project-info)
+    -   [Contributing](#contributing)
+    -   [Releases](#releases)
+    -   [Security](#security)
+    -   [License](#license)
+    -   [Authors](#authors)
+
+## Process documentation
+
+### Generated kit structure
 
 The kit will follow the [DrumGizmo file format documentation](https://drumgizmo.org/wiki/doku.php?id=documentation:file_formats).
 
@@ -251,13 +282,44 @@ All command-line options have equivalent configuration file settings which must 
 
 >   **NOTE** - For a full example, please see the [`examples/drumgizmo-kit-example.ini`](https://github.com/e-picas/drumgizmo-kits-generator/blob/master/examples/drumgizmo-kit-example.ini) file.
 
-## Contributing
+### Daily usage
+
+For a daily usage of this generator, you may first prepare your audio sources in a single directory and name the samples correctly to see them orderd alphabetically.
+
+Once your sources fit your needs, you can validate what will be generated using the `dry-run` mode with:
+
+```cli
+python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target [...] -x
+```
+
+You can adapt your options to fit your needs and run the dry-run process again.
+
+If you are satisfied, you can generate the kit:
+
+```cli
+python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target [...]
+```
+
+If you face an error during the process, you can have more information using the `--verbose` flag:
+
+```cli
+python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target [...] -v
+```
+
+Finally, if you want to be prepared to re-generate it often (if you update your samples for instance), you can save your options in a configuration file `drumgizmo-kit.ini` in your sources directory. Doing so, you can re-generate it updating your version number with:
+
+```cli
+python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target --version X.Y.Z
+```
+
+
+## Project info
+
+### Contributing
 
 If you find a bug or want to request a new feature, just [open an issue](https://github.com/e-picas/drumgizmo-kits-generator/issues/new/choose) and it will be taken care of asap.
 
 If you want to work on this project, please read the [CONTRIBUTING.md](CONTRIBUTING.md) file.
-
-## Project info
 
 ### Releases
 
