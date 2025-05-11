@@ -60,8 +60,8 @@ Copying extra file 'license.txt'...
 OK
 
 === Summary ===
-Processing complete. DrumGizmo kit successfully created in examples/target/
-Number of instruments created: 3
+Processing complete.
+DrumGizmo kit successfully created in examples/target/
 
 Main files:
   - examples/target/drumkit.xml
@@ -78,10 +78,12 @@ Kit metadata summary:
   - Website: https://example.com/my-drumgizmo-kit
   - Logo: pngtree-music-notes-png-image_8660757.png
 
+Number of instruments created: 3
+
 Instrument samples MIDI mapping:
-  - MIDI note 59: E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare
-  - MIDI note 60: Example: Example
-  - MIDI note 61: gs-16b-1c-44100hz: gs-16b-1c-44100hz
+  - MIDI note 59: E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare.wav
+  - MIDI note 60: Example: Example.ogg
+  - MIDI note 61: gs-16b-1c-44100hz: gs-16b-1c-44100hz.flac
 
 Extra files copied:
   - pngtree-music-notes-png-image_8660757.png

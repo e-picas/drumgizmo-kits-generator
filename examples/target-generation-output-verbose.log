@@ -25,9 +25,9 @@ Extra files: ['Lorem Ipsum.pdf', 'license.txt']
 
 === Scanning Source Directory ===
 DEBUG: Scanning source directory 'examples/sources/' for audio files with extensions ['wav', 'WAV', 'flac', 'FLAC', 'ogg', 'OGG']
+DEBUG: Found 'Example.ogg'
 DEBUG: Found 'E-Mu-Proteus-FX-Wacky-Snare.wav'
 DEBUG: Found 'gs-16b-1c-44100hz.flac'
-DEBUG: Found 'Example.ogg'
 DEBUG: Getting audio information for 'examples/sources/E-Mu-Proteus-FX-Wacky-Snare.wav'
 DEBUG: Audio info for 'examples/sources/E-Mu-Proteus-FX-Wacky-Snare.wav': {'channels': 2, 'samplerate': 44100, 'bits': 16, 'duration': 0.411134}
 DEBUG: Getting audio information for 'examples/sources/Example.ogg'
@@ -77,11 +77,8 @@ Generating 'drumkit.xml'...
 DEBUG: Generating drumkit XML at 'examples/target/drumkit.xml'
 OK
 Generating instruments XML files...
-DEBUG: Detected 2 channels for E-Mu-Proteus-FX-Wacky-Snare
 DEBUG: Generating instrument XML for 'E-Mu-Proteus-FX-Wacky-Snare' at 'examples/target/E-Mu-Proteus-FX-Wacky-Snare/E-Mu-Proteus-FX-Wacky-Snare.xml' with 2 channel(s)
-DEBUG: Detected 2 channels for Example
 DEBUG: Generating instrument XML for 'Example' at 'examples/target/Example/Example.xml' with 2 channel(s)
-DEBUG: Detected 1 channels for gs-16b-1c-44100hz
 DEBUG: Generating instrument XML for 'gs-16b-1c-44100hz' at 'examples/target/gs-16b-1c-44100hz/gs-16b-1c-44100hz.xml' with 1 channel(s)
 OK
 Generating 'midimap.xml'...
@@ -103,8 +100,8 @@ Copying extra file 'license.txt'...
 OK
 
 === Summary ===
-Processing complete. DrumGizmo kit successfully created in examples/target/
-Number of instruments created: 3
+Processing complete.
+DrumGizmo kit successfully created in examples/target/
 
 Main files:
   - examples/target/drumkit.xml
@@ -121,10 +118,12 @@ Kit metadata summary:
   - Website: https://example.com/my-drumgizmo-kit
   - Logo: pngtree-music-notes-png-image_8660757.png
 
+Number of instruments created: 3
+
 Instrument samples MIDI mapping:
-  - MIDI note 59: E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare
-  - MIDI note 60: Example: Example
-  - MIDI note 61: gs-16b-1c-44100hz: gs-16b-1c-44100hz
+  - MIDI note 59: E-Mu-Proteus-FX-Wacky-Snare: E-Mu-Proteus-FX-Wacky-Snare.wav
+  - MIDI note 60: Example: Example.ogg
+  - MIDI note 61: gs-16b-1c-44100hz: gs-16b-1c-44100hz.flac
 
 Extra files copied:
   - pngtree-music-notes-png-image_8660757.png

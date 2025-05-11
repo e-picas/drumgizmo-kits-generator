@@ -179,11 +179,11 @@ def print_summary(run_data: RunData) -> None:
     midi_mapping = run_data.midi_mapping
 
     if logger.is_raw_output():
-        msg = f"Processing complete. DrumGizmo kit successfully created in {target_dir}"
+        msg = "Processing complete."
     else:
-        msg = f"Processing complete in {run_data.generation_time:.2f} seconds. DrumGizmo kit successfully created in {target_dir}"
+        msg = f"Processing complete in {run_data.generation_time:.2f} seconds."
     logger.info(msg, write_log=False)
-    logger.info(f"Number of instruments created: {len(processed_audio_files)}", write_log=False)
+    logger.info(f"DrumGizmo kit successfully created in {target_dir}", write_log=False)
     logger.info("\nMain files:", write_log=False)
     logger.info(f"  - {os.path.join(target_dir, 'drumkit.xml')}", write_log=False)
     logger.info(f"  - {os.path.join(target_dir, 'midimap.xml')}", write_log=False)
@@ -199,13 +199,15 @@ def print_summary(run_data: RunData) -> None:
     logger.info(f"  - Website: {metadata.get('website', '')}", write_log=False)
     logger.info(f"  - Logo: {metadata.get('logo', '')}", write_log=False)
 
+    logger.info(f"\nNumber of instruments created: {len(processed_audio_files)}", write_log=False)
     logger.info("\nInstrument samples MIDI mapping:", write_log=False)
 
     # Display mapping with MIDI notes
-    for instrument, audio_file in zip(processed_audio_files.keys(), audio_files):
+    for instrument in processed_audio_files:
         midi_note = midi_mapping.get(instrument, "N/A")
+        original_file = audio_files.get(instrument, {}).get("source_path", "N/A")
         logger.info(
-            f"  - MIDI note {midi_note}: {instrument}: {os.path.basename(audio_file)}",
+            f"  - MIDI note {midi_note}: {instrument}: {os.path.basename(original_file)}",
             write_log=False,
         )
 
