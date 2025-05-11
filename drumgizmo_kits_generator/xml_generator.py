@@ -206,7 +206,6 @@ def generate_instrument_xml(
         logger.debug(f"No audio_files entry found for {instrument_name}, fallback to channels=1")
     else:
         instrument_channels = audio_sources.get(instrument_name).get("channels", 1)
-        logger.debug(f"Detected {instrument_channels} channels for {instrument_name}")
 
     logger.debug(
         f"Generating instrument XML for '{instrument_name}' at '{xml_path}'"
@@ -300,6 +299,6 @@ def generate_midimap_xml(target_dir: str, midi_mapping: Dict[str, int]) -> None:
         f.write(pretty_xml)
 
     # Display MIDI mapping
-    logger.debug("MIDI mapping (alphabetical order):")
+    logger.debug("MIDI mapping (alphabetical order):", write_log=False)
     for instrument, note in sorted(midi_mapping.items(), key=lambda x: x[0]):
-        logger.debug(f"  MIDI Note {note}: {instrument}")
+        logger.debug(f"  MIDI Note {note}: {instrument}", write_log=False)

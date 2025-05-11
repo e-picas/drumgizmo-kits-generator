@@ -49,7 +49,12 @@ All the tests of the code are stored in the `tests` directory.
 ### Core Modules
 main.py
 : Entry point of the application
+
+kit_generator.py
 : Kit generation process
+
+state.py
+: State management
 
 cli.py
 : Command-line interface implementation

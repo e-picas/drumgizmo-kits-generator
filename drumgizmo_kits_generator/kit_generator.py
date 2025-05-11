@@ -126,6 +126,7 @@ def evaluate_midi_mapping(run_data: RunData) -> None:
             instrument_name = utils.get_instrument_name(filename)
             midi_mapping[instrument_name] = min_note + i
             run_data.midi_mapping[instrument_name] = min_note + i
+            logger.log("DEBUG", f"Mapping {instrument_name} to MIDI note {min_note + i}")
     else:
         left_count = instruments_count // 2
         for i, filename in enumerate(audio_files):
@@ -139,6 +140,7 @@ def evaluate_midi_mapping(run_data: RunData) -> None:
                 note = median_note + offset
             note = max(min_note, min(note, max_note))
             run_data.midi_mapping[instrument_name] = note
+            logger.log("DEBUG", f"Mapping {instrument_name} to MIDI note {note}")
 
 
 def print_midi_mapping(run_data: RunData) -> None:
@@ -180,29 +182,32 @@ def print_summary(run_data: RunData) -> None:
         msg = f"Processing complete. DrumGizmo kit successfully created in {target_dir}"
     else:
         msg = f"Processing complete in {run_data.generation_time:.2f} seconds. DrumGizmo kit successfully created in {target_dir}"
-    logger.info(msg)
-    logger.info(f"Number of instruments created: {len(processed_audio_files)}")
-    logger.info("\nMain files:")
-    logger.info(f"  - {os.path.join(target_dir, 'drumkit.xml')}")
-    logger.info(f"  - {os.path.join(target_dir, 'midimap.xml')}")
+    logger.info(msg, write_log=False)
+    logger.info(f"Number of instruments created: {len(processed_audio_files)}", write_log=False)
+    logger.info("\nMain files:", write_log=False)
+    logger.info(f"  - {os.path.join(target_dir, 'drumkit.xml')}", write_log=False)
+    logger.info(f"  - {os.path.join(target_dir, 'midimap.xml')}", write_log=False)
 
-    logger.info("\nKit metadata summary:")
-    logger.info(f"  - Name: {metadata.get('name', '')}")
-    logger.info(f"  - Version: {metadata.get('version', '')}")
-    logger.info(f"  - Description: {metadata.get('description', '')}")
-    logger.info(f"  - Notes: {metadata.get('notes', '')}")
-    logger.info(f"  - Author: {metadata.get('author', '')}")
-    logger.info(f"  - License: {metadata.get('license', '')}")
-    logger.info(f"  - Sample rate: {metadata.get('samplerate', '')} Hz")
-    logger.info(f"  - Website: {metadata.get('website', '')}")
-    logger.info(f"  - Logo: {metadata.get('logo', '')}")
+    logger.info("\nKit metadata summary:", write_log=False)
+    logger.info(f"  - Name: {metadata.get('name', '')}", write_log=False)
+    logger.info(f"  - Version: {metadata.get('version', '')}", write_log=False)
+    logger.info(f"  - Description: {metadata.get('description', '')}", write_log=False)
+    logger.info(f"  - Notes: {metadata.get('notes', '')}", write_log=False)
+    logger.info(f"  - Author: {metadata.get('author', '')}", write_log=False)
+    logger.info(f"  - License: {metadata.get('license', '')}", write_log=False)
+    logger.info(f"  - Sample rate: {metadata.get('samplerate', '')} Hz", write_log=False)
+    logger.info(f"  - Website: {metadata.get('website', '')}", write_log=False)
+    logger.info(f"  - Logo: {metadata.get('logo', '')}", write_log=False)
 
-    logger.info("\nInstrument samples MIDI mapping:")
+    logger.info("\nInstrument samples MIDI mapping:", write_log=False)
 
     # Display mapping with MIDI notes
     for instrument, audio_file in zip(processed_audio_files.keys(), audio_files):
         midi_note = midi_mapping.get(instrument, "N/A")
-        logger.info(f"  - MIDI note {midi_note}: {instrument}: {os.path.basename(audio_file)}")
+        logger.info(
+            f"  - MIDI note {midi_note}: {instrument}: {os.path.basename(audio_file)}",
+            write_log=False,
+        )
 
     extra_files = []
     if metadata.get("logo"):
@@ -211,9 +216,9 @@ def print_summary(run_data: RunData) -> None:
         extra_files.extend(metadata["extra_files"])
 
     if extra_files:
-        logger.info("\nExtra files copied:")
+        logger.info("\nExtra files copied:", write_log=False)
         for extra_file in extra_files:
-            logger.info(f"  - {extra_file}")
+            logger.info(f"  - {extra_file}", write_log=False)
 
 
 def process_audio_files(run_data: RunData) -> Dict[str, List[str]]:
@@ -359,9 +364,12 @@ def scan_source_files(run_data: RunData) -> None:
         file_info.update(info)
 
     # Print the list of audio files
-    logger.info(f"Found {len(audio_files)} audio files:")
+    logger.info(f"Found {len(audio_files)} audio files:", write_log=False)
     for instrument_name, data in audio_files.items():
-        logger.info(f"- {instrument_name} ({data['samplerate']} Hz - {data['channels']} channels)")
+        logger.info(
+            f"- {instrument_name} ({data['samplerate']} Hz - {data['channels']} channels)",
+            write_log=False,
+        )
 
     run_data.audio_sources = audio_files
 
@@ -421,6 +429,8 @@ def validate_directories(run_data: RunData) -> None:
         ValidationError: If source directory doesn't exist
         ValidationError: If target's parent directory doesn't exist
     """
+    logger.log("INFO", "Analyzing sources directory...")
+
     # Check if source directory exists
     if not os.path.isdir(run_data.source_dir):
         raise ValidationError(f"Source directory '{run_data.source_dir}' does not exist")
