@@ -319,7 +319,7 @@ def generate_xml_files(run_data: RunData) -> None:
         logger.print_action_end()
 
         # Generate midimap.xml
-        logger.print_action_start("Generating midimap.xml")
+        logger.print_action_start("Generating 'midimap.xml'")
         xml_generator.generate_midimap_xml(run_data.target_dir, run_data.midi_mapping)
         logger.print_action_end()
 
