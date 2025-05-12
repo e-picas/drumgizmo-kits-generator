@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v1.9.0 (2025-05-12)
+
+### Features
+
+- Add a context to app's exceptions
+  ([#32](https://github.com/e-picas/drumgizmo-kits-generator/pull/32),
+  [`73f6970`](https://github.com/e-picas/drumgizmo-kits-generator/commit/73f6970f4aae63348da93f64416c4a05f5798124))
+
+* feat: add a context to app's exceptions
+
+* fix: make more exception tests
+
+
 ## v1.8.0 (2025-05-11)
 
 ### Features
