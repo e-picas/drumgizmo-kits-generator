@@ -433,35 +433,39 @@ class TestMainWithDependencies:
         mock_exit.assert_called_with(0)
 
     # pylint: disable=too-many-arguments
-    @mock.patch("drumgizmo_kits_generator.kit_generator.scan_source_files")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.process_audio_files")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.generate_xml_files")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.copy_additional_files")
-    @mock.patch("drumgizmo_kits_generator.config.validate_configuration")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.print_metadata")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.print_midi_mapping")
-    @mock.patch("drumgizmo_kits_generator.kit_generator.prepare_target_directory")
-    @mock.patch("drumgizmo_kits_generator.cli.parse_arguments")
-    @mock.patch("drumgizmo_kits_generator.config.load_configuration")
-    @mock.patch("drumgizmo_kits_generator.config.transform_configuration")
-    def test_main_with_valid_args(
-        self,
-        mock_transform_config,
-        mock_load_config,
-        mock_parse_args,
-        mock_prepare_target,
-        mock_print_midi_mapping,
-        mock_print_metadata,
-        mock_validate_config,
-        mock_copy,
-        mock_generate,
-        mock_process,
-        mock_scan_source,
-    ):
+    def test_main_with_valid_args(self):
         """Test main function with valid arguments"""
+        # Setup all mocks
         with mock.patch(
-            "drumgizmo_kits_generator.main.kit_generator.validate_directories", autospec=True
-        ) as mock_validate_dirs:
+            "drumgizmo_kits_generator.utils.check_dependency"
+        ) as mock_check_dependency, mock.patch(
+            "drumgizmo_kits_generator.cli.parse_arguments"
+        ) as mock_parse_args, mock.patch(
+            "drumgizmo_kits_generator.config.load_configuration"
+        ) as mock_load_config, mock.patch(
+            "drumgizmo_kits_generator.config.transform_configuration"
+        ) as mock_transform_config, mock.patch(
+            "drumgizmo_kits_generator.kit_generator.validate_directories", autospec=True
+        ) as mock_validate_dirs, mock.patch(
+            "drumgizmo_kits_generator.kit_generator.print_metadata"
+        ) as mock_print_metadata, mock.patch(
+            "drumgizmo_kits_generator.kit_generator.scan_source_files"
+        ) as mock_scan_source, mock.patch(
+            "drumgizmo_kits_generator.kit_generator.print_midi_mapping"
+        ) as mock_print_midi_mapping, mock.patch(
+            "drumgizmo_kits_generator.kit_generator.prepare_target_directory"
+        ) as mock_prepare_target, mock.patch(
+            "drumgizmo_kits_generator.kit_generator.process_audio_files"
+        ) as mock_process, mock.patch(
+            "drumgizmo_kits_generator.kit_generator.generate_xml_files"
+        ) as mock_generate, mock.patch(
+            "drumgizmo_kits_generator.kit_generator.copy_additional_files"
+        ) as mock_copy, mock.patch(
+            "drumgizmo_kits_generator.config.validate_configuration"
+        ) as mock_validate_config, mock.patch(
+            "drumgizmo_kits_generator.main.RunData"
+        ) as mock_run_data_class:
+            # Configuration des mocks
             args = argparse.Namespace(
                 source="/path/to/source",
                 target="/path/to/target",
@@ -471,6 +475,7 @@ class TestMainWithDependencies:
                 raw_output=False,
             )
             mock_parse_args.return_value = args
+
             config_data = {
                 "extensions": [".wav", ".flac"],
             }
@@ -479,44 +484,42 @@ class TestMainWithDependencies:
             mock_validate_config.return_value = transformed_config
             mock_load_config.return_value = transformed_config
 
-            # Patch RunData pour éviter toute erreur lors de la création
-            def make_run_data(*_args, **_kwargs):
-                return RunData(
-                    source_dir=args.source,
-                    target_dir=args.target,
-                    config=transformed_config,
-                )
+            # Création d'un objet RunData pour le test
+            run_data_obj = RunData(
+                source_dir=args.source,
+                target_dir=args.target,
+                config=transformed_config,
+            )
 
-            with mock.patch("drumgizmo_kits_generator.main.RunData", side_effect=make_run_data):
-                main.main()
+            # Configuration du mock RunData pour retourner notre objet
+            mock_run_data_class.return_value = run_data_obj
+
+            # Éviter l'erreur de dépendance SoX
+            mock_check_dependency.return_value = None
+
+            # Exécution de la fonction principale
+            main.main()
+
+            # Vérifications
             mock_validate_dirs.assert_called_once()
             run_data_arg = mock_validate_dirs.call_args[0][0]
-            assert isinstance(run_data_arg, RunData)
+            assert run_data_arg == run_data_obj
             assert run_data_arg.source_dir == "/path/to/source"
             assert run_data_arg.target_dir == "/path/to/target"
             assert run_data_arg.config == transformed_config
-            assert mock_parse_args.call_count == 1
-        # scan_source_files doit être appelé avec RunData
-        args_scan, kwargs_scan = mock_scan_source.call_args
-        assert isinstance(args_scan[0], RunData)
-        assert args_scan[0].source_dir == "/path/to/source"
-        assert args_scan[0].config == transformed_config
-        # process_audio_files doit être appelé avec RunData
-        args_proc, kwargs_proc = mock_process.call_args
-        assert isinstance(args_proc[0], RunData)
-        assert args_proc[0].target_dir == "/path/to/target"
-        assert args_proc[0].config == transformed_config
-        # generate_xml_files doit être appelé avec RunData
-        args_gen, kwargs_gen = mock_generate.call_args
-        assert isinstance(args_gen[0], RunData)
-        assert args_gen[0].target_dir == "/path/to/target"
-        assert args_gen[0].config == transformed_config
-        # copy_additional_files doit être appelé avec RunData
-        args_copy, kwargs_copy = mock_copy.call_args
-        assert isinstance(args_copy[0], RunData)
-        assert args_copy[0].source_dir == "/path/to/source"
-        assert args_copy[0].target_dir == "/path/to/target"
-        assert args_copy[0].config == transformed_config
+
+            # Vérification des appels aux fonctions avec RunData
+            mock_scan_source.assert_called_once()
+            assert mock_scan_source.call_args[0][0] == run_data_obj
+
+            mock_process.assert_called_once()
+            assert mock_process.call_args[0][0] == run_data_obj
+
+            mock_generate.assert_called_once()
+            assert mock_generate.call_args[0][0] == run_data_obj
+
+            mock_copy.assert_called_once()
+            assert mock_copy.call_args[0][0] == run_data_obj
 
 
 if __name__ == "__main__":

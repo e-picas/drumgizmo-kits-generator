@@ -238,37 +238,76 @@ def calculate_midi_note(
 
 def handle_subprocess_error(e: Exception, operation_name: str, from_exception: bool = True) -> None:
     """
-    Handle errors from subprocess calls in a consistent way.
+    Handle subprocess errors in a consistent and detailed manner.
 
     Args:
-        e: The caught exception
-        operation_name: Name of the operation being performed
-        from_exception: Whether to include the original exception in the raised exception
+        e: The captured exception
+        operation_name: Name of the current operation
+        from_exception: If True, the original exception is included in the exception chain
 
     Raises:
-        AudioProcessingError: With appropriate error message
+        AudioProcessingError: Enriched exception with contextual information
 
     Example:
         try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
-        except subprocess.CalledProcessError as e:
-            handle_subprocess_error(e, "converting sample rate")
+            subprocess.run(["sox", "input.wav", "output.wav"], check=True)
         except Exception as e:
             handle_subprocess_error(e, "converting sample rate", False)
     """
     if isinstance(e, subprocess.CalledProcessError):
-        error_msg = f"Failed while {operation_name}: {e}"
+        # Create a context dictionary with detailed error information
+        error_context = {
+            "command": e.cmd if hasattr(e, "cmd") else None,
+            "exit_code": e.returncode,
+            "operation": operation_name,
+        }
+
+        # Add stderr if available
         if hasattr(e, "stderr") and e.stderr:
-            error_msg += f" (stderr: {e.stderr.strip()})"
+            error_context["stderr"] = e.stderr.strip()
+            error_msg = f"Failed during {operation_name}: {e} (stderr: {e.stderr.strip()})"
+        else:
+            error_msg = f"Failed during {operation_name}: {e}"
+
+        # Add stdout if available
+        if hasattr(e, "stdout") and e.stdout:
+            error_context["stdout"] = e.stdout.strip()
+
         if from_exception:
-            raise AudioProcessingError(error_msg) from e
-        raise AudioProcessingError(error_msg)
+            raise AudioProcessingError(error_msg, error_context) from e
+        raise AudioProcessingError(error_msg, error_context)
+
+    if isinstance(e, FileNotFoundError):
+        # Handle file not found errors specifically
+        error_context = {
+            "file": e.filename if hasattr(e, "filename") else None,
+            "operation": operation_name,
+        }
+        error_msg = f"File not found during {operation_name}: {e}"
+
+        if from_exception:
+            raise AudioProcessingError(error_msg, error_context) from e
+        raise AudioProcessingError(error_msg, error_context)
+
+    if isinstance(e, PermissionError):
+        # Handle permission errors specifically
+        error_context = {
+            "file": e.filename if hasattr(e, "filename") else None,
+            "operation": operation_name,
+        }
+        error_msg = f"Permission error during {operation_name}: {e}"
+
+        if from_exception:
+            raise AudioProcessingError(error_msg, error_context) from e
+        raise AudioProcessingError(error_msg, error_context)
 
     # For other types of exceptions
-    error_msg = f"Unexpected error while {operation_name}: {e}"
+    error_context = {"exception_type": type(e).__name__, "operation": operation_name}
+    error_msg = f"Unexpected error during {operation_name}: {e}"
+
     if from_exception:
-        raise AudioProcessingError(error_msg) from e
-    raise AudioProcessingError(error_msg)
+        raise AudioProcessingError(error_msg, error_context) from e
+    raise AudioProcessingError(error_msg, error_context)
 
 
 @contextmanager

@@ -101,11 +101,14 @@ def main() -> None:
         logger.log(
             "INFO", f"### Ending run {os.getpid()} in {run_data.generation_time:.2f} seconds ###"
         )
+
     except DrumGizmoError as e:
         logger.error(f"{e}", e)
+        sys.exit(1)
     # pylint: disable=broad-exception-caught
     except Exception as e:
         logger.error(f"Unexpected error: {e}", e)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
