@@ -5,6 +5,7 @@
 # pylint: disable=unused-argument
 # pylint: disable=R0801 # code duplication # code duplication
 # pylint: disable=protected-access
+# pylint: disable=too-many-lines
 """
 SPDX-License-Identifier: MIT
 SPDX-PackageName: DrumGizmo kits generator
@@ -456,7 +457,7 @@ class TestConvertSampleRate:
             audio.convert_sample_rate(sample_file, "48000")
 
         # Verify the error message
-        assert "converting sample rate" in str(excinfo.value)
+        assert "Failed to convert sample rate with SoX" in str(excinfo.value)
         assert "sox" in str(excinfo.value)
         mock_mkdtemp.assert_called_once_with(
             prefix=constants.DEFAULT_TEMP_DIR_PREFIX
@@ -498,7 +499,7 @@ class TestConvertSampleRate:
             audio.convert_sample_rate(sample_file, "48000")
 
         # Verify the error message includes stderr
-        assert "converting sample rate" in str(excinfo.value)
+        assert "Failed to convert sample rate with SoX" in str(excinfo.value)
         assert "SoX error: invalid sample rate" in str(excinfo.value)
 
         # Verify that mkdtemp was called with the right prefix
@@ -537,7 +538,7 @@ class TestConvertSampleRate:
             audio.convert_sample_rate(sample_file, "48000")
 
         # Verify the error message
-        assert "Unexpected error while converting sample rate" in str(excinfo.value)
+        assert "Unexpected error during sample rate conversion" in str(excinfo.value)
         # Verify that mkdtemp was called with the right prefix
         mock_mkdtemp.assert_called_once_with(prefix=constants.DEFAULT_TEMP_DIR_PREFIX)
         # Verify that the temp directory was cleaned up
@@ -616,7 +617,7 @@ class TestGetAudioInfo:
             audio.get_audio_info(sample_file)
 
         # Verify the error message
-        assert "getting audio information" in str(excinfo.value)
+        assert "Failed to get audio information with SoX" in str(excinfo.value)
         assert "soxi" in str(excinfo.value)
 
     @mock.patch("subprocess.run")
@@ -636,7 +637,7 @@ class TestGetAudioInfo:
             audio.get_audio_info(sample_file)
 
         # Verify the error message includes stderr content
-        assert "getting audio information" in str(excinfo.value)
+        assert "Failed to get audio information with SoX" in str(excinfo.value)
         assert "soxi ERROR: Failed to open input file" in str(excinfo.value)
 
     @mock.patch("subprocess.run")
@@ -669,7 +670,7 @@ class TestGetAudioInfo:
             audio.get_audio_info(sample_file)
 
         # Verify the error message
-        assert "Failed to parse audio information" in str(excinfo.value)
+        assert "Unable to parse audio information" in str(excinfo.value)
 
 
 class TestProcessSample:
@@ -909,3 +910,96 @@ class TestProcessSample:
             "test_instrument",
             variations_method="linear",
         )
+
+
+class TestCleanupTempFiles:
+    """Tests for the _cleanup_temp_files function."""
+
+    @mock.patch("os.path.exists")
+    @mock.patch("os.remove")
+    @mock.patch("os.rmdir")
+    @mock.patch("drumgizmo_kits_generator.logger.log")
+    def test_cleanup_temp_files_success(self, mock_log, mock_rmdir, mock_remove, mock_exists):
+        """Test _cleanup_temp_files with successful cleanup."""
+        # Setup mocks
+        mock_exists.return_value = True
+
+        # Call the function
+        temp_file = "/tmp/test_file.wav"
+        temp_dir = "/tmp/test_dir"
+        audio._cleanup_temp_files(temp_file, temp_dir)
+
+        # Assertions
+        mock_exists.assert_any_call(temp_file)
+        mock_exists.assert_any_call(temp_dir)
+        mock_remove.assert_called_once_with(temp_file)
+        mock_rmdir.assert_called_once_with(temp_dir)
+        mock_log.assert_any_call("INFO", f"Temporary file deleted: {temp_file}")
+        mock_log.assert_any_call("INFO", f"Temporary directory deleted: {temp_dir}")
+
+    @mock.patch("os.path.exists")
+    @mock.patch("os.remove")
+    @mock.patch("os.rmdir")
+    @mock.patch("drumgizmo_kits_generator.logger.warning")
+    @mock.patch("drumgizmo_kits_generator.logger.log")
+    def test_cleanup_temp_files_with_error(
+        self, mock_log, mock_warning, mock_rmdir, mock_remove, mock_exists
+    ):
+        """Test _cleanup_temp_files with errors during cleanup."""
+        # Setup mocks
+        mock_exists.return_value = True
+        mock_remove.side_effect = OSError("Permission denied")
+        mock_rmdir.side_effect = OSError("Directory not empty")
+
+        # Call the function
+        temp_file = "/tmp/test_file.wav"
+        temp_dir = "/tmp/test_dir"
+        audio._cleanup_temp_files(temp_file, temp_dir)
+
+        # Assertions
+        mock_exists.assert_any_call(temp_file)
+        mock_exists.assert_any_call(temp_dir)
+        mock_remove.assert_called_once_with(temp_file)
+        mock_rmdir.assert_called_once_with(temp_dir)
+        mock_warning.assert_any_call(
+            f"Unable to delete temporary file {temp_file}: Permission denied"
+        )
+        mock_warning.assert_any_call(
+            f"Unable to delete temporary directory {temp_dir}: Directory not empty"
+        )
+
+    @mock.patch("os.path.exists")
+    @mock.patch("os.remove")
+    @mock.patch("os.rmdir")
+    @mock.patch("drumgizmo_kits_generator.logger.log")
+    def test_cleanup_temp_files_nonexistent(self, mock_log, mock_rmdir, mock_remove, mock_exists):
+        """Test _cleanup_temp_files with nonexistent files."""
+        # Setup mocks
+        mock_exists.return_value = False
+
+        # Call the function
+        temp_file = "/tmp/test_file.wav"
+        temp_dir = "/tmp/test_dir"
+        audio._cleanup_temp_files(temp_file, temp_dir)
+
+        # Assertions
+        mock_exists.assert_any_call(temp_file)
+        mock_exists.assert_any_call(temp_dir)
+        mock_remove.assert_not_called()
+        mock_rmdir.assert_not_called()
+        mock_log.assert_not_called()
+
+    @mock.patch("os.path.exists")
+    @mock.patch("os.remove")
+    @mock.patch("os.rmdir")
+    @mock.patch("drumgizmo_kits_generator.logger.log")
+    def test_cleanup_temp_files_none_values(self, mock_log, mock_rmdir, mock_remove, mock_exists):
+        """Test _cleanup_temp_files with None values."""
+        # Call the function with None values
+        audio._cleanup_temp_files(None, None)
+
+        # Assertions
+        mock_exists.assert_not_called()
+        mock_remove.assert_not_called()
+        mock_rmdir.assert_not_called()
+        mock_log.assert_not_called()

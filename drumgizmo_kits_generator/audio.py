@@ -20,6 +20,31 @@ from drumgizmo_kits_generator import constants, logger, utils
 from drumgizmo_kits_generator.exceptions import AudioProcessingError, DependencyError
 
 
+def _cleanup_temp_files(output_file: str = None, temp_dir: str = None) -> None:
+    """
+    Clean up temporary files created during audio processing.
+
+    Args:
+        output_file: Path to the output file to delete
+        temp_dir: Path to the temporary directory to delete
+    """
+    # Delete the output file if it exists
+    if output_file and os.path.exists(output_file):
+        try:
+            os.remove(output_file)
+            logger.log("INFO", f"Temporary file deleted: {output_file}")
+        except OSError as e:
+            logger.warning(f"Unable to delete temporary file {output_file}: {e}")
+
+    # Delete the temporary directory if it exists
+    if temp_dir and os.path.exists(temp_dir):
+        try:
+            os.rmdir(temp_dir)
+            logger.log("INFO", f"Temporary directory deleted: {temp_dir}")
+        except OSError as e:
+            logger.warning(f"Unable to delete temporary directory {temp_dir}: {e}")
+
+
 def convert_sample_rate(
     file_path: str,
     target_sample_rate: str,
@@ -83,21 +108,64 @@ def convert_sample_rate(
         return output_file
 
     except subprocess.CalledProcessError as e:
-        # Clean up the output file if it was created
-        if os.path.exists(output_file):
-            os.remove(output_file)
-        if not target_dir and os.path.exists(temp_dir):
-            os.rmdir(temp_dir)
-        utils.handle_subprocess_error(e, "converting sample rate")
-        return None  # pragma: no cover
+        # Cleanup temporary files
+        _cleanup_temp_files(output_file, temp_dir if not target_dir else None)
+        # Enhanced error context
+        error_context = {
+            "file": file_path,
+            "target_samplerate": target_sample_rate,
+            "exit_code": e.returncode,
+            "stderr": e.stderr if hasattr(e, "stderr") else None,
+        }
+        raise AudioProcessingError(
+            f"Failed to convert sample rate with SoX: {e}", error_context
+        ) from e
+    except FileNotFoundError as e:
+        # Cleanup temporary files
+        _cleanup_temp_files(output_file, temp_dir if not target_dir else None)
+        # Enhanced error context
+        error_context = {
+            "file": e.filename if hasattr(e, "filename") else file_path,
+            "target_samplerate": target_sample_rate,
+        }
+        raise AudioProcessingError(
+            f"File not found during sample rate conversion: {e}", error_context
+        ) from e
+    except PermissionError as e:
+        # Cleanup temporary files
+        _cleanup_temp_files(output_file, temp_dir if not target_dir else None)
+        # Enhanced error context
+        error_context = {
+            "file": e.filename if hasattr(e, "filename") else file_path,
+            "target_samplerate": target_sample_rate,
+        }
+        raise AudioProcessingError(
+            f"Permission error during sample rate conversion: {e}", error_context
+        ) from e
+    except OSError as e:
+        # Cleanup temporary files
+        _cleanup_temp_files(output_file, temp_dir if not target_dir else None)
+        # Enhanced error context
+        error_context = {
+            "file": e.filename if hasattr(e, "filename") else file_path,
+            "target_samplerate": target_sample_rate,
+            "error_code": e.errno if hasattr(e, "errno") else None,
+        }
+        raise AudioProcessingError(
+            f"System error during sample rate conversion: {e}", error_context
+        ) from e
     except Exception as e:  # pylint: disable=broad-exception-caught
-        # Clean up the output file if it was created
-        if os.path.exists(output_file):
-            os.remove(output_file)
-        if not target_dir and os.path.exists(temp_dir):
-            os.rmdir(temp_dir)
-        utils.handle_subprocess_error(e, "converting sample rate")
-        return None  # pragma: no cover
+        # Cleanup temporary files
+        _cleanup_temp_files(output_file, temp_dir if not target_dir else None)
+        # Enhanced error context
+        error_context = {
+            "file": file_path,
+            "target_samplerate": target_sample_rate,
+            "exception_type": type(e).__name__,
+        }
+        raise AudioProcessingError(
+            f"Unexpected error during sample rate conversion: {e}", error_context
+        ) from e
 
 
 def get_audio_info(file_path: str) -> Dict[str, Any]:
@@ -176,14 +244,45 @@ def get_audio_info(file_path: str) -> Dict[str, Any]:
 
         logger.debug(f"Audio info for '{file_path}': {audio_info}")
     except subprocess.CalledProcessError as e:
-        utils.handle_subprocess_error(e, "getting audio information")
-        return {}  # pragma: no cover
+        # Enhanced error context
+        error_context = {
+            "file": file_path,
+            "command": e.cmd if hasattr(e, "cmd") else None,
+            "exit_code": e.returncode,
+            "stderr": e.stderr if hasattr(e, "stderr") else None,
+        }
+        raise AudioProcessingError(
+            f"Failed to get audio information with SoX: {e}", error_context
+        ) from e
     except ValueError as e:
-        error_msg = f"Failed to parse audio information: {e}"
-        raise AudioProcessingError(error_msg) from e
+        # Gestion spécifique des erreurs de conversion de valeurs
+        error_context = {"file": file_path, "error_message": str(e)}
+        raise AudioProcessingError(f"Unable to parse audio information: {e}", error_context) from e
+    except FileNotFoundError as e:
+        # Gestion spécifique des erreurs de fichier non trouvé
+        error_context = {"file": e.filename if hasattr(e, "filename") else file_path}
+        raise AudioProcessingError(f"Audio file not found: {e}", error_context) from e
+    except PermissionError as e:
+        # Gestion spécifique des erreurs de permission
+        error_context = {"file": e.filename if hasattr(e, "filename") else file_path}
+        raise AudioProcessingError(
+            f"Permission error when accessing audio file: {e}", error_context
+        ) from e
+    except OSError as e:
+        # Gestion spécifique des erreurs de système de fichiers
+        error_context = {
+            "file": e.filename if hasattr(e, "filename") else file_path,
+            "error_code": e.errno if hasattr(e, "errno") else None,
+        }
+        raise AudioProcessingError(
+            f"System error when accessing audio file: {e}", error_context
+        ) from e
     except Exception as e:  # pylint: disable=broad-exception-caught
-        utils.handle_subprocess_error(e, "getting audio information")
-        return {}  # pragma: no cover
+        # Capture other unexpected exceptions
+        error_context = {"file": file_path, "exception_type": type(e).__name__}
+        raise AudioProcessingError(
+            f"Unexpected error when getting audio information: {e}", error_context
+        ) from e
 
     return audio_info
 

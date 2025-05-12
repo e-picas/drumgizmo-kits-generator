@@ -254,11 +254,35 @@ def process_audio_files(run_data: RunData) -> Dict[str, List[str]]:
             if processed_files:
                 run_data.audio_processed[instrument_name] = processed_files
 
+    except AudioProcessingError as e:
+        # Enrich the error with more context
+        error_context = {
+            "instrument": instrument_name,
+            "source_path": audio_files[instrument_name]["source_path"],
+            "target_dir": run_data.target_dir,
+        }
+        raise AudioProcessingError(f"Failed to process audio file: {e}", error_context) from e
+    except DependencyError as e:
+        # Enrich the error with more context about the missing dependency
+        raise DependencyError(f"Missing dependency during audio processing: {e}") from e
+    except OSError as e:
+        # Handle file system errors specifically
+        error_context = {
+            "instrument": instrument_name if "instrument_name" in locals() else "unknown",
+            "error_code": e.errno if hasattr(e, "errno") else "unknown",
+        }
+        raise AudioProcessingError(
+            f"System error during audio processing: {e}", error_context
+        ) from e
     except Exception as e:
-        error_msg = f"Failed to process audio files: {e}"
-        if not isinstance(e, (AudioProcessingError, DependencyError)):
-            raise AudioProcessingError(error_msg) from e
-        raise
+        # Capture other unexpected exceptions
+        error_context = {
+            "instrument": instrument_name if "instrument_name" in locals() else "unknown",
+            "exception_type": type(e).__name__,
+        }
+        raise AudioProcessingError(
+            f"Unexpected error during audio processing: {e}", error_context
+        ) from e
 
 
 def generate_xml_files(run_data: RunData) -> None:
@@ -284,19 +308,7 @@ def generate_xml_files(run_data: RunData) -> None:
         logger.print_action_end()
 
         logger.print_action_start("Generating instruments XML files")
-        for instrument_name in instrument_names:
-            instrument_files = []
-            for f in run_data.audio_processed:
-                base_name = os.path.basename(f)
-                # It could be with or without velocity prefix, and with or without "_converted" suffix
-                if utils.is_instrument_file(base_name, instrument_name) or any(
-                    base_name.startswith(f"{i}-")
-                    and utils.is_instrument_file(base_name[len(f"{i}-") :], instrument_name)
-                    for i in range(1, 10)
-                ):
-                    instrument_files.append(f)
-
-            # Pass run_data instead of old separate arguments
+        for instrument_name in run_data.audio_processed:
             xml_generator.generate_instrument_xml(
                 run_data.target_dir,
                 instrument_name,
@@ -306,12 +318,41 @@ def generate_xml_files(run_data: RunData) -> None:
             )
         logger.print_action_end()
 
-        logger.print_action_start("Generating 'midimap.xml'")
+        # Generate midimap.xml
+        logger.print_action_start("Generating midimap.xml")
         xml_generator.generate_midimap_xml(run_data.target_dir, run_data.midi_mapping)
         logger.print_action_end()
+
+    except XMLGenerationError as e:
+        # Reuse the existing error with more context
+        raise XMLGenerationError(f"Failed to generate XML files: {e}") from e
+    except OSError as e:
+        # Handle I/O errors specifically
+        error_context = {
+            "target_dir": run_data.target_dir,
+            "error_code": e.errno if hasattr(e, "errno") else "unknown",
+            "error_file": e.filename if hasattr(e, "filename") else "unknown",
+        }
+        raise XMLGenerationError(f"I/O error during XML file generation: {e}", error_context) from e
+    except ValueError as e:
+        # Handle invalid value errors
+        error_context = {
+            "instrument_count": len(run_data.audio_processed)
+            if hasattr(run_data, "audio_processed")
+            else 0,
+            "midi_mapping_count": len(run_data.midi_mapping)
+            if hasattr(run_data, "midi_mapping")
+            else 0,
+        }
+        raise XMLGenerationError(
+            f"Invalid values during XML file generation: {e}", error_context
+        ) from e
     except Exception as e:
-        error_msg = f"Failed to generate XML files: {e}"
-        raise XMLGenerationError(error_msg) from e
+        # Capture other unexpected exceptions
+        error_context = {"exception_type": type(e).__name__, "target_dir": run_data.target_dir}
+        raise XMLGenerationError(
+            f"Unexpected error during XML file generation: {e}", error_context
+        ) from e
 
 
 # pylint: disable=too-many-locals
@@ -415,9 +456,44 @@ def copy_additional_files(run_data: RunData) -> None:
                 else:
                     logger.warning(f"Extra file not found: {extra_file_path}")
 
+    except FileNotFoundError as e:
+        # Handle file not found errors specifically
+        error_context = {
+            "file": e.filename if hasattr(e, "filename") else "unknown",
+            "source_dir": run_data.source_dir,
+            "target_dir": run_data.target_dir,
+        }
+        raise DirectoryError(
+            f"File not found when copying additional files: {e}", error_context
+        ) from e
+    except PermissionError as e:
+        # Handle permission errors specifically
+        error_context = {
+            "file": e.filename if hasattr(e, "filename") else "unknown",
+            "error_code": e.errno if hasattr(e, "errno") else "unknown",
+        }
+        raise DirectoryError(
+            f"Permission error when copying additional files: {e}", error_context
+        ) from e
+    except OSError as e:
+        # Handle file system errors specifically
+        error_context = {
+            "file": e.filename if hasattr(e, "filename") else "unknown",
+            "error_code": e.errno if hasattr(e, "errno") else "unknown",
+        }
+        raise DirectoryError(
+            f"System error when copying additional files: {e}", error_context
+        ) from e
     except Exception as e:
-        error_msg = f"Failed to copy additional files: {e}"
-        raise DirectoryError(error_msg) from e
+        # Capture other unexpected exceptions
+        error_context = {
+            "exception_type": type(e).__name__,
+            "source_dir": run_data.source_dir,
+            "target_dir": run_data.target_dir,
+        }
+        raise DirectoryError(
+            f"Unexpected error when copying additional files: {e}", error_context
+        ) from e
 
 
 def validate_directories(run_data: RunData) -> None:

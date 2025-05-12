@@ -227,7 +227,7 @@ class Logger:
         Print the start of an action with ellipsis.
 
         Args:
-            msg: The message to display (e.g., "Génération du XML")
+            msg: The message to display (e.g., "Generating XML")
         """
         self.log("INFO", f"{msg}...")
         print(f"{msg}...", flush=True)
