@@ -29,8 +29,9 @@ A Python tool for generating drum kits for [DrumGizmo](https://drumgizmo.org/), 
     -   [Target directory of the generated kit](#target-directory-of-the-generated-kit)
     -   [Kit metadata](#kit-metadata)
     -   [Audio samples treatments](#audio-samples-treatments)
-    -   [Samplerate](#samplerate)
-    -   [About samples channels](#about-samples-channels)
+        -   [Volume variations](#volume-variations)
+        -   [Samplerate](#samplerate)
+    -   [About kit channels](#about-kit-channels)
     -   [MIDI keys repartition](#midi-keys-repartition)
     -   [Extra files](#extra-files)
     -   [Note about audio files formats](#note-about-audio-files-formats)
@@ -118,6 +119,8 @@ You may use the following [`metadata` options](#options) or [configuration](#con
 
 ### Audio samples treatments
 
+#### Volume variations
+
 Each original audio sample is duplicated X times to finally get the [`velocity-levels`](#options) number of volume variations, assigned to corresponding "velocity" variations by setting the `power` entry of each sample.
 
 >   For example, for a value of `velocity_levels=4`, we will have:
@@ -149,11 +152,11 @@ The [`variations-method`](#options) option defines how the volume variations are
     >   ```
 
 
-### Samplerate
+#### Samplerate
 
 The [`samplerate`](#options) of the generated kit (which defaults to `44100`), defined in *Hz*, will be used for all samples and variations to ensure the kit uniformity.
 
-### About samples channels
+### About kit channels
 
 The app will alternately use each original sample "channels" and assign them to the global "channels" of the kit, which defaults to a simple stereo `[ left , right ]` list.
 
@@ -238,6 +241,8 @@ python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target --name "Ki
 python create_drumgizmo_kit.py -h
 ```
 
+>   **NOTE** - A complete log of each run is stored to a logging file at `./drumgizmo_kit_generator.log`. You may analyze it to get details about a run and in case of error.
+
 #### Execution flags
 
 The following "special" options can be used to manage process output and run:
@@ -256,13 +261,13 @@ The following "special" options can be used to manage process output and run:
 | `-t` / `--target` | The path of the [target directory](#target-directory-of-the-generated-kit) where the kit will be generated | *REQUIRED* |
 | `-c` / `--config` | Path of a [configuration file](#configuration-file) to use | `drumgizmo-kit.ini` |
 | `--author` | The author(s) of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
-| `--channels` | Comma-separated list of [audio channels](#about-samples-channels) to use in the kit | `Left,Right` |
+| `--channels` | Comma-separated list of [audio channels](#about-kit-channels) to use in the kit | `Left,Right` |
 | `--description` | The description of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | - |
 | `--extensions` | Comma-separated list of [audio file extensions](#note-about-audio-files-formats) to process | `wav,WAV,flac,FLAC,ogg,OGG` |
 | `--extra-files` | Comma-separated list of additional files to copy to the target directory - Local paths from the `source` directory | - |
 | `--license` | The license of the generated kit - [`drumkit.xml`](#kit-metadata) metadata | `Private license` |
 | `--logo` | Path of the kit logo filename - Local path from the `source` directory - [`drumkit.xml`](#kit-metadata) metadata | - |
-| `--main-channels` | Comma-separated list of [**main** audio channels](#about-samples-channels) to use in the kit | - |
+| `--main-channels` | Comma-separated list of [**main** audio channels](#about-kit-channels) to use in the kit | - |
 | `--midi-note-max` | Maximum [MIDI note](#midi-keys-repartition) allowed - [`midimap.xml`](#midi-keys-repartition) generation | `127` |
 | `--midi-note-median` | Median [MIDI note](#midi-keys-repartition) for distributing instruments around - [`midimap.xml`](#midi-keys-repartition) generation | `60` |
 | `--midi-note-min` | Minimum [MIDI note](#midi-keys-repartition) allowed - [`midimap.xml`](#midi-keys-repartition) generation | `0` |
@@ -284,7 +289,7 @@ All command-line options have equivalent configuration file settings which must 
 
 ### Daily usage
 
-For a daily usage of this generator, you may first prepare your audio sources in a single directory and name the samples correctly to see them orderd alphabetically.
+For a daily usage of the generator, you may first prepare your audio sources in a single directory and name the samples correctly to see them orderd alphabetically.
 
 Once your sources fit your needs, you can validate what will be generated using the `dry-run` mode with:
 
@@ -292,7 +297,7 @@ Once your sources fit your needs, you can validate what will be generated using 
 python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target [...] -x
 ```
 
-You can adapt your options to fit your needs and run the dry-run process again.
+You can adapt your options to fit your needs and run the `dry-run` process again.
 
 If you are satisfied, you can generate the kit:
 
@@ -305,6 +310,8 @@ If you face an error during the process, you can have more information using the
 ```cli
 python create_drumgizmo_kit.py -s /path/to/sources -t /path/to/target [...] -v
 ```
+
+>   **NOTE** - If the error persists, you may [open an issue](https://github.com/e-picas/drumgizmo-kits-generator/issues/new/choose) in the repository with all your details.
 
 Finally, if you want to be prepared to re-generate it often (if you update your samples for instance), you can save your options in a configuration file `drumgizmo-kit.ini` in your sources directory. Doing so, you can re-generate it updating your version number with:
 
